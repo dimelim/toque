@@ -39,8 +39,12 @@ func cmdReport(args []string) error {
 	b.WriteString("# Resultados de los experimentos A/B\n\n")
 	b.WriteString("Cada experimento alterna sin el cambio (A) y con el cambio (B) en orden ABBA dentro de Realistic Street Soccer. ")
 	b.WriteString("Se compara la mediana de cada métrica por ventana, con intervalo de confianza bootstrap al 95 % y prueba de Mann-Whitney. ")
-	b.WriteString("Una diferencia cuenta como real solo si el intervalo no cruza el cero y p < 0,05.\n\n")
+	b.WriteString("En cada prueba, una métrica principal solo cuenta si el intervalo no cruza el cero y p queda por debajo de 0,05 dividido entre el número de métricas principales (Bonferroni). ")
+	b.WriteString("Todo lo que pasó una primera prueba se repitió, y al juntar los datos el umbral es p < 0,01.\n\n")
 	b.WriteString("\n\n")
+	b.WriteString(summary())
+	b.WriteString("## Cada experimento por separado\n\n")
+	b.WriteString("Una prueba suelta puede dar un falso positivo, y aquí hay dos (la primera del temporizador y la primera del plan de energía), que las réplicas desmintieron. El veredicto que cuenta es el del resumen de arriba y el de los resultados combinados del final.\n\n")
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
 		if err != nil {

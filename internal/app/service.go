@@ -124,7 +124,7 @@ func (s *Service) Overview() Overview {
 	o.Applied = len(tweaks.OpenJournal().Applied)
 	o.Tested = len(catalog.Catalog)
 	for _, e := range catalog.Catalog {
-		if e.Verdict == catalog.VerdictProven {
+		if e.Verdict == catalog.VerdictProven || e.Verdict == catalog.VerdictTradeoff {
 			o.Proven++
 		}
 	}

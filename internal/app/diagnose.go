@@ -238,6 +238,9 @@ func findings(d Diagnosis) []Finding {
 			add("paging", "warn", "memoria", "Windows lee memoria del disco durante la partida", fmt.Sprintf("%.0f lecturas de paginación por segundo de media.", g.Sys.HardFaults), "")
 		}
 	}
+	if up := uptime(); up < 15*time.Minute {
+		add("cold-start", "info", "sistema", "Acabas de encender el PC", fmt.Sprintf("Lleva %d minutos encendido. Las primeras partidas tras arrancar van peor porque Windows aún está cargando cosas en memoria y Roblox lee sus archivos del disco. Mide de nuevo en un rato.", int(up.Minutes())), "")
+	}
 	if len(f) == 0 {
 		add("all-ok", "ok", "sistema", "Todo en orden", "No encontré nada que esté frenando a Roblox en este equipo.", "")
 	}

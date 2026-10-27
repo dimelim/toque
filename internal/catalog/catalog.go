@@ -15,6 +15,7 @@ type Entry struct {
 
 const (
 	VerdictProven      = "proven"
+	VerdictTradeoff    = "tradeoff"
 	VerdictRejected    = "rejected"
 	VerdictPending     = "pending"
 	VerdictSituational = "situational"
@@ -114,7 +115,8 @@ var Catalog = []Entry{
 		Metric:   "Latencia de render, 1 % low y tiempo de GPU por frame.",
 		Risk:     "El juego se ve bastante peor, con menos detalle, sombras y distancia de dibujado.",
 		Revert:   "Vuelve a la calidad que tenías antes en la configuración de Roblox.",
-		Verdict:  VerdictPending,
+		Verdict:  VerdictTradeoff,
+		Lab:      "Probada y replicada frente a la calidad automática. En dos pruebas de 12 reaperturas cada una, la latencia de render bajó un 12 % (de unos 6,97 a 6,12 ms), la GPU por frame un 28 % y la RAM de Roblox unos 80 MB, en todas las reaperturas. A cambio el juego se ve peor.",
 	},
 	{
 		ID:       "flag:FIntDebugForceMSAASamples=0",
@@ -125,7 +127,8 @@ var Catalog = []Entry{
 		Metric:   "Tiempo de GPU por frame y latencia de render.",
 		Risk:     "Los bordes de los objetos se ven con dientes de sierra.",
 		Revert:   "Quita la opción del archivo de configuración de Roblox.",
-		Verdict:  VerdictPending,
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada. La GPU por frame quedó igual (2,60 frente a 2,62 ms) en 12 reaperturas, porque con la calidad automática Roblox no estaba usando MSAA en las pruebas.",
 	},
 	{
 		ID:       "flag:FIntFRMMinGrassDistance=0,FIntFRMMaxGrassDistance=0",

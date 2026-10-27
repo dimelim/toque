@@ -35,6 +35,29 @@ func title(id string) string {
 	return id
 }
 
+var verdictLabel = map[string]string{
+	catalog.VerdictProven:      "Probada",
+	catalog.VerdictTradeoff:    "Probada, con coste visual",
+	catalog.VerdictSituational: "Según tu caso",
+	catalog.VerdictPending:     "En estudio",
+	catalog.VerdictRejected:    "Descartada",
+}
+
+func summary() string {
+	var b strings.Builder
+	b.WriteString("## Resumen\n\n| Optimización | Veredicto final | Evidencia |\n|---|---|---|\n")
+	order := []string{catalog.VerdictProven, catalog.VerdictTradeoff, catalog.VerdictSituational, catalog.VerdictPending, catalog.VerdictRejected}
+	for _, v := range order {
+		for _, e := range catalog.Catalog {
+			if e.Verdict == v {
+				fmt.Fprintf(&b, "| %s | %s | %s |\n", e.Title, verdictLabel[v], e.Lab)
+			}
+		}
+	}
+	b.WriteString("\n")
+	return b.String()
+}
+
 func es(v float64, digits int) string {
 	return strings.Replace(fmt.Sprintf("%.*f", digits, v), ".", ",", 1)
 }

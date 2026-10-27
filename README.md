@@ -12,7 +12,9 @@ Aplicación de Windows que mide el retraso real de Roblox (enfocada en Realistic
 
 ## Cómo decide
 
-`internal/bench/ab.go` alterna sin el cambio (A) y con el cambio (B) en orden ABBA. Los cambios "en vivo" se alternan dentro de una misma sesión y los que requieren reabrir Roblox se prueban reentrando al mismo servidor por JobId. Cada métrica se compara por mediana de ventanas con intervalo de confianza bootstrap al 95 % y Mann-Whitney. Solo es concluyente si el intervalo no cruza el cero y p < 0,05. Las ventanas en las que Roblox pierde el foco o hay entrada del usuario se descartan.
+`internal/bench/ab.go` alterna sin el cambio (A) y con el cambio (B) en orden ABBA. Los cambios "en vivo" se alternan dentro de una misma sesión y los que requieren reabrir Roblox se prueban reentrando al mismo servidor por JobId. Cada métrica se compara por mediana de ventanas con intervalo de confianza bootstrap al 95 % y Mann-Whitney. Para las métricas principales el umbral se corrige por Bonferroni (0,05 dividido entre el número de métricas principales) y las secundarias solo cuentan como empeoramiento con p < 0,01. Las ventanas en las que Roblox pierde el foco o hay entrada del usuario se descartan.
+
+Todo lo que pasó una primera prueba se repitió antes de darlo por bueno. Dos resultados iniciales "significativos" (el temporizador a 0,5 ms y el plan de energía) no se confirmaron en la réplica y se descartaron. Al juntar los datos de varias pruebas el umbral sube a p < 0,01.
 
 Los resultados completos están en [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 

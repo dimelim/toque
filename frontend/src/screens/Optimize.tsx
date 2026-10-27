@@ -185,6 +185,7 @@ export function Optimize() {
   }, [load]);
   const update = (o: Optimization) => setItems((all) => all.map((x) => (x.id === o.id ? o : x)));
   const proven = items.filter((o) => o.verdict === "proven");
+  const tradeoff = items.filter((o) => o.verdict === "tradeoff");
   const situational = items.filter((o) => o.verdict === "situational");
   const pending = items.filter((o) => o.verdict === "pending");
   const rejected = items.filter((o) => o.verdict === "rejected");
@@ -227,7 +228,7 @@ export function Optimize() {
         </div>
         <div className="grid grid-cols-3 gap-6 text-right">
           <div>
-            <p className="num text-[34px] leading-none font-semibold text-volt">{num(proven.length)}</p>
+            <p className="num text-[34px] leading-none font-semibold text-volt">{num(proven.length + tradeoff.length)}</p>
             <p className="mt-1 text-caption-1-medium text-ink-3">probadas</p>
           </div>
           <div>
@@ -241,6 +242,7 @@ export function Optimize() {
         </div>
       </Card>
       <Section title="Probadas" hint="Mejoran de forma medible en pruebas reales" items={proven} onChange={update} />
+      <Section title="Mejoran, con un coste" hint="Probadas, pero cambian cómo se ve el juego. Actívalas tú" items={tradeoff} onChange={update} />
       <Section title="Según tu caso" hint="Ayudan solo en ciertas condiciones" items={situational} onChange={update} />
       <Section title="En estudio" hint="Aún sin una mejora demostrada" items={pending} onChange={update} />
       <Section title="Descartadas" hint="Las probamos y no cambian nada" items={rejected} onChange={update} />
