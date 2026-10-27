@@ -9,12 +9,15 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"toque/internal/bench"
 	"toque/internal/frames"
 	"toque/internal/netq"
 	"toque/internal/roblox"
+	"toque/internal/tweaks"
 	"toque/internal/winx"
 )
 
@@ -35,6 +38,10 @@ func main() {
 		err = cmdTrial(os.Args[2:])
 	case "trials":
 		err = cmdTrials(os.Args[2:])
+	case "tweak":
+		err = cmdTweak(os.Args[2:])
+	case "ab":
+		err = cmdAB(os.Args[2:])
 	case "analyze-pcap":
 		err = cmdAnalyzePcap(os.Args[2:])
 	case "analyze-csv":
@@ -232,6 +239,83 @@ func cmdTrials(args []string) error {
 	b, _ := json.MarshalIndent(rows, "", "  ")
 	os.WriteFile(filepath.Join(base, "series.json"), b, 0o644)
 	fmt.Println(string(b))
+	return nil
+}
+
+func cmdTweak(args []string) error {
+	if len(args) == 0 {
+		return errors.New("tweak <list|state|apply|revert|revert-all> [id]")
+	}
+	e, err := env()
+	if err != nil {
+		return err
+	}
+	tctx := tweaks.Context{Install: e.Install}
+	if pids := roblox.Running(); len(pids) > 0 {
+		tctx.PID = pids[0]
+	}
+	j := tweaks.OpenJournal()
+	switch args[0] {
+	case "list":
+		printJSON(map[string]any{"registered": tweaks.IDs(), "journal": j.Applied})
+		return nil
+	case "revert-all":
+		return j.RevertAll(tctx)
+	}
+	if len(args) < 2 {
+		return errors.New("missing tweak id")
+	}
+	t, err := tweaks.Get(args[1])
+	if err != nil {
+		return err
+	}
+	switch args[0] {
+	case "state":
+		printJSON(map[string]any{"id": t.ID(), "kind": t.Kind(), "state": t.State(tctx), "inJournal": j.Has(t.ID())})
+	case "apply":
+		err = j.Apply(tctx, t)
+		printJSON(t.State(tctx))
+	case "revert":
+		err = j.Revert(tctx, t)
+		printJSON(t.State(tctx))
+	default:
+		err = errors.New("unknown tweak action")
+	}
+	return err
+}
+
+func cmdAB(args []string) error {
+	fs := flag.NewFlagSet("ab", flag.ExitOnError)
+	cfg := bench.ABConfig{}
+	fs.StringVar(&cfg.Tweak, "tweak", "", "tweak id")
+	fs.IntVar(&cfg.Cycles, "cycles", 4, "ABBA cycles (each cycle = 1 A + 1 B)")
+	fs.DurationVar(&cfg.Window, "window", 20*time.Second, "measurement window")
+	fs.DurationVar(&cfg.Warmup, "warmup", 15*time.Second, "warmup after join")
+	fs.DurationVar(&cfg.Settle, "settle", 3*time.Second, "settle after live toggle")
+	fs.Int64Var(&cfg.PlaceID, "place", roblox.RealisticStreetSoccer, "place id")
+	fs.StringVar(&cfg.Stress, "stress", "", "stress spec e.g. cpu:6,ram:1000,up")
+	primary := fs.String("primary", "low1,low01,stutterMin,latMs", "primary metrics")
+	fs.Parse(args)
+	cfg.Primary = strings.Split(*primary, ",")
+	e, err := env()
+	if err != nil {
+		return err
+	}
+	res, err := bench.RunAB(context.Background(), e, cfg, func(f string, a ...any) { fmt.Printf(f+"\n", a...) })
+	if err != nil {
+		return err
+	}
+	keys := make([]string, 0, len(res.Compare))
+	for k := range res.Compare {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		c := res.Compare[k]
+		fmt.Printf("%-11s A=%9.2f B=%9.2f d=%+6.1f%% CI[%+6.1f,%+6.1f] p=%.3f %v\n", k, c.MedianA, c.MedianB, c.DeltaPct, c.CILowPct, c.CIHighPct, c.PValue, c.Conclusive)
+	}
+	fmt.Println("VERDICT:", res.Verdict, "-", res.Summary)
+	fmt.Println("dir:", res.Dir)
 	return nil
 }
 
