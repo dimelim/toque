@@ -33,6 +33,8 @@ func main() {
 		err = cmdMeasure(os.Args[2:])
 	case "trial":
 		err = cmdTrial(os.Args[2:])
+	case "trials":
+		err = cmdTrials(os.Args[2:])
 	case "analyze-pcap":
 		err = cmdAnalyzePcap(os.Args[2:])
 	case "analyze-csv":
@@ -189,6 +191,52 @@ func cmdTrial(args []string) error {
 	}
 	printJSON(map[string]any{"session": s, "timeToJoinMs": s.TimeToJoin().Milliseconds(), "window": w})
 	return nil
+}
+
+func cmdTrials(args []string) error {
+	fs := flag.NewFlagSet("trials", flag.ExitOnError)
+	n := fs.Int("n", 3, "number of trials")
+	dur := fs.Duration("dur", 30*time.Second, "measure duration")
+	warm := fs.Duration("warmup", 15*time.Second, "warmup after join")
+	place := fs.Int64("place", roblox.RealisticStreetSoccer, "place id")
+	label := fs.String("label", "series", "label")
+	fs.Parse(args)
+	e, err := env()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(e.Dir, time.Now().Format("20060102-150405")+"-"+*label)
+	var rows []map[string]any
+	for i := 1; i <= *n; i++ {
+		s, err := roblox.Join(context.Background(), e.Install, *place, "", 90*time.Second)
+		if err != nil {
+			rows = append(rows, map[string]any{"trial": i, "error": err.Error()})
+			roblox.CloseAll(10 * time.Second)
+			continue
+		}
+		time.Sleep(*warm)
+		winx.Focus(winx.MainWindow(s.PID))
+		w := bench.Measure(context.Background(), e, s, *dur, filepath.Join(base, fmt.Sprint(i)), *label)
+		roblox.CloseAll(10 * time.Second)
+		row := map[string]any{
+			"trial": i, "server": s.ServerIP, "joinMs": s.TimeToJoin().Milliseconds(), "fg": w.Foreground,
+			"fps": round(w.Frames.AvgFPS), "low1": round(w.Frames.Low1FPS), "low01": round(w.Frames.Low01FPS),
+			"stutterMin": round(w.Frames.StutterPerMin), "latMs": round(w.Frames.RenderLatency),
+			"rtt": round(w.Net.RTT), "jit": round(w.Net.Jitter), "loss": round(w.Net.LossDownPct),
+			"hardF": round(w.Sys.HardFaults), "hardFMax": round(w.Sys.HardFaultsMax), "availMB": round(w.Sys.AvailMB),
+			"disks": w.Sys.Disks, "errors": w.Errors,
+		}
+		rows = append(rows, row)
+		time.Sleep(3 * time.Second)
+	}
+	b, _ := json.MarshalIndent(rows, "", "  ")
+	os.WriteFile(filepath.Join(base, "series.json"), b, 0o644)
+	fmt.Println(string(b))
+	return nil
+}
+
+func round(v float64) float64 {
+	return float64(int64(v*10+0.5)) / 10
 }
 
 func cmdAnalyzePcap(args []string) error {

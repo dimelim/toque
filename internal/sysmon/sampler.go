@@ -21,13 +21,15 @@ var (
 )
 
 type Sample struct {
-	CPUTotal    float64
-	CPUProc     float64
-	GPUTotal    float64
-	GPUProc     float64
-	AvailMB     float64
-	ProcMB      float64
-	HardFaults  float64
+	CPUTotal   float64
+	CPUProc    float64
+	GPUTotal   float64
+	GPUProc    float64
+	AvailMB    float64
+	ProcMB     float64
+	HardFaults float64
+	DiskReadMs map[string]float64
+	DiskReads  map[string]float64
 }
 
 type Summary struct {
@@ -42,6 +44,14 @@ type Summary struct {
 	ProcMB        float64 `json:"ramRobloxMb"`
 	HardFaults    float64 `json:"hardFaultsPerSec"`
 	HardFaultsMax float64 `json:"hardFaultsMaxPerSec"`
+	Disks         []Disk  `json:"disks"`
+}
+
+type Disk struct {
+	Name       string  `json:"name"`
+	ReadsSec   float64 `json:"readsPerSec"`
+	ReadMs     float64 `json:"readLatencyMs"`
+	ReadMsMax  float64 `json:"readLatencyMaxMs"`
 }
 
 type memCounters struct {
@@ -84,6 +94,8 @@ func Run(ctx context.Context, pid uint32, interval time.Duration) ([]Sample, err
 	defer q.close()
 	gpu, _ := q.add(`\GPU Engine(*)\Utilization Percentage`)
 	faults, _ := q.add(`\Memory\Page Reads/sec`)
+	diskLat, _ := q.add(`\PhysicalDisk(*)\Avg. Disk sec/Read`)
+	diskReads, _ := q.add(`\PhysicalDisk(*)\Disk Reads/sec`)
 	var proc windows.Handle
 	if pid != 0 {
 		proc, _ = windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
@@ -156,6 +168,18 @@ func Run(ctx context.Context, pid uint32, interval time.Duration) ([]Sample, err
 			s.HardFaults = v
 		}
 		s.AvailMB = AvailableMB()
+		s.DiskReadMs = map[string]float64{}
+		s.DiskReads = map[string]float64{}
+		for name, v := range q.array(diskLat) {
+			if name != "_Total" {
+				s.DiskReadMs[name] = v * 1000
+			}
+		}
+		for name, v := range q.array(diskReads) {
+			if name != "_Total" {
+				s.DiskReads[name] = v
+			}
+		}
 		out = append(out, s)
 	}
 }
@@ -186,5 +210,30 @@ func Summarize(samples []Sample) Summary {
 	s.ProcMB = stats.Mean(col(func(x Sample) float64 { return x.ProcMB }))
 	s.HardFaults = stats.Mean(hf)
 	s.HardFaultsMax = stats.Sorted(hf)[len(hf)-1]
+	names := map[string]bool{}
+	for _, x := range samples {
+		for n := range x.DiskReads {
+			names[n] = true
+		}
+	}
+	for n := range names {
+		var reads, lat []float64
+		weighted, totalReads := 0.0, 0.0
+		for _, x := range samples {
+			r := x.DiskReads[n]
+			reads = append(reads, r)
+			if r > 0 {
+				lat = append(lat, x.DiskReadMs[n])
+				weighted += x.DiskReadMs[n] * r
+				totalReads += r
+			}
+		}
+		d := Disk{Name: n, ReadsSec: stats.Mean(reads)}
+		if totalReads > 0 {
+			d.ReadMs = weighted / totalReads
+			d.ReadMsMax = stats.Sorted(lat)[len(lat)-1]
+		}
+		s.Disks = append(s.Disks, d)
+	}
 	return s
 }
