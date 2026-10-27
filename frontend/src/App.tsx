@@ -6,6 +6,7 @@ import { Home } from "./screens/Home";
 import { Diagnose } from "./screens/Diagnose";
 import { Optimize } from "./screens/Optimize";
 import { Flags } from "./screens/Flags";
+import { Hud } from "./screens/Hud";
 import { Tests } from "./screens/Tests";
 import { Settings } from "./screens/Settings";
 import { Install } from "./screens/Install";
@@ -20,6 +21,8 @@ function Current() {
       return <Optimize />;
     case "flags":
       return <Flags />;
+    case "hud":
+      return <Hud />;
     case "tests":
       return <Tests />;
     case "settings":

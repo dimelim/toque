@@ -9,12 +9,13 @@ import (
 
 	"toque/internal/bench"
 	"toque/internal/catalog"
+	"toque/internal/overlay"
 	"toque/internal/roblox"
 	"toque/internal/tweaks"
 	"toque/internal/winx"
 )
 
-const Version = "1.12.1"
+const Version = "1.13.0"
 
 type Emitter func(name string, data any)
 
@@ -38,10 +39,13 @@ type Service struct {
 	watch      WatchInfo
 	watchStop  context.CancelFunc
 	watchGen   int
+	hud        *overlay.HUD
 }
 
 func New(presentMon string, emit Emitter) *Service {
-	return &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}}
+	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New()}
+	s.hud.Apply(loadHudConfig())
+	return s
 }
 
 var ErrBusy = errors.New("toque ya está ejecutando otra tarea")
@@ -152,7 +156,23 @@ func (s *Service) Overview() Overview {
 	s.mu.Lock()
 	o.Busy = s.busy
 	s.mu.Unlock()
+	s.feedPing(o)
 	return o
+}
+
+func (s *Service) feedPing(o Overview) {
+	ping := 0.0
+	if o.Roblox.InGame && o.Roblox.ServerIP != "" {
+		if rtt, ok := knownDatacenter(o.Roblox.ServerIP); ok {
+			ping = rtt
+		}
+	}
+	if ping == 0 {
+		if best, ok := bestDatacenter(); ok {
+			ping = best
+		}
+	}
+	s.hud.SetPing(ping)
 }
 
 var logTail roblox.Tail

@@ -264,6 +264,19 @@ export interface FlagEntry {
   value: string;
 }
 
+export interface HudConfig {
+  enabled: boolean;
+  x: number;
+  y: number;
+  scale: number;
+  opacity: number;
+  showKeys: boolean;
+  showMouse: boolean;
+  showPing: boolean;
+  move: boolean;
+  demo: boolean;
+}
+
 export interface Account {
   userId: number;
   username: string;

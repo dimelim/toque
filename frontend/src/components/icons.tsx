@@ -47,4 +47,5 @@
   Copy as IconCopy,
   FileArrowUp as IconImport,
   Plus as IconPlus,
+  Keyboard as IconKeyboard,
 } from "@gravity-ui/icons";

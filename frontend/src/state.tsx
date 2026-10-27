@@ -4,7 +4,7 @@ import { api, errorText, onProgress, onUpdate, onWatch } from "@/lib/api";
 import { play } from "@/lib/sound";
 import type { Overview, Progress, UpdateInfo, WatchInfo } from "@/lib/types";
 
-export type Screen = "home" | "diagnose" | "optimize" | "flags" | "tests" | "settings";
+export type Screen = "home" | "diagnose" | "optimize" | "flags" | "hud" | "tests" | "settings";
 
 export interface Toast {
   id: number;

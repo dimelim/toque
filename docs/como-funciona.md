@@ -30,6 +30,10 @@ Toque escribe las flags en `ClientSettings\ClientAppSettings.json`, dentro de la
 
 Desde septiembre de 2025 Roblox solo hace caso a las flags de su lista oficial. Toque nunca escribe flags en la memoria de Roblox para saltarse esa lista, porque el anticheat lo trata como una trampa que puede acabar en baneo.
 
+## El HUD
+
+El HUD es una ventana propia, siempre encima y transparente a los clics, que Toque dibuja con GDI sobre Roblox. Para saber qué teclas pulsas no engancha el teclado, solo mira el estado de W, A, S, D, espacio, shift y los botones del ratón con `GetAsyncKeyState` sesenta veces por segundo, así que no registra lo que escribes ni se parece a un keylogger. El ping es el del servidor en el que estás, o el de tu mejor centro cuando no hay partida. Se ve con Roblox en ventana o en pantalla completa sin bordes, no en pantalla completa exclusiva, y su posición, tamaño y opacidad se guardan en `hud.json`.
+
 ## Cómo deshace los cambios
 
 Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que había antes y solo después aplica el cambio, así que un cierre a mitad nunca deja algo aplicado sin forma de deshacerlo. El diario se escribe con un archivo temporal, se vuelca al disco y se renombra, y si aparece dañado Toque avisa en lugar de sobrescribirlo. Un experimento deja una marca mientras dura y, si se interrumpe, Toque devuelve el cambio a como estaba al volver a abrirse. Cuando Roblox se actualiza borra sus flags, y Toque las vuelve a poner al arrancar. Si el usuario cambia desde el menú de Roblox un ajuste que había puesto Toque, Toque lo da por suyo y no lo vuelve a imponer.
