@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { cx } from "@/utils/cx";
 import { api } from "@/lib/api";
 import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
-import type { BloatResult, Diagnosis, Finding, PathStep } from "@/lib/types";
+import type { BloatResult, Datacenter, Diagnosis, Finding, PathStep } from "@/lib/types";
 import { useApp } from "@/state";
-import { Card, Empty, Eyebrow, PageHeader, Pill, StatRow } from "@/components/primitives";
+import { Card, Eyebrow, PageHeader, Pill, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { IconBad, IconDiagnose, IconGlobe, IconInfo, IconOk, IconPc, IconRouter, IconServer, IconWarn } from "@/components/icons";
+import { IconTile } from "@/components/IconTile";
+import type { TileTone } from "@/components/IconTile";
+import { DatacentersCard } from "./home/DatacentersCard";
+import { IconBad, IconDiagnose, IconGlobe, IconInfo, IconOk, IconPc, IconRam, IconRouter, IconServer, IconSpeed, IconWarn, IconWindows } from "@/components/icons";
 
 const planNames: Record<string, string> = {
   "381b4222-f694-41f0-9685-ff5bb260df2e": "Equilibrado",
@@ -106,9 +109,12 @@ function FindingRow({ f }: { f: Finding }) {
 
 const gradeTone: Record<string, "volt" | "warn" | "bad" | "neutral"> = { "A+": "volt", A: "volt", B: "warn", C: "warn", D: "bad", F: "bad" };
 
-function BloatCard() {
+function BloatCard({ initial }: { initial: BloatResult | null }) {
   const { run, task } = useApp();
   const [res, setRes] = useState<BloatResult | null>(null);
+  useEffect(() => {
+    if (initial) setRes((cur) => cur ?? initial);
+  }, [initial]);
   const start = async () => {
     const r = await run("bloat", "Probando tu red bajo carga", () => api.bufferbloat());
     if (r) setRes(r);
@@ -117,15 +123,20 @@ function BloatCard() {
   const idle = phases[0]?.rttMs ?? 0;
   return (
     <Card className="p-5">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <Eyebrow>Red bajo carga</Eyebrow>
-          <p className="mt-3 text-body-medium text-ink">¿Se dispara el ping cuando alguien descarga?</p>
-          <p className="mt-1 max-w-[60ch] text-body-regular text-ink-2">
+      <div className="flex items-center gap-6">
+        <IconTile icon={IconRouter} tone="cyan" className="size-12" />
+        <div className="min-w-0 flex-1">
+          <p className="text-body-medium text-ink">¿Se dispara el ping cuando alguien descarga?</p>
+          <p className="mt-1 text-body-regular text-ink-2">
             Satura tu conexión unos 40 segundos y mide el ping hasta tu proveedor en reposo, descargando y subiendo. Si sube mucho, los tirones de red vienen del router o del proveedor, no de tu PC.
           </p>
         </div>
-        {res ? <Pill tone={gradeTone[res.grade] ?? "neutral"} className="h-8 px-3 text-[15px]">Nota {res.grade}</Pill> : null}
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          {res ? <Pill tone={gradeTone[res.grade] ?? "neutral"} className="h-8 px-3 text-[15px]">Nota {res.grade}</Pill> : null}
+          <Button size="small" variant="secondary" disabled={!!task} onClick={start}>
+            {res ? "Repetir prueba" : "Probar mi red bajo carga"}
+          </Button>
+        </div>
       </div>
       {phases.length > 0 ? (
         <div className="mt-5 grid grid-cols-3 gap-4">
@@ -154,10 +165,53 @@ function BloatCard() {
           </p>
         </div>
       ) : null}
-      <Button className="mt-5" size="small" variant="secondary" disabled={!!task} onClick={start}>
-        {res ? "Repetir prueba" : "Probar mi red bajo carga"}
-      </Button>
     </Card>
+  );
+}
+
+const checks: { icon: ComponentType<{ className?: string }>; tone: TileTone; title: string; text: string }[] = [
+  { icon: IconRouter, tone: "cyan", title: "Tu red, tramo a tramo", text: "El ping hasta tu router, tu proveedor y el servidor de Roblox, para saber dónde se pierde el tiempo." },
+  { icon: IconRam, tone: "lime", title: "Memoria y disco", text: "La RAM libre, qué programas la ocupan y si el archivo de paginación está en un disco mecánico." },
+  { icon: IconSpeed, tone: "amber", title: "Cómo dibuja Roblox", text: "FPS, tirones, latencia de render y si cada frame va directo a la pantalla o pasa por el compositor." },
+  { icon: IconWindows, tone: "rose", title: "Windows y energía", text: "El plan de energía, el límite de FPS de Roblox y si el PC acaba de arrancar con la caché fría." },
+];
+
+function Prep({ withGame, setWithGame, start, dcs }: { withGame: boolean; setWithGame: (v: boolean) => void; start: () => void; dcs: Datacenter[] }) {
+  const { task } = useApp();
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4">
+        <section className="edge-light flex flex-col rounded-2xl bg-background-secondary-default p-6 shadow-card">
+          <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
+            <IconDiagnose className="size-4 text-ink-3" />
+            Diagnóstico completo
+          </p>
+          <h2 className="mt-3 text-title-1-medium text-ink">Descubre qué te frena en un minuto</h2>
+          <p className="mt-2 max-w-[56ch] text-body-regular text-text-secondary">
+            Toque mide la ruta de red hasta Roblox, revisa la memoria, el disco y Windows y, si quieres, entra en Realistic Street Soccer para medir tus FPS y tu ping real. Al terminar te dice qué arreglar primero.
+          </p>
+          <div className="mt-5 flex items-center justify-between gap-4 rounded-2lg bg-background-inner-default p-3 shadow-card">
+            <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>
+              <span className="text-body-medium text-ink">Medir también dentro del juego</span>
+            </Switch>
+            <span className="text-caption-1-medium text-ink-3">{withGame ? "unos 90 segundos" : "unos 40 segundos"}</span>
+          </div>
+          <Button className="mt-auto h-11 w-full text-[15px]" leadingIcon={IconDiagnose} disabled={!!task} onClick={start}>
+            Diagnosticar ahora
+          </Button>
+        </section>
+        <DatacentersCard datacenters={dcs} />
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        {checks.map((c) => (
+          <section key={c.title} className="flex flex-col gap-3 rounded-2xl bg-background-secondary-default p-4 shadow-card">
+            <IconTile icon={c.icon} tone={c.tone} />
+            <p className="text-body-medium text-ink">{c.title}</p>
+            <p className="text-caption-1-medium leading-relaxed text-ink-3">{c.text}</p>
+          </section>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -165,6 +219,13 @@ export function Diagnose() {
   const { run, task } = useApp();
   const [withGame, setWithGame] = useState(true);
   const [d, setD] = useState<Diagnosis | null>(null);
+  const [bloat, setBloat] = useState<BloatResult | null>(null);
+  const [dcs, setDcs] = useState<Datacenter[]>([]);
+  useEffect(() => {
+    api.lastDiagnosis().then((v) => v && setD((cur) => cur ?? v)).catch(() => undefined);
+    api.lastBloat().then((v) => v && setBloat(v)).catch(() => undefined);
+    api.datacenters().then((v) => setDcs(v ?? [])).catch(() => undefined);
+  }, []);
   const start = async () => {
     const res = await run("diagnose", "Diagnosticando", () => api.diagnose(withGame));
     if (res) setD(res);
@@ -174,18 +235,20 @@ export function Diagnose() {
   return (
     <div>
       <PageHeader eyebrow="Diagnóstico" title="Qué está frenando tu Roblox">
-        <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>
-          <span className="text-body-regular text-ink-2">Medir dentro del juego</span>
-        </Switch>
-        <Button leadingIcon={IconDiagnose} disabled={!!task} onClick={start}>
-          Diagnosticar
-        </Button>
+        {d ? (
+          <>
+            <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>
+              <span className="text-body-regular text-ink-2">Medir dentro del juego</span>
+            </Switch>
+            <Button leadingIcon={IconDiagnose} disabled={!!task} onClick={start}>
+              Diagnosticar otra vez
+            </Button>
+          </>
+        ) : null}
       </PageHeader>
 
       {!d ? (
-        <Empty title="Un diagnóstico tarda alrededor de un minuto">
-          Toque mide la ruta de red hasta los servidores de Roblox, revisa la memoria, el disco y el plan de energía y, si quieres, entra en Realistic Street Soccer para medir tus FPS y tu ping real.
-        </Empty>
+        <Prep withGame={withGame} setWithGame={setWithGame} start={start} dcs={dcs} />
       ) : (
         <div className="flex flex-col gap-4">
           <Card className="p-6">
@@ -253,7 +316,7 @@ export function Diagnose() {
         </div>
       )}
       <div className="mt-4">
-        <BloatCard />
+        <BloatCard initial={bloat} />
       </div>
     </div>
   );

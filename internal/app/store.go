@@ -142,6 +142,33 @@ func LoadExperiments() []ExperimentRecord {
 	return out
 }
 
+type PingPoint struct {
+	At       time.Time `json:"at"`
+	RTT      float64   `json:"rttMs"`
+	ServerIP string    `json:"serverIp"`
+}
+
+func (s *Service) PingHistory() []PingPoint {
+	var out []PingPoint
+	add := func(w bench.Window) {
+		if w.Net.Confident && w.Net.RTT > 0 && time.Since(w.Start) < 7*24*time.Hour {
+			out = append(out, PingPoint{At: w.Start, RTT: w.Net.RTT, ServerIP: w.ServerIP})
+		}
+	}
+	for _, r := range loadResults() {
+		for _, smp := range r.Samples {
+			if smp.Valid {
+				add(smp.Window)
+			}
+		}
+	}
+	for _, r := range LoadRuns() {
+		add(r.Window)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].At.Before(out[j].At) })
+	return out
+}
+
 type ExperimentGroup struct {
 	Tweak   string             `json:"tweak"`
 	Title   string             `json:"title"`

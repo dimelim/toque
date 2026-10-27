@@ -9,6 +9,8 @@ import { useApp } from "@/state";
 import { Card, DeltaChip, Eyebrow, PageHeader, Pill } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { EvidenceStrip } from "@/components/Evidence";
+import type { StripPoint } from "@/components/Evidence";
 import { IconChevronDown, IconFlask, IconOptimize, IconRevert } from "@/components/icons";
 
 const kindLabel: Record<string, string> = {
@@ -52,9 +54,6 @@ function Evidence({ o }: { o: Optimization }) {
       </div>
     );
   }
-  if (o.lab) {
-    return <p className="text-caption-1-medium text-ink-3">{o.lab}</p>;
-  }
   return null;
 }
 
@@ -94,10 +93,19 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
       onChange({ ...o, mine: rec });
     }
   };
+  const metric = (o.mine?.primary ?? []).find((k) => metricMeta[k]) ?? "";
+  const points: StripPoint[] = [];
+  let ia = 0;
+  let ib = 0;
+  for (const w of o.mine?.windows ?? []) {
+    const index = w.arm === "B" ? ++ib : ++ia;
+    const v = w.values?.[metric];
+    if (w.valid && typeof v === "number" && Number.isFinite(v)) points.push({ arm: w.arm === "B" ? "B" : "A", value: v, at: o.mine!.at, index });
+  }
   return (
-    <Card className={cx("p-5", rejected && "opacity-80")}>
-      <div className="flex items-start gap-4">
-        <div className="min-w-0 flex-1">
+    <Card className={cx("p-5", rejected && "opacity-85")}>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-6">
+        <div className="flex min-w-0 flex-col">
           <div className="flex flex-wrap items-center gap-1.5">
             <Pill>{categoryLabel[o.category] ?? o.category}</Pill>
             {o.kind ? <Pill>{kindLabel[o.kind] ?? o.kind}</Pill> : null}
@@ -106,29 +114,40 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
             {!o.applicable && o.detail ? <Pill tone="warn">No aplica aquí</Pill> : null}
           </div>
           <h3 className="mt-3 text-[17px] leading-snug font-semibold text-ink">{o.title}</h3>
-          <p className="mt-1 max-w-[70ch] text-body-regular text-ink-2">{o.what}</p>
+          <p className="mt-1 text-body-regular text-ink-2">{o.what}</p>
           <div className="mt-3">
             <Evidence o={o} />
           </div>
+          <div className="mt-auto flex items-center gap-2 pt-4">
+            <Button variant="ghost" size="small" trailingIcon={IconChevronDown} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+              {open ? "Ocultar detalles" : "Ver detalles"}
+            </Button>
+            <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
+              {rejected ? "Probarla igualmente en mi PC" : "Probar en mi PC"}
+            </Button>
+          </div>
         </div>
-        {!rejected ? (
-          <Switch
-            size="md"
-            isSelected={o.applied}
-            isDisabled={busy || !!task || (!o.applicable && !o.applied) || (o.applied && !o.managed)}
-            onChange={toggle}
-            aria-label={`Activar ${o.title}`}
-          />
-        ) : null}
-      </div>
-      <div className="mt-4 flex items-center gap-2">
-        <Button variant="ghost" size="small" trailingIcon={IconChevronDown} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          {open ? "Ocultar detalles" : "Ver detalles"}
-        </Button>
-        <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
-          {rejected ? "Probarla igualmente en mi PC" : "Probar en mi PC"}
-        </Button>
-        {o.mine ? <span className="ml-auto text-caption-1-medium text-ink-3">Última prueba {when(o.mine.at)}</span> : null}
+        <div className="flex min-w-0 flex-col rounded-xl bg-background-inner-default p-4 shadow-card">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-caption-1-medium text-ink-3">{o.mine ? `${metricMeta[metric]?.label ?? "Resultado"} en tu PC · ${when(o.mine.at)}` : "En las pruebas"}</p>
+            {!rejected ? (
+              <Switch
+                size="md"
+                isSelected={o.applied}
+                isDisabled={busy || !!task || (!o.applicable && !o.applied) || (o.applied && !o.managed)}
+                onChange={toggle}
+                aria-label={`Activar ${o.title}`}
+              />
+            ) : null}
+          </div>
+          {points.length > 0 ? (
+            <div className="mt-2">
+              <EvidenceStrip metric={metric} points={points} />
+            </div>
+          ) : (
+            <p className="mt-2 text-body-regular text-ink-2">{o.lab}</p>
+          )}
+        </div>
       </div>
       <AnimatePresence initial={false}>
         {open ? (

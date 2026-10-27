@@ -3,21 +3,31 @@ import { api, errorText } from "@/lib/api";
 import { play, setSoundEnabled, soundEnabled } from "@/lib/sound";
 import { installUpdate, updateLine } from "@/lib/updates";
 import { useApp } from "@/state";
-import { Card, Eyebrow, PageHeader, StatRow } from "@/components/primitives";
+import { Card, PageHeader, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import { Switch } from "@/components/ui/switch";
 import { AppIcon } from "@/components/Logo";
-import { IconDownload, IconRefresh, IconRevert } from "@/components/icons";
+import { IconDownload, IconRefresh, IconRevert, IconSound } from "@/components/icons";
 
 const licenses = [
   { name: "Intel PresentMon", license: "MIT", use: "Captura de frames por ETW" },
-  { name: "BoardUI", license: "MIT", use: "Botones, interruptores y tooltips" },
+  { name: "BoardUI", license: "MIT", use: "Tarjetas, chips, botones e interruptores" },
+  { name: "Recharts", license: "MIT", use: "Gráficas de ping y de centros de datos" },
   { name: "Gravity UI Icons", license: "MIT", use: "Iconografía" },
   { name: "React Aria Components", license: "Apache 2.0", use: "Accesibilidad de controles" },
   { name: "Motion", license: "MIT", use: "Animaciones" },
   { name: "Geist", license: "OFL 1.1", use: "Tipografía de interfaz" },
   { name: "Barlow Condensed", license: "OFL 1.1", use: "Tipografía de cifras" },
   { name: "Wails", license: "MIT", use: "Ventana nativa" },
+];
+
+const cues = [
+  { cue: "tap" as const, label: "Pulsar" },
+  { cue: "on" as const, label: "Activar" },
+  { cue: "off" as const, label: "Quitar" },
+  { cue: "success" as const, label: "Prueba lista" },
+  { cue: "error" as const, label: "Error" },
 ];
 
 export function Settings() {
@@ -27,74 +37,50 @@ export function Settings() {
   return (
     <div>
       <PageHeader eyebrow="Ajustes" title="Preferencias" />
-      <div className="grid grid-cols-[1.2fr_1fr] gap-4">
-        <div className="flex flex-col gap-4">
-          <Card className="p-5">
-            <Eyebrow>Interfaz</Eyebrow>
-            <div className="mt-4 flex items-start justify-between gap-6">
-              <div>
-                <p className="text-body-medium text-ink">Sonidos</p>
-                <p className="mt-1 text-body-regular text-ink-2">Pequeños tonos al activar cambios y al terminar una prueba.</p>
-              </div>
-              <Switch
-                size="md"
-                isSelected={sound}
-                onChange={(v) => {
-                  setSound(v);
-                  setSoundEnabled(v);
-                  if (v) play("on");
-                }}
-                aria-label="Sonidos"
-              />
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-4">
+            <AppIcon className="size-12" />
+            <div className="min-w-0">
+              <p className="text-[17px] font-semibold text-ink">Toque</p>
+              <p className="text-caption-1-medium text-ink-3">Versión {overview?.version}</p>
             </div>
-          </Card>
-          <Card className="p-5">
-            <Eyebrow>Restaurar</Eyebrow>
-            <p className="mt-3 max-w-[60ch] text-body-regular text-ink-2">
-              Deshace todos los cambios que Toque hizo en Windows y en Roblox y deja cada ajuste como estaba antes de instalarlo. Desinstalar Toque hace lo mismo.
-            </p>
-            <Button
-              className="mt-4"
-              variant="secondary"
-              leadingIcon={IconRevert}
-              disabled={!!task}
-              onClick={async () => {
-                await run("revert", "Revirtiendo todos los cambios", () => api.revertAll());
-                toast({ tone: "ok", title: "Todo vuelve a como estaba" });
-              }}
-            >
-              Revertir todos los cambios
-            </Button>
-          </Card>
-        </div>
-        <div className="flex flex-col gap-4">
-          <Card className="p-5">
-            <div className="flex items-center gap-4">
-              <AppIcon className="size-12" />
-              <div>
-                <p className="text-[17px] font-semibold text-ink">Toque</p>
-                <p className="text-caption-1-medium text-ink-3">Versión {overview?.version}</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <StatRow label="Permisos" value={overview?.elevated ? "Administrador" : "Limitados"} />
-              <StatRow label="Roblox" value={overview?.roblox.installed ? overview.roblox.version.replace("version-", "") : "No instalado"} />
-              <StatRow label="Datos y resultados" value="C:\ProgramData\Toque" />
-            </div>
-          </Card>
-          <Card className="p-5">
-            <Eyebrow>Actualizaciones</Eyebrow>
-            <p className="mt-3 text-body-regular text-ink-2">{updateLine(update)}</p>
-            {update?.notes && (update.state === "ready" || update.state === "downloading") ? (
-              <p className="mt-2 text-caption-1-medium text-ink-3">{update.notes}</p>
-            ) : null}
+            <Chip variant="caption" color={overview?.elevated ? "lime" : "neutral"} className="ml-auto">
+              {overview?.elevated ? "Administrador" : "Permisos limitados"}
+            </Chip>
+          </div>
+          <div className="mt-4">
+            <StatRow label="Roblox" value={overview?.roblox.installed ? overview.roblox.version.replace("version-", "") : "No instalado"} />
+            <StatRow label="Datos y resultados" value="C:\ProgramData\Toque" />
+            <StatRow label="Actualizaciones desde" value="dimelim/toque-releases" />
+          </div>
+        </Card>
+
+        <Card className="flex flex-col p-5">
+          <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
+            <IconDownload className="size-4 text-ink-3" />
+            Actualizaciones
+          </p>
+          <p className="mt-3 text-body-regular text-ink-2">{updateLine(update)}</p>
+          {update?.notes && (update.state === "ready" || update.state === "downloading") ? <p className="mt-2 text-caption-1-medium text-ink-3">{update.notes}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Chip variant="caption" color="lime">
+              Firma Ed25519
+            </Chip>
+            <Chip variant="caption" color="neutral">
+              Revisa cada 6 horas
+            </Chip>
+            <Chip variant="caption" color="neutral">
+              Se instala al reabrir
+            </Chip>
+          </div>
+          <div className="mt-auto pt-4">
             {update?.state === "ready" ? (
-              <Button className="mt-4" leadingIcon={IconDownload} disabled={!!task} onClick={() => installUpdate(toast)}>
+              <Button leadingIcon={IconDownload} disabled={!!task} onClick={() => installUpdate(toast)}>
                 Instalar Toque {update.latest}
               </Button>
             ) : (
               <Button
-                className="mt-4"
                 variant="secondary"
                 leadingIcon={IconRefresh}
                 disabled={checking || update?.state === "checking" || update?.state === "downloading"}
@@ -112,17 +98,76 @@ export function Settings() {
                 Buscar actualizaciones
               </Button>
             )}
-          </Card>
-          <Card className="p-5">
-            <Eyebrow>Software de terceros</Eyebrow>
-            <div className="mt-3">
-              {licenses.map((l) => (
-                <StatRow key={l.name} label={l.name} value={l.license} hint={l.use} />
-              ))}
+          </div>
+        </Card>
+
+        <Card className="flex flex-col p-5">
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="flex items-center gap-1.5 text-body-medium text-ink">
+                <IconSound className="size-4 text-ink-3" />
+                Sonidos
+              </p>
+              <p className="mt-1 text-body-regular text-ink-2">Tonos cortos al activar cambios y al terminar una prueba, generados al momento.</p>
             </div>
-          </Card>
-        </div>
+            <Switch
+              size="md"
+              isSelected={sound}
+              onChange={(v) => {
+                setSound(v);
+                setSoundEnabled(v);
+                if (v) play("on");
+              }}
+              aria-label="Sonidos"
+            />
+          </div>
+          <div className="mt-auto flex flex-wrap gap-2 pt-4">
+            {cues.map((c) => (
+              <Button key={c.cue} size="small" variant="secondary" disabled={!sound} onClick={() => play(c.cue)}>
+                {c.label}
+              </Button>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="flex flex-col p-5">
+          <p className="flex items-center gap-1.5 text-body-medium text-ink">
+            <IconRevert className="size-4 text-ink-3" />
+            Restaurar
+          </p>
+          <p className="mt-1 text-body-regular text-ink-2">Deshace todos los cambios que Toque hizo en Windows y en Roblox y deja cada ajuste como estaba antes de instalarlo. Desinstalar Toque hace lo mismo.</p>
+          <div className="mt-auto pt-4">
+            <Button
+              variant="secondary"
+              leadingIcon={IconRevert}
+              disabled={!!task}
+              onClick={async () => {
+                await run("revert", "Revirtiendo todos los cambios", () => api.revertAll());
+                toast({ tone: "ok", title: "Todo vuelve a como estaba" });
+              }}
+            >
+              Revertir todos los cambios
+            </Button>
+          </div>
+        </Card>
       </div>
+
+      <Card className="mt-4 p-5">
+        <p className="text-body-medium text-text-secondary">Software de terceros</p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {licenses.map((l) => (
+            <div key={l.name} className="flex items-center justify-between gap-3 rounded-xl bg-background-inner-default px-3 py-2.5 shadow-card">
+              <div className="min-w-0">
+                <p className="truncate text-body-medium text-ink">{l.name}</p>
+                <p className="truncate text-caption-1-medium text-ink-3">{l.use}</p>
+              </div>
+              <Chip variant="caption" color="neutral">
+                {l.license}
+              </Chip>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

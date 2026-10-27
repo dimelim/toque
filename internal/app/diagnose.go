@@ -161,6 +161,7 @@ func (s *Service) Diagnose(withGame bool) (Diagnosis, error) {
 		roblox.CloseAll(10 * time.Second)
 	}
 	d.Findings = findings(d)
+	saveLast("diagnosis.json", d)
 	return d, nil
 }
 

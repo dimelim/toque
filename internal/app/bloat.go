@@ -43,5 +43,8 @@ func (s *Service) Bufferbloat() (netq.BloatResult, error) {
 		s.progress("bloat", kind, 0.2+0.35*float64(step), msg)
 		return bench.StartLoad(kind, 4)
 	})
+	if len(res.Phases) > 0 {
+		saveLast("bloat.json", res)
+	}
 	return res, nil
 }

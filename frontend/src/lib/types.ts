@@ -230,6 +230,19 @@ export interface ServerProbe {
   error?: string;
 }
 
+export interface PingPoint {
+  at: string;
+  rttMs: number;
+  serverIp: string;
+}
+
+export interface Datacenter {
+  ip: string;
+  rttMs: number;
+  measured: number;
+  at: string;
+}
+
 export interface PlayResult {
   first: ServerProbe;
   final: ServerProbe;

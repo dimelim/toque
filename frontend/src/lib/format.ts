@@ -11,6 +11,12 @@ export function pct(v: number | null | undefined, digits = 0) {
   return `${v > 0 ? "+" : v < 0 ? "−" : ""}${s} %`;
 }
 
+export function shortDay(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(es, { day: "numeric", month: "short" }).replace(".", "");
+}
+
 export function when(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";

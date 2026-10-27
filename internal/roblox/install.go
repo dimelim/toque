@@ -29,6 +29,9 @@ func Find() (Install, error) {
 	if p := playerFromProtocol(); p != "" {
 		if _, err := os.Stat(p); err == nil {
 			dir := filepath.Dir(p)
+			if versions := filepath.Dir(dir); strings.EqualFold(filepath.Base(versions), "Versions") {
+				root = filepath.Dir(versions)
+			}
 			return Install{Root: root, VersionDir: dir, Player: p, Version: filepath.Base(dir)}, nil
 		}
 	}

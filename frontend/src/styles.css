@@ -65,6 +65,39 @@
   --color-control-indicator-background-subtle: oklch(0.88 0.006 118);
   --color-segmented-control-background: var(--color-surface-1);
   --color-segmented-control-selected-background: var(--color-surface-4);
+  --color-background-secondary-default: var(--color-surface-1);
+  --color-background-inner-default: var(--color-surface-2);
+  --color-foreground-icon-primary: var(--color-ink);
+  --color-foreground-icon-secondary: var(--color-ink-3);
+  --color-stat-card-icon-background: var(--color-surface-3);
+
+  --color-status-lime-background: oklch(0.91 0.195 123 / 0.14);
+  --color-status-lime-text: var(--color-volt);
+  --color-status-rose-background: oklch(0.72 0.155 28 / 0.16);
+  --color-status-rose-text: oklch(0.78 0.14 28);
+  --color-status-yellow-background: oklch(0.83 0.135 82 / 0.15);
+  --color-status-yellow-text: var(--color-warn);
+  --color-status-cyan-background: oklch(0.82 0.11 210 / 0.15);
+  --color-status-cyan-text: oklch(0.84 0.11 210);
+  --color-status-dot-green-halo: oklch(0.91 0.195 123 / 0.28);
+  --color-status-dot-yellow-halo: oklch(0.83 0.135 82 / 0.28);
+  --color-status-dot-gray-halo: oklch(0.6 0.012 118 / 0.3);
+
+  --color-chart-2: var(--color-volt);
+  --color-chart-2-active: var(--color-volt);
+  --color-chart-neutral: var(--color-ink-4);
+  --color-chart-cursor: oklch(0.96 0.01 120 / 0.25);
+
+  --color-tile-lime-from: oklch(0.93 0.19 123);
+  --color-tile-lime-to: oklch(0.8 0.2 128);
+  --color-tile-cyan-from: oklch(0.86 0.12 205);
+  --color-tile-cyan-to: oklch(0.7 0.13 215);
+  --color-tile-amber-from: oklch(0.88 0.14 80);
+  --color-tile-amber-to: oklch(0.76 0.16 65);
+  --color-tile-rose-from: oklch(0.8 0.15 25);
+  --color-tile-rose-to: oklch(0.68 0.18 20);
+
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.05) inset, 0 1px 3px 0 oklch(0 0 0 / 0.35);
 
   --radius-2lg: 0.625rem;
 
@@ -95,6 +128,22 @@
   font-size: 0.75rem;
   line-height: 1.35;
   font-weight: 600;
+}
+
+@utility text-title-1-medium {
+  font-size: 1.5rem;
+  line-height: 2.125rem;
+  font-weight: 500;
+}
+@utility text-display-4-medium {
+  font-size: 2rem;
+  line-height: 2.75rem;
+  font-weight: 500;
+}
+@utility text-body-2-medium {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 500;
 }
 
 @utility button-press-motion {
@@ -207,6 +256,48 @@
   border-radius: 999px;
   background: currentColor;
   animation: pulse-ring 1.8s var(--ease-out-quint) infinite;
+}
+
+@keyframes number-fade {
+  from {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-number-fade {
+  animation: number-fade 260ms var(--ease-out-quint);
+}
+
+@property --edge-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes edge-spin {
+  to {
+    --edge-angle: 360deg;
+  }
+}
+.edge-light {
+  position: relative;
+  isolation: isolate;
+}
+.edge-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--edge-angle), transparent 0deg, oklch(0.91 0.195 123 / 0.85) 40deg, transparent 110deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: edge-spin 5s linear infinite;
 }
 
 @keyframes sweep {

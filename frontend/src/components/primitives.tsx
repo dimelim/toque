@@ -3,7 +3,7 @@ import { cx } from "@/utils/cx";
 import { improvement, metricMeta, num, pct } from "@/lib/format";
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={cx("rounded-2xl bg-surface-1 shadow-[inset_0_0_0_1px_var(--color-line)]", className)}>{children}</section>;
+  return <section className={cx("rounded-2xl bg-background-secondary-default shadow-card", className)}>{children}</section>;
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
