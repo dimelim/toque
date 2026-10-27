@@ -119,6 +119,6 @@ func serverPlace(ctx context.Context, ip string, datacenter int) (geo.Place, boo
 func withPlace(ctx context.Context, p *ServerProbe, datacenter int) {
 	if pl, ok := serverPlace(ctx, p.IP, datacenter); ok {
 		p.City, p.Country = displayCity(pl.City), pl.Country
-		noteServer(p.JobID, regionKey(pl))
+		noteDatacenter(p.JobID, datacenter)
 	}
 }

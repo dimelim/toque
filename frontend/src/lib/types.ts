@@ -255,8 +255,14 @@ export interface PlayResult {
   found: boolean;
   tried: number;
   private: boolean;
-  needVpn: boolean;
-  exitCountry: string;
+}
+
+export interface WatchInfo {
+  region: string;
+  active: boolean;
+  since: string;
+  checked: number;
+  joined?: ServerProbe;
 }
 
 export interface ServerSearch {

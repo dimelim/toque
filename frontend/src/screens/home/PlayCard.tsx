@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Input, Label, TextField } from "react-aria-components";
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import { PRIVATE, bestRegion, countryName, regionCity, regionCountry } from "@/lib/regions";
-import type { Region, ServerProbe } from "@/lib/types";
+import { PRIVATE, bestRegion, regionCity } from "@/lib/regions";
+import { play } from "@/lib/sound";
+import type { Region, ServerProbe, WatchInfo } from "@/lib/types";
 import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
 import { cx } from "@/utils/cx";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { StatusDot } from "@/components/ui/status-dot";
 import { RegionSelect } from "@/components/RegionSelect";
-import { IconPlay, IconSignal } from "@/components/icons";
+import { IconPlay, IconSearch, IconSignal } from "@/components/icons";
 
 function Stat({ label, value, tone }: { label: string; value: number | null | undefined; tone: "volt" | "ink" }) {
   return (
@@ -25,32 +26,48 @@ function Stat({ label, value, tone }: { label: string; value: number | null | un
   );
 }
 
-function intro(inGame: boolean, region: string, privateRegion: string) {
+function intro(inGame: boolean, region: string, watching: boolean) {
   if (inGame) return { title: "Ya estás jugando", text: "Mide el ping del servidor en el que estás, escuchando el tráfico real del juego durante 8 segundos." };
-  if (region === PRIVATE && privateRegion) {
-    return {
-      title: `Abrir tu servidor privado en ${regionCity(privateRegion)}`,
-      text: `Vacíalo, enciende una VPN de ${countryName(regionCountry(privateRegion))} y pulsa Jugar. Toque comprueba la ciudad en la que se abre y te dice cuándo apagar la VPN.`,
-    };
-  }
   if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación. Toque lo guarda solo en este PC y entra directo." };
+  if (region && watching) {
+    const city = regionCity(region);
+    return { title: `Vigilando ${city}`, text: `Toque revisa la lista cada 25 segundos y entra en cuanto haya una partida de ${city} con sitio. Si tienes Roblox abierto, espera a que lo cierres.` };
+  }
   if (region) {
     const city = regionCity(region);
-    return { title: `Jugar en ${city}`, text: `Toque prueba servidores públicos y descarta los que no son de ${city} hasta dar con uno. Suele tardar entre medio minuto y dos.` };
+    return { title: `Jugar en ${city}`, text: `Toque busca con RoValra una partida de ${city} con sitio y entra directo. Si no hay ninguna, déjalo vigilando.` };
   }
   return { title: "Jugar en un servidor cercano", text: "Roblox te manda a un servidor lejano en una de cada seis partidas. Toque lo comprueba al entrar y, si pasa, te mueve a uno cercano." };
 }
 
+function minutesSince(iso: string) {
+  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+function WatchStatus({ watch }: { watch: WatchInfo }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2lg bg-background-inner-default px-4 py-3 shadow-card">
+      <span className="flex items-center gap-2 text-body-medium text-ink">
+        <StatusDot color="green" />
+        {num(watch.checked)} partidas revisadas
+      </span>
+      <span className="text-caption-1-medium text-ink-3">hace {minutesSince(watch.since)} min</span>
+    </div>
+  );
+}
+
 export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () => void }) {
-  const { overview, run, task, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion } = useApp();
+  const { overview, run, task, region, setRegion, privateLink, setPrivateLink, watch } = useApp();
   const start = usePlay();
   const [probe, setProbe] = useState<ServerProbe | null>(null);
   const r = overview?.roblox;
   const best = bestRegion(regions);
   const fresh = probe && r?.inGame && probe.jobId === r.jobId ? probe : null;
   const status = !r?.installed ? "Roblox no está instalado" : r.inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado";
-  const text = intro(!!r?.inGame, region, privateRegion);
+  const watching = !!watch?.active && watch.region === region;
+  const text = intro(!!r?.inGame, region, watching);
   const needsLink = region === PRIVATE && !privateLink.trim();
+  const canWatch = !!region && region !== PRIVATE;
 
   const measure = async () => {
     const p = await run("ping", "Midiendo tu ping ahora", () => api.quickPing());
@@ -79,7 +96,7 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
           </div>
         ) : (
           <>
-            <RegionSelect regions={regions} value={region} onChange={setRegion} isDisabled={!!task} />
+            <RegionSelect regions={regions} value={region} onChange={setRegion} isDisabled={!!task || watching} />
             {region === PRIVATE ? (
               <TextField
                 value={privateLink}
@@ -91,7 +108,7 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
                 <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
               </TextField>
             ) : null}
-            {region === PRIVATE ? <RegionSelect variant="private" regions={regions} value={privateRegion} onChange={setPrivateRegion} isDisabled={!!task} /> : null}
+            {watching && watch ? <WatchStatus watch={watch} /> : null}
           </>
         )}
       </div>
@@ -100,17 +117,44 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
           <Button className="h-11 w-full text-[15px]" leadingIcon={IconSignal} disabled={!!task} onClick={measure}>
             {fresh ? "Medir otra vez" : "Medir mi ping ahora"}
           </Button>
-        ) : (
+        ) : watching ? (
           <Button
+            variant="secondary"
             className="h-11 w-full text-[15px]"
-            leadingIcon={IconPlay}
-            disabled={!!task || !r?.installed || r.running || needsLink}
-            onClick={async () => {
-              if (await start()) onDone();
+            onClick={() => {
+              play("off");
+              api.stopWatch();
             }}
           >
-            Jugar
+            Dejar de vigilar
           </Button>
+        ) : (
+          <div className={cx("grid gap-2", canWatch && "grid-cols-[1fr_auto]")}>
+            <Button
+              className="h-11 w-full text-[15px]"
+              leadingIcon={IconPlay}
+              disabled={!!task || !r?.installed || r.running || needsLink}
+              onClick={async () => {
+                if (await start()) onDone();
+              }}
+            >
+              Jugar
+            </Button>
+            {canWatch ? (
+              <Button
+                variant="secondary"
+                className="h-11 text-[15px]"
+                leadingIcon={IconSearch}
+                disabled={!r?.installed}
+                onClick={() => {
+                  play("on");
+                  api.watchRegion(region);
+                }}
+              >
+                Vigilar
+              </Button>
+            ) : null}
+          </div>
         )}
       </div>
     </section>

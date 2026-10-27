@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
@@ -52,8 +53,20 @@ function WindowControls() {
   );
 }
 
+function useWatchToast() {
+  const { watch, toast } = useApp();
+  const announced = useRef("");
+  useEffect(() => {
+    const joined = watch?.joined;
+    if (!joined || announced.current === joined.jobId) return;
+    announced.current = joined.jobId;
+    play("success");
+    toast({ tone: "ok", title: `Entraste en una partida de ${joined.city ?? regionCity(watch?.region ?? "")}`, detail: "El vigía la encontró y te metió en cuanto hubo sitio." });
+  }, [watch, toast]);
+}
+
 function RobloxStatus() {
-  const { overview, task, region, privateLink } = useApp();
+  const { overview, task, region, privateLink, watch } = useApp();
   const start = usePlay();
   const r = overview?.roblox;
   if (!r) return null;
@@ -64,7 +77,7 @@ function RobloxStatus() {
         <span className={cx("live-dot relative size-2 rounded-full", inGame ? "text-volt bg-volt" : r.running ? "text-warn bg-warn" : "bg-ink-4 text-transparent")} />
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
-      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
+      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : watch?.active ? `Vigilando ${regionCity(watch.region)}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
       {!r.running && r.installed ? (
         <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task || (region === PRIVATE && !privateLink.trim())} onClick={start}>
           Jugar
@@ -210,6 +223,7 @@ function Toasts() {
 
 export function Shell({ children }: { children: ReactNode }) {
   const { screen } = useApp();
+  useWatchToast();
   return (
     <div className="flex h-full bg-canvas text-ink">
       <Sidebar />

@@ -54,6 +54,8 @@ func main() {
 		err = cmdPlay(os.Args[2:])
 	case "regions":
 		err = cmdRegions(os.Args[2:])
+	case "watch":
+		err = cmdWatch(os.Args[2:])
 	case "diagnose":
 		err = cmdDiagnose(os.Args[2:])
 	case "analyze-pcap":

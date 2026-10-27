@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"toque/internal/geo"
+	"toque/internal/rovalra"
 	"toque/internal/winx"
 )
 
 type dcMap struct {
-	FetchedAt time.Time        `json:"fetchedAt"`
-	Locations []geo.Datacenter `json:"locations"`
+	FetchedAt time.Time            `json:"fetchedAt"`
+	Locations []rovalra.Datacenter `json:"locations"`
 }
 
 var (
@@ -27,7 +28,7 @@ func dcMapPath() string {
 	return filepath.Join(winx.DataDir(), "dcmap.json")
 }
 
-func robloxDatacenters(ctx context.Context) []geo.Datacenter {
+func robloxDatacenters(ctx context.Context) []rovalra.Datacenter {
 	dcMapMu.Lock()
 	defer dcMapMu.Unlock()
 	if time.Since(dcMapMem.FetchedAt) < 24*time.Hour {
@@ -41,7 +42,7 @@ func robloxDatacenters(ctx context.Context) []geo.Datacenter {
 		dcMapMem = disk
 		return disk.Locations
 	}
-	fresh, err := geo.RobloxDatacenters(ctx)
+	fresh, err := rovalra.Datacenters(ctx)
 	if err != nil {
 		stale := dcMapMem.Locations
 		if len(disk.Locations) > 0 {

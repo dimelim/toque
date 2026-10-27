@@ -14,7 +14,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.8.1"
+const Version = "1.9.0"
 
 type Emitter func(name string, data any)
 
@@ -34,6 +34,10 @@ type Service struct {
 	updMu      sync.Mutex
 	upd        UpdateInfo
 	checking   atomic.Bool
+	watchMu    sync.Mutex
+	watch      WatchInfo
+	watchStop  context.CancelFunc
+	watchGen   int
 }
 
 func New(presentMon string, emit Emitter) *Service {

@@ -40,38 +40,54 @@ func rateLimitWait(h http.Header) time.Duration {
 	return 60 * time.Second
 }
 
+type SortOrder string
+
+const (
+	FullestFirst  SortOrder = "Desc"
+	EmptiestFirst SortOrder = "Asc"
+)
+
+func PublicPage(ctx context.Context, placeID int64, order SortOrder, cursor string) ([]PublicServer, string, error) {
+	url := fmt.Sprintf("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=%s&excludeFullGames=true&limit=100", placeID, order)
+	if cursor != "" {
+		url += "&cursor=" + cursor
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, "", &RateLimitError{Wait: rateLimitWait(resp.Header)}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("roblox answered %s for the server list", resp.Status)
+	}
+	var page serverPage
+	if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+		return nil, "", err
+	}
+	return page.Data, page.NextPageCursor, nil
+}
+
 func PublicServers(ctx context.Context, placeID int64, pages int) ([]PublicServer, error) {
 	var all []PublicServer
 	cursor := ""
 	for i := 0; i < pages; i++ {
-		url := fmt.Sprintf("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&excludeFullGames=true&limit=100", placeID)
-		if cursor != "" {
-			url += "&cursor=" + cursor
-		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		page, next, err := PublicPage(ctx, placeID, FullestFirst, cursor)
+		all = append(all, page...)
 		if err != nil {
 			return all, err
 		}
-		req.Header.Set("Accept", "application/json")
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return all, err
-		}
-		if resp.StatusCode == http.StatusTooManyRequests {
-			resp.Body.Close()
-			return all, &RateLimitError{Wait: rateLimitWait(resp.Header)}
-		}
-		var page serverPage
-		err = json.NewDecoder(resp.Body).Decode(&page)
-		resp.Body.Close()
-		if err != nil {
-			return all, err
-		}
-		all = append(all, page.Data...)
-		if page.NextPageCursor == "" {
+		if next == "" {
 			break
 		}
-		cursor = page.NextPageCursor
+		cursor = next
 		time.Sleep(400 * time.Millisecond)
 	}
 	return all, nil

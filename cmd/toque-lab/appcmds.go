@@ -49,7 +49,7 @@ func cmdPlay(args []string) error {
 	}
 	var res app.PlayResult
 	if *private != "" {
-		res, err = svc.PlayPrivate(*private, *region)
+		res, err = svc.PlayPrivate(*private)
 	} else {
 		res, err = svc.PlayIn(*region)
 	}
@@ -63,6 +63,30 @@ func cmdRegions([]string) error {
 		return err
 	}
 	printJSON(svc.Regions())
+	return nil
+}
+
+func cmdWatch(args []string) error {
+	fs := flag.NewFlagSet("watch", flag.ExitOnError)
+	region := fs.String("region", "", "region key such as PE/Lima")
+	limit := fs.Duration("for", 10*time.Minute, "stop watching after this long")
+	fs.Parse(args)
+	svc, err := newService()
+	if err != nil {
+		return err
+	}
+	svc.WatchRegion(*region)
+	deadline := time.Now().Add(*limit)
+	for time.Now().Before(deadline) {
+		time.Sleep(10 * time.Second)
+		w := svc.WatchStatus()
+		fmt.Printf("watch %s active=%v checked=%d\n", w.Region, w.Active, w.Checked)
+		if !w.Active {
+			printJSON(w)
+			return nil
+		}
+	}
+	printJSON(svc.StopWatch())
 	return nil
 }
 

@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api, errorText, onProgress, onUpdate } from "@/lib/api";
+import { api, errorText, onProgress, onUpdate, onWatch } from "@/lib/api";
 import { play } from "@/lib/sound";
-import type { Overview, Progress, UpdateInfo } from "@/lib/types";
+import type { Overview, Progress, UpdateInfo, WatchInfo } from "@/lib/types";
 
 export type Screen = "home" | "diagnose" | "optimize" | "tests" | "settings";
 
@@ -31,8 +31,7 @@ interface AppState {
   setRegion: (key: string) => void;
   privateLink: string;
   setPrivateLink: (link: string) => void;
-  privateRegion: string;
-  setPrivateRegion: (key: string) => void;
+  watch: WatchInfo | null;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -63,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [region, setRegionState] = useState(() => stored("toque.region"));
   const [privateLink, setPrivateLinkState] = useState(() => stored("toque.private"));
-  const [privateRegion, setPrivateRegionState] = useState(() => stored("toque.privateRegion"));
+  const [watch, setWatch] = useState<WatchInfo | null>(null);
   const seq = useRef(0);
 
   const setRegion = useCallback((key: string) => {
@@ -74,11 +73,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setPrivateLink = useCallback((link: string) => {
     setPrivateLinkState(link);
     store("toque.private", link);
-  }, []);
-
-  const setPrivateRegion = useCallback((key: string) => {
-    setPrivateRegionState(key);
-    store("toque.privateRegion", key);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -95,10 +89,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const t = setInterval(refresh, 4000);
     const off = onProgress((p) => setProgress(p.step === "done" ? null : p));
     const offUpdate = onUpdate(setUpdate);
+    api.watchStatus().then(setWatch).catch(() => undefined);
+    const offWatch = onWatch(setWatch);
     return () => {
       clearInterval(t);
       off();
       offUpdate();
+      offWatch();
     };
   }, [refresh]);
 
@@ -139,8 +136,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink, watch }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink, watch],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

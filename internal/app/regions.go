@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -118,43 +117,10 @@ func (s *Service) Regions() []Region {
 	return out
 }
 
-type seenServer struct {
-	key string
-	at  time.Time
+func regionCity(key string) string {
+	_, city, _ := strings.Cut(key, "/")
+	return city
 }
-
-var (
-	seenMu      sync.Mutex
-	seenServers = map[string]seenServer{}
-)
-
-func noteServer(jobID, key string) {
-	if jobID == "" {
-		return
-	}
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	seenServers[jobID] = seenServer{key: key, at: time.Now()}
-}
-
-func recentServersIn(key string, n int) []roblox.PublicServer {
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	var ids []string
-	for id, sv := range seenServers {
-		if sv.key == key && time.Since(sv.at) < 45*time.Minute {
-			ids = append(ids, id)
-		}
-	}
-	sort.Slice(ids, func(i, j int) bool { return seenServers[ids[i]].at.After(seenServers[ids[j]].at) })
-	var out []roblox.PublicServer
-	for i := 0; i < len(ids) && i < n; i++ {
-		out = append(out, roblox.PublicServer{ID: ids[i]})
-	}
-	return out
-}
-
-const regionTries = 8
 
 func (s *Service) PlayIn(key string) (PlayResult, error) {
 	if key == "" {
@@ -169,65 +135,44 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 	if err != nil {
 		return PlayResult{}, err
 	}
-	city := key[strings.Index(key, "/")+1:]
-	s.progress("play", "list", 0.04, "Consultando la lista pública de servidores")
-	known := recentServersIn(key, 3)
-	skip := map[string]bool{}
-	for _, k := range known {
-		skip[k.ID] = true
-	}
-	servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 1)
-	var limited *roblox.RateLimitError
-	if len(servers) == 0 && errors.As(err, &limited) {
-		s.progress("play", "list", 0.04, fmt.Sprintf("Roblox limita las consultas a la lista de servidores. Espero %.0f segundos", limited.Wait.Seconds()))
-		select {
-		case <-ctx.Done():
-			return PlayResult{}, ctx.Err()
-		case <-time.After(limited.Wait):
-		}
-		servers, _ = roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 1)
-	}
-	candidates := append(known, roblox.PublicServer{})
-	candidates = append(candidates, roblox.SampleCandidates(servers, skip, regionTries, time.Now().UnixNano())...)
 	res := PlayResult{Region: key}
-	seen := ""
-	inRegion := func(sess roblox.Session) bool {
-		p, ok := serverPlace(ctx, sess.ServerIP, sess.DatacenterID)
-		if !ok {
-			return false
+	s.progress("play", "list", 0.05, fmt.Sprintf("Buscando partidas de %s", regionCity(key)))
+	var servers []roblox.PublicServer
+	var listErr error
+	for _, order := range []roblox.SortOrder{roblox.FullestFirst, roblox.EmptiestFirst} {
+		page, _, err := s.listPage(ctx, "play", order, "")
+		if err != nil {
+			if ctx.Err() != nil {
+				return res, ctx.Err()
+			}
+			listErr = err
+			continue
 		}
-		seen = displayCity(p.City)
-		noteServer(sess.JobID, regionKey(p))
-		return regionKey(p) == key
+		servers = append(servers, page...)
 	}
-	for i, c := range candidates {
+	if len(servers) == 0 && listErr != nil {
+		return res, fmt.Errorf("no pude leer la lista de servidores: %w", listErr)
+	}
+	matches, lookupErr := serversIn(ctx, key, servers)
+	if len(matches) == 0 {
+		if lookupErr != nil {
+			return res, fmt.Errorf("no pude consultar RoValra: %w", lookupErr)
+		}
+		return res, nil
+	}
+	sess, tried, err := s.joinIn(ctx, inst, key, matches, "play")
+	res.Tried = tried
+	if err != nil {
 		if ctx.Err() != nil {
 			return res, ctx.Err()
 		}
-		msg := fmt.Sprintf("Buscando un servidor en %s, intento %d de %d", city, i+1, len(candidates))
-		if seen != "" {
-			msg += ". El anterior era de " + seen
-		}
-		s.progress("play", "hop", 0.06+0.86*float64(i)/float64(len(candidates)), msg)
-		seen = ""
-		res.Tried++
-		sess, err := roblox.JoinIf(ctx, inst, roblox.Target{PlaceID: roblox.RealisticStreetSoccer, JobID: c.ID}, 30*time.Second, inRegion)
-		if err != nil {
-			continue
-		}
-		res.Found = true
-		res.Final = joinedProbe(ctx, sess)
-		res.First = res.Final
 		return res, nil
 	}
-	if ctx.Err() != nil {
-		return res, ctx.Err()
-	}
-	near, err := s.playNear(ctx, inst)
-	near.Region, near.Tried = key, res.Tried
-	return near, err
+	res.Found = true
+	res.Final = joinedProbe(ctx, sess)
+	res.First = res.Final
+	return res, nil
 }
-
 func joinedProbe(ctx context.Context, sess roblox.Session) ServerProbe {
 	p, _ := serverRTT(ctx, sess.ServerIP)
 	p.JobID, p.Current = sess.JobID, true

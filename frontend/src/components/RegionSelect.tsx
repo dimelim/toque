@@ -39,41 +39,22 @@ function Option({ id, title, place, ms }: { id: string; title: string; place: st
   );
 }
 
-const autos = {
-  play: { label: "Región", title: "Automática" },
-  private: { label: "Abrir en", title: "Donde lo decida Roblox" },
-};
-
-export function RegionSelect({
-  regions,
-  value,
-  onChange,
-  isDisabled,
-  variant = "play",
-}: {
-  regions: Region[];
-  value: string;
-  onChange: (key: string) => void;
-  isDisabled?: boolean;
-  variant?: "play" | "private";
-}) {
+export function RegionSelect({ regions, value, onChange, isDisabled }: { regions: Region[]; value: string; onChange: (key: string) => void; isDisabled?: boolean }) {
   const best = bestRegion(regions);
   const current = regions.find((r) => r.key === value);
   const isPrivate = value === PRIVATE;
-  const auto = autos[variant];
   const Icon = isPrivate ? IconLock : IconPin;
-  const autoPing = variant === "play" ? best?.rttMs : null;
   return (
-    <Select aria-label={auto.label} value={value || AUTO} onChange={(k) => onChange(k === null || k === AUTO ? "" : String(k))} isDisabled={isDisabled}>
+    <Select aria-label="Región" value={value || AUTO} onChange={(k) => onChange(k === null || k === AUTO ? "" : String(k))} isDisabled={isDisabled}>
       <AriaButton className="flex w-full items-center gap-3 rounded-2lg bg-background-inner-default px-4 py-3 text-left shadow-card outline-none transition-colors duration-150 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:opacity-60">
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1 text-caption-1-medium text-ink-3">
             <Icon className="size-3.5" />
-            {auto.label}
+            Región
           </span>
-          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? "Servidor privado" : value ? (current?.city ?? regionCity(value)) : auto.title}</span>
+          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? "Servidor privado" : value ? (current?.city ?? regionCity(value)) : "Automática"}</span>
         </span>
-        <Ping ms={isPrivate ? null : value ? current?.rttMs : autoPing} size="lg" />
+        <Ping ms={isPrivate ? null : value ? current?.rttMs : best?.rttMs} size="lg" />
         <IconChevronDown className="size-4 shrink-0 text-ink-3" />
       </AriaButton>
       <Popover
@@ -81,14 +62,8 @@ export function RegionSelect({
         className="w-[var(--trigger-width)] rounded-xl bg-surface-3 shadow-dropdown outline-none transition-[opacity,transform] duration-150 ease-out data-[entering]:-translate-y-1 data-[entering]:opacity-0 data-[exiting]:opacity-0"
       >
         <ListBox className="max-h-80 overflow-y-auto p-1.5 outline-none">
-          {variant === "play" ? (
-            <>
-              <Option id={AUTO} title={auto.title} place={best ? `Va al más cercano, ${best.city}` : "Va al servidor más cercano"} ms={best?.rttMs} />
-              <Option id={PRIVATE} title="Servidor privado" place="Con su enlace de invitación" ms={null} />
-            </>
-          ) : (
-            <Option id={AUTO} title={auto.title} place="Roblox elige la ciudad al abrirlo" ms={null} />
-          )}
+          <Option id={AUTO} title="Automática" place={best ? `Va al más cercano, ${best.city}` : "Va al servidor más cercano"} ms={best?.rttMs} />
+          <Option id={PRIVATE} title="Servidor privado" place="Con su enlace de invitación" ms={null} />
           {regions.map((r) => (
             <Option key={r.key} id={r.key} title={r.city} place={regionPlace(r)} ms={r.rttMs} />
           ))}

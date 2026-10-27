@@ -15,6 +15,7 @@ import type {
   ServerProbe,
   ServerSearch,
   UpdateInfo,
+  WatchInfo,
 } from "./types";
 
 export const api = {
@@ -35,7 +36,10 @@ export const api = {
   bufferbloat: () => Service.Bufferbloat() as Promise<BloatResult>,
   quickPing: () => Service.QuickPing() as Promise<ServerProbe>,
   play: (region: string) => Service.PlayIn(region) as Promise<PlayResult>,
-  playPrivate: (link: string, region: string) => Service.PlayPrivate(link, region) as Promise<PlayResult>,
+  playPrivate: (link: string) => Service.PlayPrivate(link) as Promise<PlayResult>,
+  watchRegion: (region: string) => Service.WatchRegion(region) as Promise<WatchInfo>,
+  stopWatch: () => Service.StopWatch() as Promise<WatchInfo>,
+  watchStatus: () => Service.WatchStatus() as Promise<WatchInfo>,
   cancel: () => Service.Cancel() as Promise<void>,
   lastDiagnosis: () => Service.LastDiagnosis() as Promise<Diagnosis | null>,
   lastBloat: () => Service.LastBloat() as Promise<BloatResult | null>,
@@ -52,6 +56,10 @@ export function onProgress(cb: (p: Progress) => void) {
 
 export function onUpdate(cb: (u: UpdateInfo) => void) {
   return EventsOn("update", cb);
+}
+
+export function onWatch(cb: (w: WatchInfo) => void) {
+  return EventsOn("watch", cb);
 }
 
 export const win = {
