@@ -42,4 +42,5 @@
   Bars as IconThreads,
   Check as IconCheck,
   MapPin as IconPin,
+  Lock as IconLock,
 } from "@gravity-ui/icons";

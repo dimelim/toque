@@ -73,13 +73,14 @@ func serverRTT(ctx context.Context, ip string) (ServerProbe, error) {
 }
 
 type PlayResult struct {
-	First  ServerProbe `json:"first"`
-	Final  ServerProbe `json:"final"`
-	Hops   int         `json:"hops"`
-	BestMs float64     `json:"bestMs"`
-	Region string      `json:"region"`
-	Found  bool        `json:"found"`
-	Tried  int         `json:"tried"`
+	First   ServerProbe `json:"first"`
+	Final   ServerProbe `json:"final"`
+	Hops    int         `json:"hops"`
+	BestMs  float64     `json:"bestMs"`
+	Region  string      `json:"region"`
+	Found   bool        `json:"found"`
+	Tried   int         `json:"tried"`
+	Private bool        `json:"private"`
 }
 
 func (s *Service) Play() (PlayResult, error) {
@@ -99,6 +100,9 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 	s.progress("play", "join", 0.08, "Entrando en Realistic Street Soccer")
 	sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, "", 90*time.Second)
 	if err != nil {
+		if ctx.Err() != nil {
+			return PlayResult{}, ctx.Err()
+		}
 		return PlayResult{}, fmt.Errorf("no pude entrar al juego: %w", err)
 	}
 	s.progress("play", "measure", 0.3, "Comprobando a qué distancia está el servidor")
@@ -112,9 +116,8 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 		return res, nil
 	}
 	candidates := []roblox.PublicServer{{}}
-	if servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 2); err == nil {
-		candidates = append(candidates, roblox.SampleCandidates(servers, map[string]bool{sess.JobID: true}, 2, time.Now().UnixNano())...)
-	}
+	servers, _ := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 1)
+	candidates = append(candidates, roblox.SampleCandidates(servers, map[string]bool{sess.JobID: true}, 2, time.Now().UnixNano())...)
 	visited := map[string]bool{sess.JobID: true}
 	current := sess.JobID
 	for i, c := range candidates {

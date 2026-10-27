@@ -29,17 +29,25 @@ interface AppState {
   setUpdate: (u: UpdateInfo) => void;
   region: string;
   setRegion: (key: string) => void;
+  privateLink: string;
+  setPrivateLink: (link: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
 
-const regionStore = "toque.region";
-
-function savedRegion() {
+function stored(key: string) {
   try {
-    return localStorage.getItem(regionStore) ?? "";
+    return localStorage.getItem(key) ?? "";
   } catch {
     return "";
+  }
+}
+
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    return;
   }
 }
 
@@ -51,16 +59,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [taskLabel, setTaskLabel] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
-  const [region, setRegionState] = useState(savedRegion);
+  const [region, setRegionState] = useState(() => stored("toque.region"));
+  const [privateLink, setPrivateLinkState] = useState(() => stored("toque.private"));
   const seq = useRef(0);
 
   const setRegion = useCallback((key: string) => {
     setRegionState(key);
-    try {
-      localStorage.setItem(regionStore, key);
-    } catch {
-      return;
-    }
+    store("toque.region", key);
+  }, []);
+
+  const setPrivateLink = useCallback((link: string) => {
+    setPrivateLinkState(link);
+    store("toque.private", link);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -103,8 +113,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         play("success");
         return out;
       } catch (e) {
+        const text = errorText(e);
+        if (text.endsWith("context canceled")) {
+          toast({ tone: "info", title: "Cancelado" });
+          return undefined;
+        }
         play("error");
-        toast({ tone: "error", title: "No se pudo completar", detail: errorText(e) });
+        toast({ tone: "error", title: "No se pudo completar", detail: text });
         return undefined;
       } finally {
         setTask(null);
@@ -116,8 +131,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

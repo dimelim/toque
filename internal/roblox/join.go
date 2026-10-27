@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"toque/internal/winx"
@@ -30,10 +31,23 @@ func (s Session) TimeToJoin() time.Duration {
 	return s.JoinedAt.Sub(s.LaunchedAt)
 }
 
-func JoinURL(placeID int64, jobID string) string {
-	u := fmt.Sprintf("roblox://experiences/start?placeId=%d", placeID)
-	if jobID != "" {
-		u += "&gameInstanceId=" + jobID
+type Target struct {
+	PlaceID   int64
+	JobID     string
+	LinkCode  string
+	ShareCode string
+}
+
+func (t Target) URL() string {
+	if t.ShareCode != "" {
+		return "roblox://navigation/share_links?code=" + url.QueryEscape(t.ShareCode) + "&type=Server"
+	}
+	u := fmt.Sprintf("roblox://experiences/start?placeId=%d", t.PlaceID)
+	if t.JobID != "" {
+		u += "&gameInstanceId=" + url.QueryEscape(t.JobID)
+	}
+	if t.LinkCode != "" {
+		u += "&linkCode=" + url.QueryEscape(t.LinkCode)
 	}
 	return u
 }
@@ -48,21 +62,42 @@ func CloseAll(timeout time.Duration) {
 	}
 }
 
-var ErrRejected = errors.New("server rejected")
+var (
+	ErrRejected = errors.New("server rejected")
+	ErrQueued   = errors.New("roblox put the join in a queue")
+)
+
+const queueWait = 15 * time.Second
 
 func Join(ctx context.Context, inst Install, placeID int64, jobID string, timeout time.Duration) (Session, error) {
-	return JoinIf(ctx, inst, placeID, jobID, timeout, nil)
+	return JoinIf(ctx, inst, Target{PlaceID: placeID, JobID: jobID}, timeout, nil)
 }
 
-func JoinIf(ctx context.Context, inst Install, placeID int64, jobID string, timeout time.Duration, accept func(Session) bool) (Session, error) {
+func JoinIf(ctx context.Context, inst Install, t Target, timeout time.Duration, accept func(Session) bool) (Session, error) {
 	CloseAll(10 * time.Second)
-	time.Sleep(1500 * time.Millisecond)
-	s := Session{PlaceID: placeID, LaunchedAt: time.Now()}
-	pid, err := winx.LaunchAsUser(inst.Player, JoinURL(placeID, jobID), inst.VersionDir)
+	s := Session{PlaceID: t.PlaceID}
+	select {
+	case <-ctx.Done():
+		return s, ctx.Err()
+	case <-time.After(1500 * time.Millisecond):
+	}
+	s.LaunchedAt = time.Now()
+	pid, err := winx.LaunchAsUser(inst.Player, t.URL(), inst.VersionDir)
 	if err != nil {
 		return s, err
 	}
 	s.PID = pid
+	s, err = watchJoin(ctx, inst, s, t.JobID != "", timeout, accept)
+	if err != nil {
+		CloseAll(10 * time.Second)
+		if ctx.Err() != nil {
+			return s, ctx.Err()
+		}
+	}
+	return s, err
+}
+
+func watchJoin(ctx context.Context, inst Install, s Session, canQueue bool, timeout time.Duration, accept func(Session) bool) (Session, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	for s.LogPath == "" {
@@ -84,16 +119,22 @@ func JoinIf(ctx context.Context, inst Install, placeID int64, jobID string, time
 			}
 		})
 	}()
+	var queued <-chan time.Time
+	if canQueue {
+		timer := time.NewTimer(queueWait)
+		defer timer.Stop()
+		queued = timer.C
+	}
 	for {
 		select {
 		case ev := <-events:
 			switch ev.Kind {
 			case EventJoining:
 				s.JobID, s.PlaceID = ev.JobID, ev.PlaceID
+				queued = nil
 			case EventUdmux:
 				s.ServerIP, s.ServerPort = ev.IP, ev.Port
 				if accept != nil && !accept(s) {
-					CloseAll(10 * time.Second)
 					return s, ErrRejected
 				}
 			case EventLoadTime:
@@ -107,6 +148,8 @@ func JoinIf(ctx context.Context, inst Install, placeID int64, jobID string, time
 					return s, nil
 				}
 			}
+		case <-queued:
+			return s, ErrQueued
 		case <-ctx.Done():
 			return s, errors.New("join not detected before timeout")
 		}

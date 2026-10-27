@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { win, api } from "@/lib/api";
-import { regionCity } from "@/lib/regions";
+import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
 import { usePlay } from "@/hooks/use-play";
@@ -53,7 +53,7 @@ function WindowControls() {
 }
 
 function RobloxStatus() {
-  const { overview, task, region } = useApp();
+  const { overview, task, region, privateLink } = useApp();
   const start = usePlay();
   const r = overview?.roblox;
   if (!r) return null;
@@ -64,9 +64,9 @@ function RobloxStatus() {
         <span className={cx("live-dot relative size-2 rounded-full", inGame ? "text-volt bg-volt" : r.running ? "text-warn bg-warn" : "bg-ink-4 text-transparent")} />
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
-      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
+      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
       {!r.running && r.installed ? (
-        <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task} onClick={start}>
+        <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task || (region === PRIVATE && !privateLink.trim())} onClick={start}>
           Jugar
         </Button>
       ) : null}

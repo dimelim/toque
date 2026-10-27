@@ -1,5 +1,7 @@
 import type { Region } from "./types";
 
+export const PRIVATE = "private";
+
 const countries = new Intl.DisplayNames(["es"], { type: "region" });
 
 export function countryName(code: string) {

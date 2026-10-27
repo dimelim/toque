@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -133,7 +134,17 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 	for _, k := range known {
 		skip[k.ID] = true
 	}
-	servers, _ := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 2)
+	servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 1)
+	var limited *roblox.RateLimitError
+	if len(servers) == 0 && errors.As(err, &limited) {
+		s.progress("play", "list", 0.04, fmt.Sprintf("Roblox limita las consultas a la lista de servidores. Espero %.0f segundos", limited.Wait.Seconds()))
+		select {
+		case <-ctx.Done():
+			return PlayResult{}, ctx.Err()
+		case <-time.After(limited.Wait):
+		}
+		servers, _ = roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 1)
+	}
 	candidates := append(known, roblox.PublicServer{})
 	candidates = append(candidates, roblox.SampleCandidates(servers, skip, regionTries, time.Now().UnixNano())...)
 	res := PlayResult{Region: key}
@@ -158,7 +169,7 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 		s.progress("play", "hop", 0.06+0.86*float64(i)/float64(len(candidates)), msg)
 		seen = ""
 		res.Tried++
-		sess, err := roblox.JoinIf(ctx, inst, roblox.RealisticStreetSoccer, c.ID, 30*time.Second, inRegion)
+		sess, err := roblox.JoinIf(ctx, inst, roblox.Target{PlaceID: roblox.RealisticStreetSoccer, JobID: c.ID}, 30*time.Second, inRegion)
 		if err != nil {
 			continue
 		}

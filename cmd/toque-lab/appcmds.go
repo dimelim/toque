@@ -36,13 +36,23 @@ func cmdFinder(args []string) error {
 
 func cmdPlay(args []string) error {
 	fs := flag.NewFlagSet("play", flag.ExitOnError)
-	region := fs.String("region", "", "region key such as BR/Barueri; empty plays the nearest")
+	region := fs.String("region", "", "region key such as BR/São Paulo; empty plays the nearest")
+	private := fs.String("private", "", "private server link to join instead of searching")
+	cancelAfter := fs.Duration("cancel", 0, "cancel the run after this long")
 	fs.Parse(args)
 	svc, err := newService()
 	if err != nil {
 		return err
 	}
-	res, err := svc.PlayIn(*region)
+	if *cancelAfter > 0 {
+		time.AfterFunc(*cancelAfter, svc.Cancel)
+	}
+	var res app.PlayResult
+	if *private != "" {
+		res, err = svc.PlayPrivate(*private)
+	} else {
+		res, err = svc.PlayIn(*region)
+	}
 	printJSON(res)
 	return err
 }

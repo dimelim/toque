@@ -35,6 +35,7 @@ export const api = {
   bufferbloat: () => Service.Bufferbloat() as Promise<BloatResult>,
   quickPing: () => Service.QuickPing() as Promise<ServerProbe>,
   play: (region: string) => Service.PlayIn(region) as Promise<PlayResult>,
+  playPrivate: (link: string) => Service.PlayPrivate(link) as Promise<PlayResult>,
   cancel: () => Service.Cancel() as Promise<void>,
   lastDiagnosis: () => Service.LastDiagnosis() as Promise<Diagnosis | null>,
   lastBloat: () => Service.LastBloat() as Promise<BloatResult | null>,

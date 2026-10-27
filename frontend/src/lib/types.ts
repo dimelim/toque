@@ -254,6 +254,7 @@ export interface PlayResult {
   region: string;
   found: boolean;
   tried: number;
+  private: boolean;
 }
 
 export interface ServerSearch {

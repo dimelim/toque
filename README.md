@@ -28,7 +28,7 @@ Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que h
 
 Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes de Windows. Las escrituras en las carpetas de Roblox, que son del usuario, se hacen con el token normal del usuario, de modo que un enlace o junction plantado ahí no puede desviarlas a una carpeta protegida. `C:\ProgramData\Toque` pertenece a Administradores y los usuarios solo pueden leerlo. Solo se usan flags de la lista oficial que Roblox permite, nunca se lee la cookie de la cuenta ni se toca la memoria del juego.
 
-Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP del servidor de Roblox y guarda la respuesta en `C:\ProgramData\Toque\places.json`. Elegir región no usa ninguna API privada. Toque entra en servidores públicos y corta la entrada en cuanto el log de Roblox muestra que el servidor es de otra ciudad.
+Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP del servidor de Roblox y guarda la respuesta en `C:\ProgramData\Toque\places.json`. Elegir región no usa ninguna API privada. Toque entra en servidores públicos y corta la entrada en cuanto el log de Roblox muestra que el servidor es de otra ciudad, o si Roblox la deja en la fila de un servidor lleno. El enlace de un servidor privado se guarda solo en este PC y lo abre el propio Roblox, sin pasar por ningún servicio de Toque.
 
 ## Estructura
 
@@ -36,7 +36,7 @@ Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP d
 |---|---|
 | `main.go`, `cli.go` | App Wails (ventana, enlaces con el frontend) y modos `--uninstall` / `--revert-all` |
 | `cmd/toque-lab` | CLI de laboratorio para experimentos y el informe de benchmarks |
-| `internal/roblox` | Instalación, log, configuración, FFlags permitidas, unión por enlace profundo, lista de servidores |
+| `internal/roblox` | Instalación, log, configuración, FFlags permitidas, unión por enlace profundo, servidores privados, lista de servidores |
 | `internal/frames` | PresentMon y resumen de frames |
 | `internal/netq` | pktmon, lector pcapng, estimador de ping, traceroute ICMP |
 | `internal/sysmon` | Muestreo PDH de CPU, GPU, memoria y disco |

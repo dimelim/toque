@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +25,21 @@ type serverPage struct {
 
 var httpClient = &http.Client{Timeout: 12 * time.Second}
 
+type RateLimitError struct {
+	Wait time.Duration
+}
+
+func (e *RateLimitError) Error() string {
+	return fmt.Sprintf("roblox limits the server list for %s", e.Wait)
+}
+
+func rateLimitWait(h http.Header) time.Duration {
+	if secs, err := strconv.Atoi(h.Get("x-ratelimit-reset")); err == nil && secs > 0 && secs <= 60 {
+		return time.Duration(secs+1) * time.Second
+	}
+	return 60 * time.Second
+}
+
 func PublicServers(ctx context.Context, placeID int64, pages int) ([]PublicServer, error) {
 	var all []PublicServer
 	cursor := ""
@@ -41,12 +57,13 @@ func PublicServers(ctx context.Context, placeID int64, pages int) ([]PublicServe
 		if err != nil {
 			return all, err
 		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			resp.Body.Close()
+			return all, &RateLimitError{Wait: rateLimitWait(resp.Header)}
+		}
 		var page serverPage
 		err = json.NewDecoder(resp.Body).Decode(&page)
 		resp.Body.Close()
-		if resp.StatusCode == http.StatusTooManyRequests {
-			return all, fmt.Errorf("roblox rate limited the server list")
-		}
 		if err != nil {
 			return all, err
 		}

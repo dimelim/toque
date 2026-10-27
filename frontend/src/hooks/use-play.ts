@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import { regionCity } from "@/lib/regions";
+import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import type { PlayResult, ServerProbe } from "@/lib/types";
 import { useApp } from "@/state";
@@ -15,6 +15,7 @@ function ping(p: ServerProbe) {
 
 export function playMessage(r: PlayResult) {
   const f = r.final;
+  if (r.private) return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
   if (r.region && r.found) {
     return { title: `Dentro de un servidor${where(f)}${ping(f)}`, detail: r.tried > 1 ? `Lo encontré en el intento ${r.tried}.` : undefined };
   }
@@ -28,9 +29,14 @@ export function playMessage(r: PlayResult) {
 }
 
 export function usePlay() {
-  const { run, toast, region } = useApp();
+  const { run, toast, region, privateLink } = useApp();
   return async () => {
     play("tap");
+    if (region === PRIVATE) {
+      const r = await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink));
+      if (r) toast({ tone: "ok", ...playMessage(r) });
+      return r;
+    }
     const label = region ? `Buscando un servidor en ${regionCity(region)}` : "Entrando en un servidor cercano";
     const r = await run("play", label, () => api.play(region));
     if (r) toast({ tone: r.region && !r.found ? "info" : "ok", ...playMessage(r) });
