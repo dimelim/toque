@@ -100,7 +100,8 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
           <div className="flex flex-wrap items-center gap-1.5">
             <Pill>{categoryLabel[o.category] ?? o.category}</Pill>
             {o.kind ? <Pill>{kindLabel[o.kind] ?? o.kind}</Pill> : null}
-            {o.applied && !rejected ? <Pill tone="volt">Activa</Pill> : null}
+            {o.applied && o.managed && !rejected ? <Pill tone="volt">Activa</Pill> : null}
+            {o.applied && !o.managed ? <Pill>Ya estaba así</Pill> : null}
             {!o.applicable && o.detail ? <Pill tone="warn">No aplica aquí</Pill> : null}
           </div>
           <h3 className="mt-3 text-[17px] leading-snug font-semibold text-ink">{o.title}</h3>
@@ -113,7 +114,7 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
           <Switch
             size="md"
             isSelected={o.applied}
-            isDisabled={busy || !!task || (!o.applicable && !o.applied)}
+            isDisabled={busy || !!task || (!o.applicable && !o.applied) || (o.applied && !o.managed)}
             onChange={toggle}
             aria-label={`Activar ${o.title}`}
           />

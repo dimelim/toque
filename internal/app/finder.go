@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -38,6 +39,7 @@ func measureServer(ctx context.Context, ip string, dur time.Duration) (netq.Summ
 		return netq.Summary{}, err
 	}
 	dir := filepath.Join(winx.DataDir("finder"), time.Now().Format("150405.000"))
+	defer os.RemoveAll(dir)
 	pcap, err := netq.Record(ctx, ip, dur, dir)
 	if err != nil {
 		return netq.Summary{}, err

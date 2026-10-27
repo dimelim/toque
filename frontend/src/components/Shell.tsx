@@ -32,7 +32,7 @@ const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string
 ];
 
 function WindowControls() {
-  const btn = "no-drag grid h-10 w-12 place-items-center text-ink-3 transition-colors duration-150 hover:bg-surface-2 hover:text-ink";
+  const btn = "no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring";
   return (
     <div className="flex">
       <button aria-label="Minimizar" className={btn} onClick={() => win.minimise()}>
@@ -99,7 +99,7 @@ function Sidebar() {
               }}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "group relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-left text-body-medium transition-[background-color,color] duration-150",
+                "group relative flex h-10 items-center gap-3 rounded-[10px] px-3 text-left text-body-medium outline-none transition-[background-color,color] duration-150 focus-visible:ring-2 focus-visible:ring-border-focus-ring",
                 active ? "bg-surface-2 text-ink" : "text-ink-2 hover:bg-surface-1 hover:text-ink",
               )}
             >

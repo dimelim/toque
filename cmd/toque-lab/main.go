@@ -78,7 +78,7 @@ func env() (bench.Env, error) {
 	if _, err := os.Stat(pm); err != nil {
 		pm = `.dev\bin\PresentMon.exe`
 	}
-	return bench.Env{PresentMon: pm, Install: inst, Dir: winx.DataDir("runs")}, nil
+	return bench.Env{PresentMon: pm, Install: inst, Dir: winx.DataDir("runs"), KeepRaw: true}, nil
 }
 
 func currentSession(inst roblox.Install) (roblox.Session, error) {

@@ -40,6 +40,9 @@ func (s *Service) Benchmark(label string) (RunRecord, error) {
 	s.progress("benchmark", "measure", 0.4, "Midiendo frames, red y sistema durante 30 s")
 	id := time.Now().Format("20060102-150405")
 	w := bench.Measure(ctx, env, sess, 30*time.Second, filepath.Join(env.Dir, id), label)
+	if w.Net.Confident {
+		rememberDatacenter(sess.ServerIP, w.Net.RTT)
+	}
 	var applied []string
 	for k := range tweaks.OpenJournal().Applied {
 		applied = append(applied, k)

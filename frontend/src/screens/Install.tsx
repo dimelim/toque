@@ -45,10 +45,10 @@ export function Install({ state, onSkip }: { state: InstallState; onSkip: () => 
   return (
     <div className="pitch-lines relative flex h-full flex-col bg-canvas">
       <div className="drag flex h-10 shrink-0 items-start justify-end">
-        <button aria-label="Minimizar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 hover:bg-surface-2 hover:text-ink" onClick={() => win.minimise()}>
+        <button aria-label="Minimizar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring" onClick={() => win.minimise()}>
           <IconMinimize className="size-4" />
         </button>
-        <button aria-label="Cerrar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 hover:bg-bad hover:text-canvas" onClick={() => win.quit()}>
+        <button aria-label="Cerrar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-bad hover:text-canvas focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring" onClick={() => win.quit()}>
           <IconClose className="size-4" />
         </button>
       </div>

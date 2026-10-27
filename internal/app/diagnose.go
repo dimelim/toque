@@ -153,6 +153,7 @@ func (s *Service) Diagnose(withGame bool) (Diagnosis, error) {
 			d.Game = &w
 			if w.Net.Confident {
 				d.Path = append(d.Path, PathStep{Label: "Servidor de Roblox", Addr: sess.ServerIP, RTT: w.Net.RTT, Jitter: w.Net.Jitter, Loss: w.Net.LossDownPct, Kind: "game"})
+				rememberDatacenter(sess.ServerIP, w.Net.RTT)
 			}
 		}
 	}
@@ -202,14 +203,24 @@ func findings(d Diagnosis) []Finding {
 		add("fps-cap", "warn", "fps", fmt.Sprintf("Roblox limitado a %d FPS con un monitor de %d Hz", d.FramerateCap, d.System.RefreshHz),
 			"Cada frame tarda más en llegar a la pantalla de lo que tu monitor permite. Sube el límite en la configuración de Roblox.", "")
 	}
+	bestDC := 0.0
+	for _, e := range loadDatacenters() {
+		if e.RTT > 0 && (bestDC == 0 || e.RTT < bestDC) {
+			bestDC = e.RTT
+		}
+	}
 	for _, p := range d.Path {
 		switch {
 		case p.Kind == "local" && p.Label == "Router" && p.RTT > 4:
 			add("lan", "warn", "red", "Tu red local añade retraso", fmt.Sprintf("Llegar al router cuesta %s ms. Por cable suele ser menos de 1 ms, así que el Wi-Fi o el router están sumando retraso.", dec(p.RTT)), "")
 		case p.Kind == "local" && p.Loss > 2:
 			add("lan-loss", "warn", "red", "Se pierden paquetes antes de salir de casa", fmt.Sprintf("El %s no respondió al %s %% de las pruebas.", strings.ToLower(p.Label), dec(p.Loss)), "")
-		case p.Kind == "game" && p.RTT > 120:
-			add("far-server", "warn", "red", fmt.Sprintf("Servidor lejano, %.0f ms de ping", p.RTT), "Buscar otro servidor de Realistic Street Soccer suele bajar mucho el ping.", "server")
+		case p.Kind == "game" && (p.RTT > 100 || (bestDC > 0 && p.RTT > bestDC+25)):
+			detail := "Buscar otro servidor de Realistic Street Soccer suele bajar mucho el ping."
+			if bestDC > 0 && p.RTT > bestDC+25 {
+				detail = fmt.Sprintf("Ya te medí un centro de datos de Roblox a %.0f ms. Buscar servidor puede dejarte ahí.", bestDC)
+			}
+			add("far-server", "warn", "red", fmt.Sprintf("Servidor lejano, %.0f ms de ping", p.RTT), detail, "server")
 		case p.Kind == "game" && p.Loss > 1:
 			add("loss", "bad", "red", fmt.Sprintf("Se pierden paquetes del servidor (%s %%)", dec(p.Loss)), "Eso se nota como saltos del balón y de los jugadores.", "")
 		}

@@ -21,6 +21,7 @@ type Env struct {
 	PresentMon string
 	Install    roblox.Install
 	Dir        string
+	KeepRaw    bool
 }
 
 type Window struct {
@@ -57,6 +58,9 @@ func Measure(ctx context.Context, env Env, sess roblox.Session, dur time.Duratio
 			return
 		}
 		fr, err := frames.ParseCSV(csv)
+		if !env.KeepRaw {
+			os.Remove(csv)
+		}
 		if err != nil {
 			fail(err)
 			return
@@ -76,6 +80,9 @@ func Measure(ctx context.Context, env Env, sess roblox.Session, dur time.Duratio
 			return
 		}
 		pk, err := netq.ReadPcapng(pcap, addr)
+		if !env.KeepRaw {
+			os.Remove(pcap)
+		}
 		if err != nil {
 			fail(err)
 			return
