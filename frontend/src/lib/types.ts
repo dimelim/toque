@@ -257,6 +257,13 @@ export interface PlayResult {
   private: boolean;
 }
 
+export interface Account {
+  userId: number;
+  username: string;
+  displayName: string;
+  avatar: string;
+}
+
 export interface WatchInfo {
   region: string;
   active: boolean;

@@ -63,10 +63,9 @@ func (s *Service) StartUpdates() {
 		return
 	}
 	go func() {
-		time.Sleep(15 * time.Second)
 		for {
 			s.checkUpdate()
-			time.Sleep(6 * time.Hour)
+			time.Sleep(30 * time.Minute)
 		}
 	}()
 }

@@ -92,7 +92,7 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 	cursor := ""
 	for {
 		wait := watchEvery
-		if s.idle() == nil && len(roblox.Running()) == 0 {
+		if s.idle() == nil {
 			page, next, err := roblox.PublicPage(ctx, roblox.RealisticStreetSoccer, roblox.EmptiestFirst, cursor)
 			var limited *roblox.RateLimitError
 			switch {

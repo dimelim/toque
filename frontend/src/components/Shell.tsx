@@ -6,6 +6,7 @@ import { win, api } from "@/lib/api";
 import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
+import { useAccount } from "@/hooks/use-account";
 import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
@@ -68,19 +69,29 @@ function useWatchToast() {
 function RobloxStatus() {
   const { overview, task, region, privateLink, watch } = useApp();
   const start = usePlay();
+  const account = useAccount();
   const r = overview?.roblox;
   if (!r) return null;
   const inGame = r.inGame;
   return (
     <div className="rounded-xl bg-surface-1 p-3 shadow-[inset_0_0_0_1px_var(--color-line)]">
+      {account ? (
+        <div className="mb-3 flex items-center gap-2.5">
+          {account.avatar ? <img src={account.avatar} alt="" className="size-9 shrink-0 rounded-full bg-surface-3" /> : <span className="size-9 shrink-0 rounded-full bg-surface-3" />}
+          <span className="min-w-0">
+            <span className="block truncate text-body-medium text-ink">{account.displayName || account.username}</span>
+            <span className="block truncate text-caption-1-medium text-ink-3">@{account.username}</span>
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         <span className={cx("live-dot relative size-2 rounded-full", inGame ? "text-volt bg-volt" : r.running ? "text-warn bg-warn" : "bg-ink-4 text-transparent")} />
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
       <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : watch?.active ? `Vigilando ${regionCity(watch.region)}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
-      {!r.running && r.installed ? (
+      {r.installed ? (
         <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task || (region === PRIVATE && !privateLink.trim())} onClick={start}>
-          Jugar
+          {r.running ? "Cambiar de servidor" : "Jugar"}
         </Button>
       ) : null}
     </div>

@@ -68,7 +68,7 @@ export function Settings() {
               Firma Ed25519
             </Chip>
             <Chip variant="caption" color="neutral">
-              Revisa cada 6 horas
+              Revisa cada 30 minutos
             </Chip>
             <Chip variant="caption" color="neutral">
               Se instala al reabrir

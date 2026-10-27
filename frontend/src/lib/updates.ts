@@ -25,6 +25,6 @@ export function updateLine(u: UpdateInfo | null) {
     case "error":
       return `No se pudo comprobar si hay versión nueva (${u.error}).`;
     default:
-      return "Toque busca versiones nuevas al abrirse y cada 6 horas, y solo instala las que llevan su firma.";
+      return "Toque busca versiones nuevas al abrirse y cada 30 minutos, y solo instala las que llevan su firma.";
   }
 }

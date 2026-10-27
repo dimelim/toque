@@ -27,16 +27,11 @@ function Stat({ label, value, tone }: { label: string; value: number | null | un
 }
 
 function intro(inGame: boolean, region: string, watching: boolean) {
-  if (inGame) return { title: "Ya estás jugando", text: "Mide el ping del servidor en el que estás, escuchando el tráfico real del juego durante 8 segundos." };
+  const city = region && region !== PRIVATE ? regionCity(region) : "";
+  if (watching) return { title: `Vigilando ${city}`, text: `Toque revisa la lista cada 25 segundos y te mete en cuanto haya una partida de ${city} con sitio, aunque estés jugando en otra.` };
+  if (inGame) return { title: "Ya estás jugando", text: "Mide el ping de este servidor o cámbiate a otro con la región que elijas." };
   if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación. Toque lo guarda solo en este PC y entra directo." };
-  if (region && watching) {
-    const city = regionCity(region);
-    return { title: `Vigilando ${city}`, text: `Toque revisa la lista cada 25 segundos y entra en cuanto haya una partida de ${city} con sitio. Si tienes Roblox abierto, espera a que lo cierres.` };
-  }
-  if (region) {
-    const city = regionCity(region);
-    return { title: `Jugar en ${city}`, text: `Toque busca con RoValra una partida de ${city} con sitio y entra directo. Si no hay ninguna, déjalo vigilando.` };
-  }
+  if (city) return { title: `Jugar en ${city}`, text: `Toque busca con RoValra una partida de ${city} con sitio y entra directo. Si no hay ninguna, déjalo vigilando.` };
   return { title: "Jugar en un servidor cercano", text: "Roblox te manda a un servidor lejano en una de cada seis partidas. Toque lo comprueba al entrar y, si pasa, te mueve a uno cercano." };
 }
 
@@ -61,11 +56,13 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
   const start = usePlay();
   const [probe, setProbe] = useState<ServerProbe | null>(null);
   const r = overview?.roblox;
+  const inGame = !!r?.inGame;
+  const running = !!r?.running;
   const best = bestRegion(regions);
-  const fresh = probe && r?.inGame && probe.jobId === r.jobId ? probe : null;
-  const status = !r?.installed ? "Roblox no está instalado" : r.inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado";
+  const fresh = probe && inGame && probe.jobId === r?.jobId ? probe : null;
+  const status = !r?.installed ? "Roblox no está instalado" : inGame ? "En partida" : running ? "Roblox abierto" : "Roblox cerrado";
   const watching = !!watch?.active && watch.region === region;
-  const text = intro(!!r?.inGame, region, watching);
+  const text = intro(inGame, region, watching);
   const needsLink = region === PRIVATE && !privateLink.trim();
   const canWatch = !!region && region !== PRIVATE;
 
@@ -81,43 +78,39 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
     <section className="edge-light flex min-w-0 flex-col rounded-2xl bg-background-secondary-default p-5 shadow-card">
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-body-medium text-text-secondary">
-          <StatusDot color={r?.inGame ? "green" : r?.running ? "yellow" : "gray"} />
+          <StatusDot color={inGame ? "green" : running ? "yellow" : "gray"} />
           {status}
         </span>
-        {r?.inGame ? <Chip variant="caption" color="neutral">{r.serverIp}</Chip> : <Chip variant="caption" color="lime">Realistic Street Soccer</Chip>}
+        {inGame ? <Chip variant="caption" color="neutral">{r?.serverIp}</Chip> : <Chip variant="caption" color="lime">Realistic Street Soccer</Chip>}
       </div>
       <h2 className="mt-4 text-title-1-medium text-ink">{text.title}</h2>
       <p className="mt-1.5 text-body-regular text-text-secondary">{text.text}</p>
       <div className="mt-4 flex flex-col gap-2">
-        {r?.inGame ? (
-          <div className="grid grid-cols-2 gap-2 rounded-2lg bg-background-inner-default p-1.5 shadow-card">
+        {inGame ? (
+          <div className="flex items-center gap-1 rounded-2lg bg-background-inner-default p-1.5 shadow-card">
             <Stat label="Ping ahora" value={fresh?.rttMs} tone="volt" />
             <Stat label="Tu mejor centro" value={best?.rttMs} tone="ink" />
+            <Button size="small" variant="secondary" className="mr-1.5 ml-auto" leadingIcon={IconSignal} disabled={!!task} onClick={measure}>
+              {fresh ? "Otra vez" : "Medir"}
+            </Button>
           </div>
-        ) : (
-          <>
-            <RegionSelect regions={regions} value={region} onChange={setRegion} isDisabled={!!task || watching} />
-            {region === PRIVATE ? (
-              <TextField
-                value={privateLink}
-                onChange={setPrivateLink}
-                isDisabled={!!task}
-                className="flex flex-col rounded-2lg bg-background-inner-default px-4 py-2.5 shadow-card focus-within:ring-2 focus-within:ring-border-focus-ring"
-              >
-                <Label className="text-caption-1-medium text-ink-3">Enlace del servidor privado</Label>
-                <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
-              </TextField>
-            ) : null}
-            {watching && watch ? <WatchStatus watch={watch} /> : null}
-          </>
-        )}
+        ) : null}
+        <RegionSelect regions={regions} value={region} onChange={setRegion} isDisabled={!!task || watching} />
+        {region === PRIVATE ? (
+          <TextField
+            value={privateLink}
+            onChange={setPrivateLink}
+            isDisabled={!!task}
+            className="flex flex-col rounded-2lg bg-background-inner-default px-4 py-2.5 shadow-card focus-within:ring-2 focus-within:ring-border-focus-ring"
+          >
+            <Label className="text-caption-1-medium text-ink-3">Enlace del servidor privado</Label>
+            <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
+          </TextField>
+        ) : null}
+        {watching && watch ? <WatchStatus watch={watch} /> : null}
       </div>
       <div className="mt-auto pt-4">
-        {r?.inGame ? (
-          <Button className="h-11 w-full text-[15px]" leadingIcon={IconSignal} disabled={!!task} onClick={measure}>
-            {fresh ? "Medir otra vez" : "Medir mi ping ahora"}
-          </Button>
-        ) : watching ? (
+        {watching ? (
           <Button
             variant="secondary"
             className="h-11 w-full text-[15px]"
@@ -133,12 +126,12 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
             <Button
               className="h-11 w-full text-[15px]"
               leadingIcon={IconPlay}
-              disabled={!!task || !r?.installed || r.running || needsLink}
+              disabled={!!task || !r?.installed || needsLink}
               onClick={async () => {
                 if (await start()) onDone();
               }}
             >
-              Jugar
+              {running ? "Cambiar de servidor" : "Jugar"}
             </Button>
             {canWatch ? (
               <Button
@@ -156,6 +149,9 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
             ) : null}
           </div>
         )}
+        {running && !watching ? (
+          <p className="mt-2 text-caption-1-medium text-ink-3">{inGame ? "Al cambiar de servidor saldrás de la partida actual." : "Roblox está abierto. Toque lo cerrará para entrar en el servidor elegido."}</p>
+        ) : null}
       </div>
     </section>
   );

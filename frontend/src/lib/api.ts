@@ -1,6 +1,7 @@
 import * as Service from "@wails/go/app/Service";
 import { EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } from "@wails/runtime/runtime";
 import type {
+  Account,
   BloatResult,
   Diagnosis,
   ExperimentGroup,
@@ -40,6 +41,7 @@ export const api = {
   watchRegion: (region: string) => Service.WatchRegion(region) as Promise<WatchInfo>,
   stopWatch: () => Service.StopWatch() as Promise<WatchInfo>,
   watchStatus: () => Service.WatchStatus() as Promise<WatchInfo>,
+  account: () => Service.Account() as Promise<Account>,
   cancel: () => Service.Cancel() as Promise<void>,
   lastDiagnosis: () => Service.LastDiagnosis() as Promise<Diagnosis | null>,
   lastBloat: () => Service.LastBloat() as Promise<BloatResult | null>,
