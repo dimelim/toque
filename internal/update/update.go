@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	releases    = "https://github.com/dimelim/toque-releases/releases/"
+	releases    = "https://github.com/dimelim/toque/releases/"
 	manifestURL = releases + "latest/download/latest.json"
 	maxExeBytes = 100 << 20
 )

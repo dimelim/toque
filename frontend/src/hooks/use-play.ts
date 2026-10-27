@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import { PRIVATE, regionCity } from "@/lib/regions";
+import { PRIVATE, countryName, regionCity, regionCountry } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import type { PlayResult, ServerProbe } from "@/lib/types";
 import { useApp } from "@/state";
@@ -13,9 +13,32 @@ function ping(p: ServerProbe) {
   return p.rttMs ? `, a ${num(p.rttMs, 0)} ms` : "";
 }
 
+function privateMessage(r: PlayResult) {
+  const f = r.final;
+  if (r.needVpn) {
+    return {
+      title: `Tu conexión sale por ${countryName(r.exitCountry)}`,
+      detail: `Enciende una VPN de ${countryName(regionCountry(r.region))} y pulsa Jugar otra vez.`,
+    };
+  }
+  if (r.region && r.found) {
+    return {
+      title: `Tu servidor privado se abrió en ${f.city}`,
+      detail: "Ya puedes apagar la VPN. Si Roblox te desconecta, pulsa Jugar enseguida para volver al mismo servidor mientras siga abierto.",
+    };
+  }
+  if (r.region) {
+    return {
+      title: `Tu servidor privado se abrió${where(f)}`,
+      detail: `Roblox no lo abrió en ${regionCity(r.region)}. Si ya había alguien dentro, espera a que se vacíe y vuelve a probar.`,
+    };
+  }
+  return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
+}
+
 export function playMessage(r: PlayResult) {
   const f = r.final;
-  if (r.private) return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
+  if (r.private) return privateMessage(r);
   if (r.region && r.found) {
     return { title: `Dentro de un servidor${where(f)}${ping(f)}`, detail: r.tried > 1 ? `Lo encontré en el intento ${r.tried}.` : undefined };
   }
@@ -29,12 +52,12 @@ export function playMessage(r: PlayResult) {
 }
 
 export function usePlay() {
-  const { run, toast, region, privateLink } = useApp();
+  const { run, toast, region, privateLink, privateRegion } = useApp();
   return async () => {
     play("tap");
     if (region === PRIVATE) {
-      const r = await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink));
-      if (r) toast({ tone: "ok", ...playMessage(r) });
+      const r = await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink, privateRegion));
+      if (r) toast({ tone: r.needVpn || (r.region && !r.found) ? "info" : "ok", ...playMessage(r) });
       return r;
     }
     const label = region ? `Buscando un servidor en ${regionCity(region)}` : "Entrando en un servidor cercano";

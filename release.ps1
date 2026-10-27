@@ -19,7 +19,7 @@ New-Item -ItemType Directory -Force $dist | Out-Null
 $manifestPath = Join-Path $dist 'latest.json'
 $manifest = [ordered]@{
     version   = $version
-    url       = "https://github.com/dimelim/toque-releases/releases/download/$tag/Toque.exe"
+    url       = "https://github.com/dimelim/toque/releases/download/$tag/Toque.exe"
     sha256    = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
     notes     = $Notes
     published = (Get-Date).ToUniversalTime().ToString('o')
@@ -28,10 +28,8 @@ $manifest = [ordered]@{
 go run ./cmd/toque-sign sign $Key $manifestPath
 if ($LASTEXITCODE -ne 0) { throw 'No se pudo firmar el manifiesto' }
 
-gh release create $tag --repo dimelim/toque-releases --title "Toque $version" --notes $Notes $exe $manifestPath "$manifestPath.sig"
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo publicar en toque-releases' }
 git tag $tag
 git push origin $tag
-gh release create $tag --repo dimelim/toque --title "Toque $version" --notes $Notes $exe
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el lanzamiento en dimelim/toque' }
+gh release create $tag --repo dimelim/toque --title "Toque $version" --notes $Notes $exe $manifestPath "$manifestPath.sig"
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo publicar en dimelim/toque' }
 Write-Host "== Toque $version publicada"

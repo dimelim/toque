@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input, Label, TextField } from "react-aria-components";
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import { PRIVATE, bestRegion, regionCity } from "@/lib/regions";
+import { PRIVATE, bestRegion, countryName, regionCity, regionCountry } from "@/lib/regions";
 import type { Region, ServerProbe } from "@/lib/types";
 import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
@@ -25,9 +25,15 @@ function Stat({ label, value, tone }: { label: string; value: number | null | un
   );
 }
 
-function intro(inGame: boolean, region: string) {
+function intro(inGame: boolean, region: string, privateRegion: string) {
   if (inGame) return { title: "Ya estás jugando", text: "Mide el ping del servidor en el que estás, escuchando el tráfico real del juego durante 8 segundos." };
-  if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación de tu servidor privado. Toque lo guarda solo en este PC y entra directo." };
+  if (region === PRIVATE && privateRegion) {
+    return {
+      title: `Abrir tu servidor privado en ${regionCity(privateRegion)}`,
+      text: `Vacíalo, enciende una VPN de ${countryName(regionCountry(privateRegion))} y pulsa Jugar. Toque comprueba la ciudad en la que se abre y te dice cuándo apagar la VPN.`,
+    };
+  }
+  if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación. Toque lo guarda solo en este PC y entra directo." };
   if (region) {
     const city = regionCity(region);
     return { title: `Jugar en ${city}`, text: `Toque prueba servidores públicos y descarta los que no son de ${city} hasta dar con uno. Suele tardar entre medio minuto y dos.` };
@@ -36,14 +42,14 @@ function intro(inGame: boolean, region: string) {
 }
 
 export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () => void }) {
-  const { overview, run, task, region, setRegion, privateLink, setPrivateLink } = useApp();
+  const { overview, run, task, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion } = useApp();
   const start = usePlay();
   const [probe, setProbe] = useState<ServerProbe | null>(null);
   const r = overview?.roblox;
   const best = bestRegion(regions);
   const fresh = probe && r?.inGame && probe.jobId === r.jobId ? probe : null;
   const status = !r?.installed ? "Roblox no está instalado" : r.inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado";
-  const text = intro(!!r?.inGame, region);
+  const text = intro(!!r?.inGame, region, privateRegion);
   const needsLink = region === PRIVATE && !privateLink.trim();
 
   const measure = async () => {
@@ -85,6 +91,7 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
                 <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
               </TextField>
             ) : null}
+            {region === PRIVATE ? <RegionSelect variant="private" regions={regions} value={privateRegion} onChange={setPrivateRegion} isDisabled={!!task} /> : null}
           </>
         )}
       </div>

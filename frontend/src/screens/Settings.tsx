@@ -52,7 +52,7 @@ export function Settings() {
           <div className="mt-4">
             <StatRow label="Roblox" value={overview?.roblox.installed ? overview.roblox.version.replace("version-", "") : "No instalado"} />
             <StatRow label="Datos y resultados" value="C:\ProgramData\Toque" />
-            <StatRow label="Actualizaciones desde" value="dimelim/toque-releases" />
+            <StatRow label="Código y versiones" value="dimelim/toque" />
           </div>
         </Card>
 

@@ -16,6 +16,10 @@ export function regionCity(key: string) {
   return key.slice(key.indexOf("/") + 1);
 }
 
+export function regionCountry(key: string) {
+  return key.slice(0, Math.max(0, key.indexOf("/")));
+}
+
 export function regionPlace(r: Region) {
   return r.area ? `${r.area}, ${countryName(r.country)}` : countryName(r.country);
 }

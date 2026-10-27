@@ -31,6 +31,8 @@ interface AppState {
   setRegion: (key: string) => void;
   privateLink: string;
   setPrivateLink: (link: string) => void;
+  privateRegion: string;
+  setPrivateRegion: (key: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -61,6 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [region, setRegionState] = useState(() => stored("toque.region"));
   const [privateLink, setPrivateLinkState] = useState(() => stored("toque.private"));
+  const [privateRegion, setPrivateRegionState] = useState(() => stored("toque.privateRegion"));
   const seq = useRef(0);
 
   const setRegion = useCallback((key: string) => {
@@ -71,6 +74,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setPrivateLink = useCallback((link: string) => {
     setPrivateLinkState(link);
     store("toque.private", link);
+  }, []);
+
+  const setPrivateRegion = useCallback((key: string) => {
+    setPrivateRegionState(key);
+    store("toque.privateRegion", key);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -131,8 +139,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

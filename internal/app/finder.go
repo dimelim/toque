@@ -73,14 +73,16 @@ func serverRTT(ctx context.Context, ip string) (ServerProbe, error) {
 }
 
 type PlayResult struct {
-	First   ServerProbe `json:"first"`
-	Final   ServerProbe `json:"final"`
-	Hops    int         `json:"hops"`
-	BestMs  float64     `json:"bestMs"`
-	Region  string      `json:"region"`
-	Found   bool        `json:"found"`
-	Tried   int         `json:"tried"`
-	Private bool        `json:"private"`
+	First       ServerProbe `json:"first"`
+	Final       ServerProbe `json:"final"`
+	Hops        int         `json:"hops"`
+	BestMs      float64     `json:"bestMs"`
+	Region      string      `json:"region"`
+	Found       bool        `json:"found"`
+	Tried       int         `json:"tried"`
+	Private     bool        `json:"private"`
+	NeedVPN     bool        `json:"needVpn"`
+	ExitCountry string      `json:"exitCountry"`
 }
 
 func (s *Service) Play() (PlayResult, error) {
