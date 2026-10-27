@@ -34,14 +34,26 @@ func cmdFinder(args []string) error {
 	return err
 }
 
-func cmdPlay([]string) error {
+func cmdPlay(args []string) error {
+	fs := flag.NewFlagSet("play", flag.ExitOnError)
+	region := fs.String("region", "", "region key such as BR/Barueri; empty plays the nearest")
+	fs.Parse(args)
 	svc, err := newService()
 	if err != nil {
 		return err
 	}
-	res, err := svc.Play()
+	res, err := svc.PlayIn(*region)
 	printJSON(res)
 	return err
+}
+
+func cmdRegions([]string) error {
+	svc, err := newService()
+	if err != nil {
+		return err
+	}
+	printJSON(svc.Regions())
+	return nil
 }
 
 func cmdLoad(args []string) error {

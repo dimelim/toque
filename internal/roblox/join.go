@@ -48,7 +48,13 @@ func CloseAll(timeout time.Duration) {
 	}
 }
 
+var ErrRejected = errors.New("server rejected")
+
 func Join(ctx context.Context, inst Install, placeID int64, jobID string, timeout time.Duration) (Session, error) {
+	return JoinIf(ctx, inst, placeID, jobID, timeout, nil)
+}
+
+func JoinIf(ctx context.Context, inst Install, placeID int64, jobID string, timeout time.Duration, accept func(Session) bool) (Session, error) {
 	CloseAll(10 * time.Second)
 	time.Sleep(1500 * time.Millisecond)
 	s := Session{PlaceID: placeID, LaunchedAt: time.Now()}
@@ -86,6 +92,10 @@ func Join(ctx context.Context, inst Install, placeID int64, jobID string, timeou
 				s.JobID, s.PlaceID = ev.JobID, ev.PlaceID
 			case EventUdmux:
 				s.ServerIP, s.ServerPort = ev.IP, ev.Port
+				if accept != nil && !accept(s) {
+					CloseAll(10 * time.Second)
+					return s, ErrRejected
+				}
 			case EventLoadTime:
 				s.JoinSecs = ev.Seconds
 			case EventConnected:

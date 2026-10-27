@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { num } from "@/lib/format";
-import type { Datacenter } from "@/lib/types";
+import { bestRegion, regionPlace } from "@/lib/regions";
+import type { Region } from "@/lib/types";
+import { cx } from "@/utils/cx";
 import { Chip } from "@/components/ui/chip";
 import { IconGlobe } from "@/components/icons";
 
-export function DatacentersCard({ datacenters }: { datacenters: Datacenter[] }) {
-  const [active, setActive] = useState<number | null>(null);
-  const best = datacenters[0]?.rttMs ?? 0;
-  const data = datacenters.slice(0, 6).map((d) => ({ ...d, label: d.ip.replace(/^128\.116\./, "…"), near: d.rttMs <= best + 8 }));
-  const hovered = active !== null ? data[active] : null;
+export function DatacentersCard({ regions, max = 7 }: { regions: Region[]; max?: number }) {
+  const best = bestRegion(regions)?.rttMs ?? 0;
+  const measured = regions.filter((r) => r.rttMs > 0);
+  const top = Math.max(1, ...measured.map((r) => r.rttMs));
+  const rows = regions.slice(0, max);
   return (
     <section className="flex min-w-0 flex-col rounded-2xl bg-background-secondary-default p-5 shadow-card">
       <div className="flex items-center justify-between gap-3">
@@ -18,26 +18,36 @@ export function DatacentersCard({ datacenters }: { datacenters: Datacenter[] }) 
           Centros de datos
         </p>
         <Chip variant="caption" color="neutral">
-          {datacenters.length} medidos
+          {measured.length} medidos
         </Chip>
       </div>
-      <p className="mt-1 text-caption-1-medium text-ink-3">
-        {hovered ? `${hovered.ip} · medido ${hovered.measured} ${hovered.measured === 1 ? "vez" : "veces"}` : "Ping real desde tu conexión. Jugar evita los grises."}
-      </p>
-      <div className="mt-2 min-h-[176px] flex-1">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 0, right: 58, bottom: 0, left: 0 }} barCategoryGap={8} onMouseLeave={() => setActive(null)}>
-            <XAxis type="number" hide domain={[0, Math.max(...data.map((d) => d.rttMs)) * 1.05]} />
-            <YAxis type="category" dataKey="label" width={58} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--color-ink-3)" }} />
-            <Bar dataKey="rttMs" radius={[0, 6, 6, 0]} maxBarSize={30} isAnimationActive animationDuration={500} onMouseEnter={(_, i) => setActive(i)}>
-              {data.map((d, i) => (
-                <Cell key={d.ip} fill={d.near ? "var(--color-volt)" : "var(--color-ink-4)"} fillOpacity={active === null || active === i ? 1 : 0.55} />
-              ))}
-              <LabelList dataKey="rttMs" position="right" formatter={(v: unknown) => `${num(Number(v), 0)} ms`} style={{ fontSize: 11, fill: "var(--color-ink-2)", fontWeight: 600 }} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <p className="mt-1 text-caption-1-medium text-ink-3">Ping real desde tu conexión a cada ciudad. Jugar evita los grises.</p>
+      {rows.length === 0 ? (
+        <p className="flex flex-1 items-center justify-center py-8 text-center text-body-regular text-ink-3">Juega una partida con Toque y aquí aparecerán las ciudades de tus servidores.</p>
+      ) : (
+        <ul className="mt-3 flex flex-1 flex-col justify-between gap-2.5">
+          {rows.map((r) => (
+            <li key={r.key} title={regionPlace(r)}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="truncate text-body-medium text-ink">{r.city}</span>
+                {r.rttMs > 0 ? (
+                  <span className="num shrink-0 text-[14px] font-semibold text-ink-2">{num(r.rttMs, 0)} ms</span>
+                ) : (
+                  <span className="shrink-0 text-caption-1-medium text-ink-4">sin medir</span>
+                )}
+              </div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                {r.rttMs > 0 ? (
+                  <div
+                    className={cx("h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out-quint)]", r.rttMs <= best + 8 ? "bg-volt" : "bg-ink-4")}
+                    style={{ width: `${Math.max(4, (r.rttMs / top) * 100)}%` }}
+                  />
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

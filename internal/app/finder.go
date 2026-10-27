@@ -24,6 +24,8 @@ type ServerProbe struct {
 	Max     int     `json:"max"`
 	Current bool    `json:"current"`
 	Cached  bool    `json:"cached"`
+	City    string  `json:"city,omitempty"`
+	Country string  `json:"country,omitempty"`
 	Error   string  `json:"error,omitempty"`
 }
 
@@ -75,6 +77,9 @@ type PlayResult struct {
 	Final  ServerProbe `json:"final"`
 	Hops   int         `json:"hops"`
 	BestMs float64     `json:"bestMs"`
+	Region string      `json:"region"`
+	Found  bool        `json:"found"`
+	Tried  int         `json:"tried"`
 }
 
 func (s *Service) Play() (PlayResult, error) {
@@ -87,6 +92,10 @@ func (s *Service) Play() (PlayResult, error) {
 	if err != nil {
 		return PlayResult{}, err
 	}
+	return s.playNear(ctx, inst)
+}
+
+func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult, error) {
 	s.progress("play", "join", 0.08, "Entrando en Realistic Street Soccer")
 	sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, "", 90*time.Second)
 	if err != nil {
@@ -95,6 +104,7 @@ func (s *Service) Play() (PlayResult, error) {
 	s.progress("play", "measure", 0.3, "Comprobando a qué distancia está el servidor")
 	first, err := serverRTT(ctx, sess.ServerIP)
 	first.JobID, first.Current = sess.JobID, true
+	withPlace(ctx, &first)
 	res := PlayResult{First: first, Final: first}
 	best, known := bestDatacenter()
 	res.BestMs = best
@@ -128,6 +138,7 @@ func (s *Service) Play() (PlayResult, error) {
 			continue
 		}
 		p.JobID, p.Playing, p.Max = ns.JobID, c.Playing, c.MaxPlayers
+		withPlace(ctx, &p)
 		if p.RTT < res.Final.RTT {
 			res.Final = p
 		}

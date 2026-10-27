@@ -2,9 +2,10 @@ import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { win, api } from "@/lib/api";
+import { regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
-import type { PlayResult } from "@/lib/types";
+import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
 import { Wordmark } from "./Logo";
@@ -51,20 +52,9 @@ function WindowControls() {
   );
 }
 
-function playMessage(r: PlayResult) {
-  const ms = (v: number) => `${Math.round(v)} ms`;
-  if (!r.final.rttMs) return { title: "Dentro de Realistic Street Soccer" };
-  if (r.final.jobId !== r.first.jobId) {
-    return { title: `Te moví a un servidor a ${ms(r.final.rttMs)}`, detail: `Roblox te había puesto en uno a ${ms(r.first.rttMs)}.` };
-  }
-  if (r.hops > 0) {
-    return { title: `Servidor a ${ms(r.final.rttMs)}`, detail: `Probé ${r.hops} más y ninguno estaba más cerca. Tu mejor centro de datos va a ${ms(r.bestMs)}.` };
-  }
-  return { title: `Servidor cercano, a ${ms(r.final.rttMs)}` };
-}
-
 function RobloxStatus() {
-  const { overview, run, task, toast } = useApp();
+  const { overview, task, region } = useApp();
+  const start = usePlay();
   const r = overview?.roblox;
   if (!r) return null;
   const inGame = r.inGame;
@@ -74,20 +64,9 @@ function RobloxStatus() {
         <span className={cx("live-dot relative size-2 rounded-full", inGame ? "text-volt bg-volt" : r.running ? "text-warn bg-warn" : "bg-ink-4 text-transparent")} />
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
-      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : "Realistic Street Soccer"}</p>
+      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
       {!r.running && r.installed ? (
-        <Button
-          size="small"
-          variant="secondary"
-          className="mt-3 w-full"
-          leadingIcon={IconPlay}
-          disabled={!!task}
-          onClick={async () => {
-            play("tap");
-            const r = await run("play", "Entrando en un servidor cercano", () => api.play());
-            if (r) toast({ tone: "ok", ...playMessage(r) });
-          }}
-        >
+        <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task} onClick={start}>
           Jugar
         </Button>
       ) : null}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 
@@ -51,23 +50,15 @@ func rememberDatacenter(ip string, rtt float64) {
 	os.WriteFile(dcPath(), b, 0o644)
 }
 
-type Datacenter struct {
-	IP       string    `json:"ip"`
-	RTT      float64   `json:"rttMs"`
-	Measured int       `json:"measured"`
-	At       time.Time `json:"at"`
-}
-
-func (s *Service) Datacenters() []Datacenter {
+func freshDatacenters() map[string]float64 {
 	dcMu.Lock()
 	defer dcMu.Unlock()
-	var out []Datacenter
+	out := map[string]float64{}
 	for ip, e := range loadDatacenters() {
 		if time.Since(e.At) <= 7*24*time.Hour {
-			out = append(out, Datacenter{IP: ip, RTT: e.RTT, Measured: e.N, At: e.At})
+			out[ip] = e.RTT
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].RTT < out[j].RTT })
 	return out
 }
 

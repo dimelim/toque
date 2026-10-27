@@ -27,9 +27,21 @@ interface AppState {
   taskLabel: string;
   update: UpdateInfo | null;
   setUpdate: (u: UpdateInfo) => void;
+  region: string;
+  setRegion: (key: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
+
+const regionStore = "toque.region";
+
+function savedRegion() {
+  try {
+    return localStorage.getItem(regionStore) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [screen, setScreen] = useState<Screen>("home");
@@ -39,7 +51,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [taskLabel, setTaskLabel] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [region, setRegionState] = useState(savedRegion);
   const seq = useRef(0);
+
+  const setRegion = useCallback((key: string) => {
+    setRegionState(key);
+    try {
+      localStorage.setItem(regionStore, key);
+    } catch {
+      return;
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -94,8 +116,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -4,7 +4,7 @@ import { cx } from "@/utils/cx";
 import { api } from "@/lib/api";
 import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
-import type { BloatResult, Datacenter, Diagnosis, Finding, PathStep } from "@/lib/types";
+import type { BloatResult, Diagnosis, Finding, PathStep, Region } from "@/lib/types";
 import { useApp } from "@/state";
 import { Card, Eyebrow, PageHeader, Pill, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
@@ -176,7 +176,7 @@ const checks: { icon: ComponentType<{ className?: string }>; tone: TileTone; tit
   { icon: IconWindows, tone: "rose", title: "Windows y energía", text: "El plan de energía, el límite de FPS de Roblox y si el PC acaba de arrancar con la caché fría." },
 ];
 
-function Prep({ withGame, setWithGame, start, dcs }: { withGame: boolean; setWithGame: (v: boolean) => void; start: () => void; dcs: Datacenter[] }) {
+function Prep({ withGame, setWithGame, start, regions }: { withGame: boolean; setWithGame: (v: boolean) => void; start: () => void; regions: Region[] }) {
   const { task } = useApp();
   return (
     <div className="flex flex-col gap-4">
@@ -200,7 +200,7 @@ function Prep({ withGame, setWithGame, start, dcs }: { withGame: boolean; setWit
             Diagnosticar ahora
           </Button>
         </section>
-        <DatacentersCard datacenters={dcs} />
+        <DatacentersCard regions={regions} max={5} />
       </div>
       <div className="grid grid-cols-4 gap-4">
         {checks.map((c) => (
@@ -220,11 +220,11 @@ export function Diagnose() {
   const [withGame, setWithGame] = useState(true);
   const [d, setD] = useState<Diagnosis | null>(null);
   const [bloat, setBloat] = useState<BloatResult | null>(null);
-  const [dcs, setDcs] = useState<Datacenter[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   useEffect(() => {
     api.lastDiagnosis().then((v) => v && setD((cur) => cur ?? v)).catch(() => undefined);
     api.lastBloat().then((v) => v && setBloat(v)).catch(() => undefined);
-    api.datacenters().then((v) => setDcs(v ?? [])).catch(() => undefined);
+    api.regions().then((v) => setRegions(v ?? [])).catch(() => undefined);
   }, []);
   const start = async () => {
     const res = await run("diagnose", "Diagnosticando", () => api.diagnose(withGame));
@@ -248,7 +248,7 @@ export function Diagnose() {
       </PageHeader>
 
       {!d ? (
-        <Prep withGame={withGame} setWithGame={setWithGame} start={start} dcs={dcs} />
+        <Prep withGame={withGame} setWithGame={setWithGame} start={start} regions={regions} />
       ) : (
         <div className="flex flex-col gap-4">
           <Card className="p-6">

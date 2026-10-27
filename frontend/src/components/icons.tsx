@@ -40,4 +40,6 @@
   ArrowUpRight as IconArrowUpRight,
   ShieldCheck as IconShield,
   Bars as IconThreads,
+  Check as IconCheck,
+  MapPin as IconPin,
 } from "@gravity-ui/icons";

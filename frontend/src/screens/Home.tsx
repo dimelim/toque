@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import type { Datacenter, Optimization, PingPoint, RunRecord } from "@/lib/types";
+import { bestRegion } from "@/lib/regions";
+import type { Optimization, PingPoint, Region, RunRecord } from "@/lib/types";
 import { useApp } from "@/state";
 import { Button } from "@/components/ui/button";
 import { IconStopwatch } from "@/components/icons";
@@ -15,14 +16,17 @@ import { SystemCard } from "./home/SystemCard";
 export function Home() {
   const { overview, run, task, toast, refresh } = useApp();
   const [points, setPoints] = useState<PingPoint[]>([]);
-  const [dcs, setDcs] = useState<Datacenter[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [opts, setOpts] = useState<Optimization[]>([]);
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const load = useCallback(async () => {
+    api
+      .regions()
+      .then((v) => setRegions(v ?? []))
+      .catch(() => undefined);
     try {
-      const [p, d, o, r] = await Promise.all([api.pingHistory(), api.datacenters(), api.optimizations(), api.runs()]);
+      const [p, o, r] = await Promise.all([api.pingHistory(), api.optimizations(), api.runs()]);
       setPoints(p ?? []);
-      setDcs(d ?? []);
       setOpts(o ?? []);
       setRuns(r ?? []);
     } catch {
@@ -44,7 +48,7 @@ export function Home() {
     }
   };
   const proven = opts.filter((o) => o.verdict === "proven" || o.verdict === "tradeoff");
-  const best = dcs[0]?.rttMs ?? null;
+  const best = bestRegion(regions)?.rttMs ?? null;
   return (
     <div className="flex flex-col gap-4 pb-2">
       <header className="flex items-end justify-between gap-6">
@@ -61,14 +65,14 @@ export function Home() {
 
       <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-4">
         <PingCard points={points} best={best} />
-        <PlayCard datacenters={dcs} onDone={reload} />
+        <PlayCard regions={regions} onDone={reload} />
       </div>
 
       <StatTiles runs={runs} />
 
       <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4">
         <OptimizationsCard items={proven} all={opts} onChange={reload} />
-        <DatacentersCard datacenters={dcs} />
+        <DatacentersCard regions={regions} />
         <SystemCard />
       </div>
     </div>

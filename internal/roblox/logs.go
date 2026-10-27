@@ -95,6 +95,27 @@ func NewestPlayerLog(dir string, since time.Time) string {
 	return best
 }
 
+func ServerIPs(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() || !IsPlayerLog(e.Name()) {
+			continue
+		}
+		for _, ev := range ScanFile(filepath.Join(dir, e.Name())) {
+			if ev.Kind == EventUdmux && !seen[ev.IP] {
+				seen[ev.IP] = true
+				out = append(out, ev.IP)
+			}
+		}
+	}
+	return out
+}
+
 func Follow(ctx context.Context, path string, fromStart bool, emit func(Event)) error {
 	f, err := os.Open(path)
 	if err != nil {

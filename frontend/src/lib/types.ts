@@ -227,6 +227,8 @@ export interface ServerProbe {
   max: number;
   current: boolean;
   cached: boolean;
+  city?: string;
+  country?: string;
   error?: string;
 }
 
@@ -236,11 +238,12 @@ export interface PingPoint {
   serverIp: string;
 }
 
-export interface Datacenter {
-  ip: string;
+export interface Region {
+  key: string;
+  city: string;
+  area: string;
+  country: string;
   rttMs: number;
-  measured: number;
-  at: string;
 }
 
 export interface PlayResult {
@@ -248,6 +251,9 @@ export interface PlayResult {
   final: ServerProbe;
   hops: number;
   bestMs: number;
+  region: string;
+  found: boolean;
+  tried: number;
 }
 
 export interface ServerSearch {
