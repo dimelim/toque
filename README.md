@@ -21,7 +21,7 @@ Toque es una app para Windows que mide el retraso real de Roblox, empezando por 
 - **Diagnostica qué te frena.** Red tramo a tramo, memoria y disco, cómo dibuja Roblox, Windows y energía.
 - **Juega cerca.** Comprueba el servidor al entrar y te mueve si Roblox te mandó lejos.
 - **Elige la ciudad.** Los 35 centros de datos de Roblox, incluidos Lima, Santiago, Buenos Aires y Querétaro. Si no hay partidas en esa ciudad, Toque vigila y entra en cuanto aparece una.
-- **Entra en tu servidor privado.** Con su enlace de invitación, y te dice en qué ciudad se abrió.
+- **Entra en tu servidor privado.** Con su enlace de invitación. Eliges en qué ciudad abrirlo y te dice dónde se abrió.
 
 ## Descargar
 

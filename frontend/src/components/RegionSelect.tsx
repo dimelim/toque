@@ -39,22 +39,49 @@ function Option({ id, title, place, ms }: { id: string; title: string; place: st
   );
 }
 
-export function RegionSelect({ regions, value, onChange, isDisabled }: { regions: Region[]; value: string; onChange: (key: string) => void; isDisabled?: boolean }) {
+const variants = {
+  play: {
+    label: "Región",
+    auto: "Automática",
+    note: "Centros de datos según RoValra. Los nuevos, como Lima o Santiago, todavía tienen pocas partidas públicas de Realistic Street Soccer.",
+  },
+  private: {
+    label: "Abrir en",
+    auto: "Donde lo decida Roblox",
+    note: "Roblox suele abrir un servidor privado vacío en el centro de datos más cercano a quien entra primero.",
+  },
+};
+
+export function RegionSelect({
+  regions,
+  value,
+  onChange,
+  isDisabled,
+  variant = "play",
+}: {
+  regions: Region[];
+  value: string;
+  onChange: (key: string) => void;
+  isDisabled?: boolean;
+  variant?: keyof typeof variants;
+}) {
   const best = bestRegion(regions);
   const current = regions.find((r) => r.key === value);
   const isPrivate = value === PRIVATE;
+  const v = variants[variant];
   const Icon = isPrivate ? IconLock : IconPin;
+  const autoPing = variant === "play" ? best?.rttMs : null;
   return (
-    <Select aria-label="Región" value={value || AUTO} onChange={(k) => onChange(k === null || k === AUTO ? "" : String(k))} isDisabled={isDisabled}>
+    <Select aria-label={v.label} value={value || AUTO} onChange={(k) => onChange(k === null || k === AUTO ? "" : String(k))} isDisabled={isDisabled}>
       <AriaButton className="flex w-full items-center gap-3 rounded-2lg bg-background-inner-default px-4 py-3 text-left shadow-card outline-none transition-colors duration-150 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-border-focus-ring disabled:opacity-60">
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1 text-caption-1-medium text-ink-3">
             <Icon className="size-3.5" />
-            Región
+            {v.label}
           </span>
-          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? "Servidor privado" : value ? (current?.city ?? regionCity(value)) : "Automática"}</span>
+          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? "Servidor privado" : value ? (current?.city ?? regionCity(value)) : v.auto}</span>
         </span>
-        <Ping ms={isPrivate ? null : value ? current?.rttMs : best?.rttMs} size="lg" />
+        <Ping ms={isPrivate ? null : value ? current?.rttMs : autoPing} size="lg" />
         <IconChevronDown className="size-4 shrink-0 text-ink-3" />
       </AriaButton>
       <Popover
@@ -62,15 +89,19 @@ export function RegionSelect({ regions, value, onChange, isDisabled }: { regions
         className="w-[var(--trigger-width)] rounded-xl bg-surface-3 shadow-dropdown outline-none transition-[opacity,transform] duration-150 ease-out data-[entering]:-translate-y-1 data-[entering]:opacity-0 data-[exiting]:opacity-0"
       >
         <ListBox className="max-h-80 overflow-y-auto p-1.5 outline-none">
-          <Option id={AUTO} title="Automática" place={best ? `Va al más cercano, ${best.city}` : "Va al servidor más cercano"} ms={best?.rttMs} />
-          <Option id={PRIVATE} title="Servidor privado" place="Con su enlace de invitación" ms={null} />
+          {variant === "play" ? (
+            <>
+              <Option id={AUTO} title={v.auto} place={best ? `Va al más cercano, ${best.city}` : "Va al servidor más cercano"} ms={best?.rttMs} />
+              <Option id={PRIVATE} title="Servidor privado" place="Con su enlace de invitación" ms={null} />
+            </>
+          ) : (
+            <Option id={AUTO} title={v.auto} place="Toque te dice en qué ciudad se abrió" ms={null} />
+          )}
           {regions.map((r) => (
             <Option key={r.key} id={r.key} title={r.city} place={regionPlace(r)} ms={r.rttMs} />
           ))}
         </ListBox>
-        <p className="px-4 py-2.5 text-caption-1-medium text-ink-4 shadow-[inset_0_1px_0_var(--color-line)]">
-          Centros de datos según RoValra. Los nuevos, como Lima o Santiago, todavía tienen pocas partidas públicas de Realistic Street Soccer.
-        </p>
+        <p className="px-4 py-2.5 text-caption-1-medium text-ink-4 shadow-[inset_0_1px_0_var(--color-line)]">{v.note}</p>
       </Popover>
     </Select>
   );

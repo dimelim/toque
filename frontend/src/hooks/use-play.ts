@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
-import { PRIVATE, regionCity } from "@/lib/regions";
+import { PRIVATE, countryName, regionCity, regionCountry } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import type { PlayResult, ServerProbe } from "@/lib/types";
 import { useApp } from "@/state";
@@ -13,9 +13,22 @@ function ping(p: ServerProbe) {
   return p.rttMs ? `, a ${num(p.rttMs, 0)} ms` : "";
 }
 
+function privateMessage(r: PlayResult) {
+  const f = r.final;
+  if (!r.region) return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
+  const city = regionCity(r.region);
+  if (r.found) return { title: `Dentro de tu servidor privado en ${city}${ping(f)}`, detail: `Seguirá en ${city} mientras quede alguien dentro.` };
+  const country = countryName(regionCountry(r.region));
+  const title = `Tu servidor privado se abrió${where(f)}, no en ${city}`;
+  if (r.exitCountry === regionCountry(r.region)) {
+    return { title, detail: `Tu conexión ya sale por ${country}, así que había alguien dentro o tu VPN de ${country} está en realidad en otro país.` };
+  }
+  return { title, detail: `Roblox lo abre cerca de quien entra primero. Para abrirlo en ${city}, sal, espera un minuto sin nadie dentro y entra con una VPN de ${country}.` };
+}
+
 export function playMessage(r: PlayResult) {
   const f = r.final;
-  if (r.private) return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
+  if (r.private) return privateMessage(r);
   if (r.region && r.found) return { title: `Dentro de una partida${where(f)}${ping(f)}` };
   if (r.region) {
     return {
@@ -32,16 +45,13 @@ export function playMessage(r: PlayResult) {
 }
 
 export function usePlay() {
-  const { run, toast, region, privateLink } = useApp();
+  const { run, toast, region, privateLink, privateRegion } = useApp();
   return async () => {
     play("tap");
-    if (region === PRIVATE) {
-      const r = await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink));
-      if (r) toast({ tone: "ok", ...playMessage(r) });
-      return r;
-    }
-    const label = region ? `Buscando partidas de ${regionCity(region)}` : "Entrando en un servidor cercano";
-    const r = await run("play", label, () => api.play(region));
+    const r =
+      region === PRIVATE
+        ? await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink, privateRegion))
+        : await run("play", region ? `Buscando partidas de ${regionCity(region)}` : "Entrando en un servidor cercano", () => api.play(region));
     if (r) toast({ tone: r.region && !r.found ? "info" : "ok", ...playMessage(r) });
     return r;
   };

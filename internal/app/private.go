@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"toque/internal/geo"
 	"toque/internal/roblox"
 )
 
-func (s *Service) PlayPrivate(link string) (PlayResult, error) {
+func (s *Service) PlayPrivate(link, region string) (PlayResult, error) {
 	target, err := roblox.ParsePrivateLink(link)
 	if err != nil {
 		return PlayResult{}, err
@@ -31,5 +32,15 @@ func (s *Service) PlayPrivate(link string) (PlayResult, error) {
 	}
 	s.progress("play", "measure", 0.6, "Comprobando a qué distancia está el servidor")
 	p := joinedProbe(ctx, sess)
-	return PlayResult{First: p, Final: p, Private: true}, nil
+	res := PlayResult{First: p, Final: p, Private: true, Region: region}
+	if region == "" {
+		return res, nil
+	}
+	res.Found = sessionIn(ctx, sess, region)
+	if !res.Found {
+		if exit, err := geo.Self(ctx); err == nil {
+			res.ExitCountry = exit.Country
+		}
+	}
+	return res, nil
 }

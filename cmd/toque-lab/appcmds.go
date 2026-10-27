@@ -49,7 +49,7 @@ func cmdPlay(args []string) error {
 	}
 	var res app.PlayResult
 	if *private != "" {
-		res, err = svc.PlayPrivate(*private)
+		res, err = svc.PlayPrivate(*private, *region)
 	} else {
 		res, err = svc.PlayIn(*region)
 	}

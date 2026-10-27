@@ -20,9 +20,10 @@ Roblox escribe en su log el número de centro de datos de cada servidor. Toque l
 
 Elegir ciudad no usa ninguna API privada ni la cookie de la cuenta. Toque lee la lista pública de servidores de Roblox y pregunta a la API pública de RoValra (`/v1/servers/details`) en qué centro de datos está cada uno. RoValra lo sabe porque sus usuarios lo reportan al ver la lista de servidores, así que conoce más o menos un tercio de ellos. Si alguno con sitio está en la ciudad elegida, Toque entra directo y comprueba en el log que de verdad es de esa ciudad. Si Roblox deja la entrada en la fila de un servidor lleno, pasa al siguiente.
 
-Si no hay ninguno, el vigía revisa la lista de menos a más llena, una página cada 25 segundos para no pasar el límite de Roblox de 3 consultas por minuto, y entra en cuanto aparece una partida de esa ciudad. Solo actúa con Roblox cerrado, para no sacar a nadie de una partida, y se detiene a la hora.
+Si no hay ninguno, el vigía revisa la lista de menos a más llena, una página cada 25 segundos para no pasar el límite de Roblox de 3 consultas por minuto, y entra en cuanto aparece una partida de esa ciudad, aunque estés jugando en otra. Se detiene a la hora.
 
-Roblox abre un servidor privado vacío en el centro de datos que elige para quien entra primero, y Toque no puede cambiar esa decisión. Lo que hace es decir en qué ciudad se abrió.
+Roblox suele abrir un servidor privado vacío en el centro de datos más cercano a quien entra primero, y Toque no puede cambiar esa decisión. Si eliges una ciudad en «Abrir en», Toque entra, lee en el log en qué ciudad se abrió y, si no es la elegida, te dice por qué. Para abrirlo en otra ciudad tiene que estar vacío y tu conexión tiene que salir cerca de allí, que es lo que hace la gente con una VPN. Toque no configura ninguna VPN.
+
 ## Cómo deshace los cambios
 
 Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que había antes y solo después aplica el cambio, así que un cierre a mitad nunca deja algo aplicado sin forma de deshacerlo. El diario se escribe con un archivo temporal, se vuelca al disco y se renombra, y si aparece dañado Toque avisa en lugar de sobrescribirlo. Un experimento deja una marca mientras dura y, si se interrumpe, Toque devuelve el cambio a como estaba al volver a abrirse. Cuando Roblox se actualiza borra sus flags, y Toque las vuelve a poner al arrancar. Si el usuario cambia desde el menú de Roblox un ajuste que había puesto Toque, Toque lo da por suyo y no lo vuelve a imponer.

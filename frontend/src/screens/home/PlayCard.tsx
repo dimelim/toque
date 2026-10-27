@@ -26,10 +26,14 @@ function Stat({ label, value, tone }: { label: string; value: number | null | un
   );
 }
 
-function intro(inGame: boolean, region: string, watching: boolean) {
+function intro(inGame: boolean, region: string, privateRegion: string, watching: boolean) {
   const city = region && region !== PRIVATE ? regionCity(region) : "";
   if (watching) return { title: `Vigilando ${city}`, text: `Toque revisa la lista cada 25 segundos y te mete en cuanto haya una partida de ${city} con sitio, aunque estés jugando en otra.` };
   if (inGame) return { title: "Ya estás jugando", text: "Mide el ping de este servidor o cámbiate a otro con la región que elijas." };
+  if (region === PRIVATE && privateRegion) {
+    const target = regionCity(privateRegion);
+    return { title: `Abrir tu servidor privado en ${target}`, text: `Toque entra y comprueba en qué ciudad se abrió. Si ya hay alguien dentro, seguirá donde esté aunque elijas ${target}.` };
+  }
   if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación. Toque lo guarda solo en este PC y entra directo." };
   if (city) return { title: `Jugar en ${city}`, text: `Toque busca con RoValra una partida de ${city} con sitio y entra directo. Si no hay ninguna, déjalo vigilando.` };
   return { title: "Jugar en un servidor cercano", text: "Roblox te manda a un servidor lejano en una de cada seis partidas. Toque lo comprueba al entrar y, si pasa, te mueve a uno cercano." };
@@ -52,7 +56,7 @@ function WatchStatus({ watch }: { watch: WatchInfo }) {
 }
 
 export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () => void }) {
-  const { overview, run, task, region, setRegion, privateLink, setPrivateLink, watch } = useApp();
+  const { overview, run, task, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion, watch } = useApp();
   const start = usePlay();
   const [probe, setProbe] = useState<ServerProbe | null>(null);
   const r = overview?.roblox;
@@ -62,7 +66,7 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
   const fresh = probe && inGame && probe.jobId === r?.jobId ? probe : null;
   const status = !r?.installed ? "Roblox no está instalado" : inGame ? "En partida" : running ? "Roblox abierto" : "Roblox cerrado";
   const watching = !!watch?.active && watch.region === region;
-  const text = intro(inGame, region, watching);
+  const text = intro(inGame, region, privateRegion, watching);
   const needsLink = region === PRIVATE && !privateLink.trim();
   const canWatch = !!region && region !== PRIVATE;
 
@@ -97,15 +101,18 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
         ) : null}
         <RegionSelect regions={regions} value={region} onChange={setRegion} isDisabled={!!task || watching} />
         {region === PRIVATE ? (
-          <TextField
-            value={privateLink}
-            onChange={setPrivateLink}
-            isDisabled={!!task}
-            className="flex flex-col rounded-2lg bg-background-inner-default px-4 py-2.5 shadow-card focus-within:ring-2 focus-within:ring-border-focus-ring"
-          >
-            <Label className="text-caption-1-medium text-ink-3">Enlace del servidor privado</Label>
-            <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
-          </TextField>
+          <>
+            <TextField
+              value={privateLink}
+              onChange={setPrivateLink}
+              isDisabled={!!task}
+              className="flex flex-col rounded-2lg bg-background-inner-default px-4 py-2.5 shadow-card focus-within:ring-2 focus-within:ring-border-focus-ring"
+            >
+              <Label className="text-caption-1-medium text-ink-3">Enlace del servidor privado</Label>
+              <Input placeholder="https://www.roblox.com/share?code=…" className="mt-0.5 w-full bg-transparent text-body-medium text-ink outline-none placeholder:text-ink-4" />
+            </TextField>
+            <RegionSelect variant="private" regions={regions} value={privateRegion} onChange={setPrivateRegion} isDisabled={!!task} />
+          </>
         ) : null}
         {watching && watch ? <WatchStatus watch={watch} /> : null}
       </div>

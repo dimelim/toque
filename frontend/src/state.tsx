@@ -31,6 +31,8 @@ interface AppState {
   setRegion: (key: string) => void;
   privateLink: string;
   setPrivateLink: (link: string) => void;
+  privateRegion: string;
+  setPrivateRegion: (key: string) => void;
   watch: WatchInfo | null;
 }
 
@@ -52,6 +54,18 @@ function store(key: string, value: string) {
   }
 }
 
+function useStored(key: string) {
+  const [value, setValue] = useState(() => stored(key));
+  const set = useCallback(
+    (next: string) => {
+      setValue(next);
+      store(key, next);
+    },
+    [key],
+  );
+  return [value, set] as const;
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [screen, setScreen] = useState<Screen>("home");
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -60,20 +74,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [taskLabel, setTaskLabel] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
-  const [region, setRegionState] = useState(() => stored("toque.region"));
-  const [privateLink, setPrivateLinkState] = useState(() => stored("toque.private"));
+  const [region, setRegion] = useStored("toque.region");
+  const [privateLink, setPrivateLink] = useStored("toque.private");
+  const [privateRegion, setPrivateRegion] = useStored("toque.privateRegion");
   const [watch, setWatch] = useState<WatchInfo | null>(null);
   const seq = useRef(0);
-
-  const setRegion = useCallback((key: string) => {
-    setRegionState(key);
-    store("toque.region", key);
-  }, []);
-
-  const setPrivateLink = useCallback((link: string) => {
-    setPrivateLinkState(link);
-    store("toque.private", link);
-  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -136,8 +141,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink, watch }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink, watch],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion, watch }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, region, setRegion, privateLink, setPrivateLink, privateRegion, setPrivateRegion, watch],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

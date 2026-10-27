@@ -103,11 +103,15 @@ func (s *Service) listPage(ctx context.Context, task string, order roblox.SortOr
 	return roblox.PublicPage(ctx, roblox.RealisticStreetSoccer, order, cursor)
 }
 
+func sessionIn(ctx context.Context, sess roblox.Session, key string) bool {
+	p, ok := serverPlace(ctx, sess.ServerIP, sess.DatacenterID)
+	return ok && regionKey(p) == key
+}
+
 func (s *Service) joinIn(ctx context.Context, inst roblox.Install, key string, matches []roblox.PublicServer, task string) (roblox.Session, int, error) {
 	accept := func(sess roblox.Session) bool {
 		noteDatacenter(sess.JobID, sess.DatacenterID)
-		p, ok := serverPlace(ctx, sess.ServerIP, sess.DatacenterID)
-		return ok && regionKey(p) == key
+		return sessionIn(ctx, sess, key)
 	}
 	tried := 0
 	for _, sv := range matches {
