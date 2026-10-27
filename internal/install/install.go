@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -261,10 +262,30 @@ func Uninstall(removeData bool) error {
 		}
 		os.RemoveAll(p)
 	}
-	script := fmt.Sprintf(`Start-Sleep -Seconds 2; Remove-Item -LiteralPath '%s' -Recurse -Force -ErrorAction SilentlyContinue`, strings.ReplaceAll(dir, "'", "''"))
-	cmd := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000 | 0x00000008}
-	return cmd.Start()
+	deleteOnReboot(exe)
+	deleteOnReboot(dir)
+	cmdExe := filepath.Join(os.Getenv("SystemRoot"), "System32", "cmd.exe")
+	line := fmt.Sprintf(`"%s" /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "%s"`, cmdExe, dir)
+	const noWindow, detached, breakaway = 0x08000000, 0x00000008, 0x01000000
+	for _, flags := range []uint32{noWindow | detached | breakaway, noWindow | detached} {
+		cmd := exec.Command(cmdExe)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: flags, CmdLine: line}
+		if err := cmd.Start(); err == nil {
+			return nil
+		}
+	}
+	return nil
+}
+
+var procMoveFileExW = windows.NewLazySystemDLL("kernel32.dll").NewProc("MoveFileExW")
+
+func deleteOnReboot(path string) {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return
+	}
+	const delayUntilReboot = 0x4
+	procMoveFileExW.Call(uintptr(unsafe.Pointer(p)), 0, delayUntilReboot)
 }
 
 func CleanupOld() {
