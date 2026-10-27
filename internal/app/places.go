@@ -3,27 +3,45 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 
 	"toque/internal/geo"
 	"toque/internal/winx"
 )
 
-var placeMu sync.Mutex
+var (
+	placeMu  sync.Mutex
+	placeMem = map[string]geo.Place{}
+)
 
 var cityNames = map[string]string{
-	"Barueri":           "São Paulo",
-	"Saint-Denis":       "París",
-	"Paris":             "París",
-	"Frankfurt am Main": "Fráncfort",
-	"New York City":     "Nueva York",
-	"New York":          "Nueva York",
-	"Tokyo":             "Tokio",
-	"Singapore":         "Singapur",
-	"Amsterdam":         "Ámsterdam",
-	"London":            "Londres",
+	"Barueri":               "São Paulo",
+	"Saint-Denis":           "París",
+	"Paris":                 "París",
+	"Leesburg":              "Ashburn",
+	"Frankfurt am Main":     "Fráncfort",
+	"New York City":         "Nueva York",
+	"New York":              "Nueva York",
+	"Los Angeles":           "Los Ángeles",
+	"Santiago de Querétaro": "Querétaro",
+	"Tokyo":                 "Tokio",
+	"Singapore":             "Singapur",
+	"Amsterdam":             "Ámsterdam",
+	"London":                "Londres",
+	"Zürich":                "Zúrich",
+	"Warsaw":                "Varsovia",
+	"Istanbul":              "Estambul",
+	"Cape Town":             "Ciudad del Cabo",
+	"Athens":                "Atenas",
+	"Milan":                 "Milán",
+	"Dublin":                "Dublín",
+	"Jakarta":               "Yakarta",
+	"Mumbai":                "Bombay",
+	"Sydney":                "Sídney",
 }
 
 func displayCity(city string) string {
@@ -46,17 +64,23 @@ func loadPlaces() map[string]geo.Place {
 	if b, err := os.ReadFile(placesPath()); err == nil {
 		json.Unmarshal(b, &out)
 	}
+	maps.Copy(out, placeMem)
 	return out
+}
+
+func rememberPlace(ip string, p geo.Place) {
+	placeMu.Lock()
+	defer placeMu.Unlock()
+	placeMem[ip] = p
+	all := loadPlaces()
+	b, _ := json.MarshalIndent(all, "", "  ")
+	os.WriteFile(placesPath(), b, 0o644)
 }
 
 func knownIPs() []string {
 	placeMu.Lock()
 	defer placeMu.Unlock()
-	var out []string
-	for ip := range loadPlaces() {
-		out = append(out, ip)
-	}
-	return out
+	return slices.Collect(maps.Keys(loadPlaces()))
 }
 
 func placeOf(ctx context.Context, ip string) (geo.Place, bool) {
@@ -70,20 +94,30 @@ func placeOf(ctx context.Context, ip string) (geo.Place, bool) {
 	if err != nil {
 		return geo.Place{}, false
 	}
-	placeMu.Lock()
-	defer placeMu.Unlock()
-	all := loadPlaces()
-	all[ip] = p
-	b, _ := json.MarshalIndent(all, "", "  ")
-	os.WriteFile(placesPath(), b, 0o644)
+	rememberPlace(ip, p)
 	return p, true
 }
 
-func withPlace(ctx context.Context, p *ServerProbe) {
-	if p.IP == "" {
-		return
+func serverPlace(ctx context.Context, ip string, datacenter int) (geo.Place, bool) {
+	if p, ok := datacenterPlace(ctx, datacenter); ok {
+		if ip != "" {
+			placeMu.Lock()
+			known, seen := loadPlaces()[ip]
+			placeMu.Unlock()
+			if !seen || known != p {
+				rememberPlace(ip, p)
+			}
+		}
+		return p, true
 	}
-	if pl, ok := placeOf(ctx, p.IP); ok {
+	if ip == "" {
+		return geo.Place{}, false
+	}
+	return placeOf(ctx, ip)
+}
+
+func withPlace(ctx context.Context, p *ServerProbe, datacenter int) {
+	if pl, ok := serverPlace(ctx, p.IP, datacenter); ok {
 		p.City, p.Country = displayCity(pl.City), pl.Country
 		noteServer(p.JobID, regionKey(pl))
 	}

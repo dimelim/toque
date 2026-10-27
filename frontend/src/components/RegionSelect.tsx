@@ -69,7 +69,7 @@ export function RegionSelect({ regions, value, onChange, isDisabled }: { regions
           ))}
         </ListBox>
         <p className="px-4 py-2.5 text-caption-1-medium text-ink-4 shadow-[inset_0_1px_0_var(--color-line)]">
-          Roblox no tiene servidores en Perú ni en Chile. En Sudamérica solo está São Paulo. Ciudades según ipinfo.io.
+          Centros de datos según RoValra. Los nuevos, como Lima o Santiago, todavía tienen pocas partidas públicas de Realistic Street Soccer.
         </p>
       </Popover>
     </Select>

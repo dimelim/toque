@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"toque/internal/geo"
 	"toque/internal/roblox"
 )
 
@@ -21,43 +23,80 @@ type Region struct {
 }
 
 var (
-	logOnce sync.Once
-	logIPs  []string
+	logOnce      sync.Once
+	logSightings []roblox.Sighting
+	selfOnce     sync.Once
+	selfPlace    geo.Place
 )
+
+func userPlace(ctx context.Context) geo.Place {
+	selfOnce.Do(func() {
+		selfPlace, _ = geo.Self(ctx)
+	})
+	return selfPlace
+}
 
 func (s *Service) Regions() []Region {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	logOnce.Do(func() {
 		if inst, err := roblox.Find(); err == nil {
-			logIPs = roblox.ServerIPs(inst.LogDir())
+			logSightings = roblox.ServerSightings(inst.LogDir())
 		}
 	})
+	for _, si := range logSightings {
+		serverPlace(ctx, si.IP, si.Datacenter)
+	}
+	byKey := map[string]*Region{}
+	coords := map[string]geo.Place{}
+	add := func(p geo.Place) *Region {
+		key := regionKey(p)
+		if r, ok := byKey[key]; ok {
+			return r
+		}
+		r := &Region{Key: key, City: displayCity(p.City), Area: displayCity(p.Region), Country: p.Country}
+		if r.Area == r.City {
+			r.Area = ""
+		}
+		byKey[key], coords[key] = r, p
+		return r
+	}
+	datacenters := robloxDatacenters(ctx)
+	for _, d := range datacenters {
+		add(d.Place)
+	}
 	rtts := freshDatacenters()
 	ips := map[string]bool{}
-	for _, ip := range append(knownIPs(), logIPs...) {
+	for _, ip := range knownIPs() {
 		ips[ip] = true
 	}
 	for ip := range rtts {
 		ips[ip] = true
 	}
-	byKey := map[string]*Region{}
 	for ip := range ips {
-		r := Region{Key: "ip/" + ip, City: ip}
-		if p, ok := placeOf(ctx, ip); ok {
-			r = Region{Key: regionKey(p), City: displayCity(p.City), Area: displayCity(p.Region), Country: p.Country}
-			if r.Area == r.City {
-				r.Area = ""
-			}
-		}
-		cur, ok := byKey[r.Key]
+		p, ok := placeOf(ctx, ip)
 		if !ok {
-			cur = &r
-			byKey[r.Key] = cur
+			continue
 		}
-		if rtt, ok := rtts[ip]; ok && (cur.RTT == 0 || rtt < cur.RTT) {
-			cur.RTT = rtt
+		r, known := byKey[regionKey(p)]
+		if !known {
+			if len(datacenters) > 0 {
+				continue
+			}
+			r = add(p)
 		}
+		if rtt, ok := rtts[ip]; ok && (r.RTT == 0 || rtt < r.RTT) {
+			r.RTT = rtt
+		}
+	}
+	self := userPlace(ctx)
+	distance := func(key string) float64 {
+		lat1, lon1, ok1 := self.Coords()
+		lat2, lon2, ok2 := coords[key].Coords()
+		if !ok1 || !ok2 {
+			return math.MaxFloat64
+		}
+		return geo.DistanceKm(lat1, lon1, lat2, lon2)
 	}
 	out := make([]Region, 0, len(byKey))
 	for _, r := range byKey {
@@ -68,8 +107,11 @@ func (s *Service) Regions() []Region {
 		if (a.RTT > 0) != (b.RTT > 0) {
 			return a.RTT > 0
 		}
-		if a.RTT != b.RTT {
+		if a.RTT > 0 {
 			return a.RTT < b.RTT
+		}
+		if da, db := distance(a.Key), distance(b.Key); da != db {
+			return da < db
 		}
 		return a.City < b.City
 	})
@@ -150,7 +192,7 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 	res := PlayResult{Region: key}
 	seen := ""
 	inRegion := func(sess roblox.Session) bool {
-		p, ok := placeOf(ctx, sess.ServerIP)
+		p, ok := serverPlace(ctx, sess.ServerIP, sess.DatacenterID)
 		if !ok {
 			return false
 		}
@@ -189,6 +231,6 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 func joinedProbe(ctx context.Context, sess roblox.Session) ServerProbe {
 	p, _ := serverRTT(ctx, sess.ServerIP)
 	p.JobID, p.Current = sess.JobID, true
-	withPlace(ctx, &p)
+	withPlace(ctx, &p, sess.DatacenterID)
 	return p
 }

@@ -13,15 +13,16 @@ import (
 const RealisticStreetSoccer int64 = 14315258385
 
 type Session struct {
-	PID        uint32
-	LogPath    string
-	JobID      string
-	PlaceID    int64
-	ServerIP   string
-	ServerPort int
-	JoinSecs   float64
-	LaunchedAt time.Time
-	JoinedAt   time.Time
+	PID          uint32
+	LogPath      string
+	JobID        string
+	PlaceID      int64
+	ServerIP     string
+	ServerPort   int
+	DatacenterID int
+	JoinSecs     float64
+	LaunchedAt   time.Time
+	JoinedAt     time.Time
 }
 
 func (s Session) TimeToJoin() time.Duration {
@@ -132,6 +133,8 @@ func watchJoin(ctx context.Context, inst Install, s Session, canQueue bool, time
 			case EventJoining:
 				s.JobID, s.PlaceID = ev.JobID, ev.PlaceID
 				queued = nil
+			case EventDatacenter:
+				s.DatacenterID = ev.Datacenter
 			case EventUdmux:
 				s.ServerIP, s.ServerPort = ev.IP, ev.Port
 				if accept != nil && !accept(s) {

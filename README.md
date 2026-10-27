@@ -28,7 +28,7 @@ Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que h
 
 Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes de Windows. Las escrituras en las carpetas de Roblox, que son del usuario, se hacen con el token normal del usuario, de modo que un enlace o junction plantado ahí no puede desviarlas a una carpeta protegida. `C:\ProgramData\Toque` pertenece a Administradores y los usuarios solo pueden leerlo. Solo se usan flags de la lista oficial que Roblox permite, nunca se lee la cookie de la cuenta ni se toca la memoria del juego.
 
-Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP del servidor de Roblox y guarda la respuesta en `C:\ProgramData\Toque\places.json`. Elegir región no usa ninguna API privada. Toque entra en servidores públicos y corta la entrada en cuanto el log de Roblox muestra que el servidor es de otra ciudad, o si Roblox la deja en la fila de un servidor lleno. El enlace de un servidor privado se guarda solo en este PC y lo abre el propio Roblox, sin pasar por ningún servicio de Toque.
+Roblox escribe en su log el número de centro de datos de cada servidor. Toque lo traduce a una ciudad con la lista pública de [RoValra](https://github.com/NotValra/RoValra) (`apis.rovalra.com`), que descarga como mucho una vez al día y guarda en `C:\ProgramData\Toque\dcmap.json`. Para los servidores que no salen en esa lista y para ordenar las ciudades por cercanía, consulta ipinfo.io y guarda las respuestas en `C:\ProgramData\Toque\places.json`. Elegir región no usa ninguna API privada. Toque entra en servidores públicos y corta la entrada en cuanto el log de Roblox muestra que el servidor es de otra ciudad, o si Roblox la deja en la fila de un servidor lleno. El enlace de un servidor privado se guarda solo en este PC y lo abre el propio Roblox, sin pasar por ningún servicio de Toque.
 
 ## Estructura
 
@@ -44,7 +44,7 @@ Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP d
 | `internal/catalog` | Qué cambia cada optimización, por qué, su riesgo y el veredicto de las pruebas |
 | `internal/bench` | Medición de ventanas, experimentos A/B, carga artificial |
 | `internal/app` | Servicio que usa la interfaz (diagnóstico, catálogo, pruebas, jugar cerca o en una región, instalador) |
-| `internal/geo` | Ciudad de la IP de un servidor según ipinfo.io |
+| `internal/geo` | Ciudades de los centros de datos de Roblox (RoValra) y de una IP (ipinfo.io) |
 | `internal/install` | Autoinstalación en Program Files, accesos directos, desinstalación |
 | `internal/update` | Comprueba, descarga y verifica las versiones nuevas firmadas |
 | `cmd/toque-sign` | Genera la clave de firma y firma el manifiesto de cada versión |

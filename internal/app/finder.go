@@ -108,7 +108,7 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 	s.progress("play", "measure", 0.3, "Comprobando a qué distancia está el servidor")
 	first, err := serverRTT(ctx, sess.ServerIP)
 	first.JobID, first.Current = sess.JobID, true
-	withPlace(ctx, &first)
+	withPlace(ctx, &first, sess.DatacenterID)
 	res := PlayResult{First: first, Final: first}
 	best, known := bestDatacenter()
 	res.BestMs = best
@@ -141,7 +141,7 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 			continue
 		}
 		p.JobID, p.Playing, p.Max = ns.JobID, c.Playing, c.MaxPlayers
-		withPlace(ctx, &p)
+		withPlace(ctx, &p, ns.DatacenterID)
 		if p.RTT < res.Final.RTT {
 			res.Final = p
 		}

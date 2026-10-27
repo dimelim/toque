@@ -16,6 +16,7 @@ type EventKind int
 
 const (
 	EventJoining EventKind = iota + 1
+	EventDatacenter
 	EventUdmux
 	EventLoadTime
 	EventConnected
@@ -23,19 +24,21 @@ const (
 )
 
 type Event struct {
-	Time    time.Time
-	Kind    EventKind
-	JobID   string
-	PlaceID int64
-	IP      string
-	Port    int
-	Seconds float64
+	Time       time.Time
+	Kind       EventKind
+	JobID      string
+	PlaceID    int64
+	IP         string
+	Port       int
+	Seconds    float64
+	Datacenter int
 }
 
 var (
-	reJoining  = regexp.MustCompile(`! Joining game '([0-9a-f-]{36})' place (\d+) at ([0-9.]+)`)
-	reUdmux    = regexp.MustCompile(`UDMUX Address = ([0-9.]+), Port = (\d+)`)
-	reLoadTime = regexp.MustCompile(`game_join_loadtime: placeid:(\d+), join_time:([0-9.]+)`)
+	reJoining    = regexp.MustCompile(`! Joining game '([0-9a-f-]{36})' place (\d+) at ([0-9.]+)`)
+	reDatacenter = regexp.MustCompile(`DatacenterId=(\d+)`)
+	reUdmux      = regexp.MustCompile(`UDMUX Address = ([0-9.]+), Port = (\d+)`)
+	reLoadTime   = regexp.MustCompile(`game_join_loadtime: placeid:(\d+), join_time:([0-9.]+)`)
 )
 
 func ParseLine(line string) (Event, bool) {
@@ -50,6 +53,11 @@ func ParseLine(line string) (Event, bool) {
 		if m := reJoining.FindStringSubmatch(line); m != nil {
 			id, _ := strconv.ParseInt(m[2], 10, 64)
 			return Event{Time: ts, Kind: EventJoining, JobID: m[1], PlaceID: id, IP: m[3]}, true
+		}
+	case strings.Contains(line, "Transport selection"):
+		if m := reDatacenter.FindStringSubmatch(line); m != nil {
+			id, _ := strconv.Atoi(m[1])
+			return Event{Time: ts, Kind: EventDatacenter, Datacenter: id}, true
 		}
 	case strings.Contains(line, "UDMUX Address"):
 		if m := reUdmux.FindStringSubmatch(line); m != nil {
@@ -95,21 +103,34 @@ func NewestPlayerLog(dir string, since time.Time) string {
 	return best
 }
 
-func ServerIPs(dir string) []string {
+type Sighting struct {
+	IP         string
+	Datacenter int
+}
+
+func ServerSightings(dir string) []Sighting {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil
 	}
-	seen := map[string]bool{}
-	var out []string
+	seen := map[Sighting]bool{}
+	var out []Sighting
 	for _, e := range entries {
 		if e.IsDir() || !IsPlayerLog(e.Name()) {
 			continue
 		}
+		datacenter := 0
 		for _, ev := range ScanFile(filepath.Join(dir, e.Name())) {
-			if ev.Kind == EventUdmux && !seen[ev.IP] {
-				seen[ev.IP] = true
-				out = append(out, ev.IP)
+			switch ev.Kind {
+			case EventDatacenter:
+				datacenter = ev.Datacenter
+			case EventUdmux:
+				s := Sighting{IP: ev.IP, Datacenter: datacenter}
+				if !seen[s] {
+					seen[s] = true
+					out = append(out, s)
+				}
+				datacenter = 0
 			}
 		}
 	}
