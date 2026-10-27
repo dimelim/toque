@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	"toque/internal/app"
+	"toque/internal/bench"
 )
 
 func newService() (*app.Service, error) {
@@ -30,6 +32,18 @@ func cmdFinder(args []string) error {
 	res, err := svc.FindServer(*tries)
 	printJSON(res)
 	return err
+}
+
+func cmdLoad(args []string) error {
+	fs := flag.NewFlagSet("load", flag.ExitOnError)
+	kind := fs.String("kind", "up", "up or down")
+	secs := fs.Int("secs", 8, "seconds")
+	fs.Parse(args)
+	stop := bench.StartLoad(*kind, 4)
+	time.Sleep(time.Duration(*secs) * time.Second)
+	bytes := stop()
+	fmt.Printf("%s %.1f Mbps\n", *kind, float64(bytes)*8/1e6/float64(*secs))
+	return nil
 }
 
 func cmdDiagnose(args []string) error {

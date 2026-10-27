@@ -48,6 +48,8 @@ func main() {
 		err = cmdBloat(os.Args[2:])
 	case "finder":
 		err = cmdFinder(os.Args[2:])
+	case "load":
+		err = cmdLoad(os.Args[2:])
 	case "diagnose":
 		err = cmdDiagnose(os.Args[2:])
 	case "analyze-pcap":
