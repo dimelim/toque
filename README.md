@@ -1,6 +1,8 @@
 # Toque
 
-Aplicación de Windows que mide el retraso real de Roblox (enfocada en Realistic Street Soccer) y aplica solo los cambios que demuestran reducirlo con pruebas A/B.
+Aplicación de Windows que mide el retraso real de Roblox (enfocada en Realistic Street Soccer) y aplica solo los cambios que demuestran reducirlo con pruebas A/B. También te deja elegir la ciudad del servidor en el que juegas.
+
+Es código abierto bajo [licencia MIT](LICENSE). Descarga la última versión firmada en [dimelim/toque-releases](https://github.com/dimelim/toque-releases/releases/latest).
 
 ## Cómo mide
 
@@ -26,6 +28,8 @@ Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que h
 
 Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes de Windows. Las escrituras en las carpetas de Roblox, que son del usuario, se hacen con el token normal del usuario, de modo que un enlace o junction plantado ahí no puede desviarlas a una carpeta protegida. `C:\ProgramData\Toque` pertenece a Administradores y los usuarios solo pueden leerlo. Solo se usan flags de la lista oficial que Roblox permite, nunca se lee la cookie de la cuenta ni se toca la memoria del juego.
 
+Para poner nombre a la ciudad de cada servidor, Toque envía a ipinfo.io la IP del servidor de Roblox y guarda la respuesta en `C:\ProgramData\Toque\places.json`. Elegir región no usa ninguna API privada. Toque entra en servidores públicos y corta la entrada en cuanto el log de Roblox muestra que el servidor es de otra ciudad.
+
 ## Estructura
 
 | Ruta | Qué hace |
@@ -39,7 +43,8 @@ Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes d
 | `internal/tweaks` | Cada optimización con aplicar, revertir y estado, más el diario que permite deshacerlo todo |
 | `internal/catalog` | Qué cambia cada optimización, por qué, su riesgo y el veredicto de las pruebas |
 | `internal/bench` | Medición de ventanas, experimentos A/B, carga artificial |
-| `internal/app` | Servicio que usa la interfaz (diagnóstico, catálogo, pruebas, buscador de servidor, instalador) |
+| `internal/app` | Servicio que usa la interfaz (diagnóstico, catálogo, pruebas, jugar cerca o en una región, instalador) |
+| `internal/geo` | Ciudad de la IP de un servidor según ipinfo.io |
 | `internal/install` | Autoinstalación en Program Files, accesos directos, desinstalación |
 | `internal/update` | Comprueba, descarga y verifica las versiones nuevas firmadas |
 | `cmd/toque-sign` | Genera la clave de firma y firma el manifiesto de cada versión |
@@ -47,10 +52,10 @@ Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes d
 
 ## Compilar
 
-Hace falta Go 1.27, Node 24 y Wails CLI 2.17.
+Hace falta Go 1.27, Node 24 y Wails CLI 2.17. Toque incluye el `PresentMon.exe` de consola que publica Intel en [GameTechDev/PresentMon](https://github.com/GameTechDev/PresentMon/releases). No está en el repositorio, así que descárgalo y pásalo al guion, que comprueba que lleve la firma de Intel.
 
 ```powershell
-.\build.ps1
+.\build.ps1 -PresentMon C:\ruta\a\PresentMon.exe
 ```
 
 El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo.
@@ -60,3 +65,7 @@ El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo.
 Sube `Version` en `internal/app/service.go`, haz commit y ejecuta `.\release.ps1 -Notes "..."`. El guion compila, firma `latest.json` con la clave de `%USERPROFILE%\.toque\update-signing.key` y publica el ejecutable en [dimelim/toque-releases](https://github.com/dimelim/toque-releases), que es público y solo tiene binarios, y en este repositorio.
 
 Las copias instaladas consultan el manifiesto al abrirse y cada 6 horas. Si hay una versión nueva la descargan, comprueban la firma Ed25519 y el SHA-256 y la instalan al volver a abrir Toque o al pulsar Actualizar, nunca a mitad de una prueba. La clave privada no está en el repositorio. Si se pierde, las copias instaladas dejarán de aceptar versiones nuevas hasta que se instale a mano una que lleve la clave nueva. Se compila sin símbolos ni rutas del equipo de desarrollo. La ofuscación con garble se probó y se descartó porque Microsoft Defender marca el binario ofuscado como troyano (Trojan:Win32/Gracing.I), mientras que el binario normal sale limpio.
+
+## Licencia
+
+MIT, ver [LICENSE](LICENSE). El software de terceros que va dentro conserva su propia licencia y aparece en [assets/THIRD-PARTY-NOTICES.txt](assets/THIRD-PARTY-NOTICES.txt). Toque no está afiliado a Roblox Corporation.

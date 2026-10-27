@@ -33,5 +33,5 @@ if ($LASTEXITCODE -ne 0) { throw 'No se pudo publicar en toque-releases' }
 git tag $tag
 git push origin $tag
 gh release create $tag --repo dimelim/toque --title "Toque $version" --notes $Notes $exe
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el lanzamiento en el repositorio privado' }
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el lanzamiento en dimelim/toque' }
 Write-Host "== Toque $version publicada"
