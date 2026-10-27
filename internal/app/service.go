@@ -1,4 +1,4 @@
-package app
+﻿package app
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.13.2"
+const Version = "1.14.0"
 
 type Emitter func(name string, data any)
 
@@ -48,7 +48,7 @@ func New(presentMon string, emit Emitter) *Service {
 	return s
 }
 
-var ErrBusy = errors.New("toque ya está ejecutando otra tarea")
+var ErrBusy = errors.New("toque ya estÃ¡ ejecutando otra tarea")
 
 func (s *Service) idle() error {
 	s.mu.Lock()

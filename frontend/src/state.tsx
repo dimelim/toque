@@ -107,6 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((t: Omit<Toast, "id">) => {
     const id = ++seq.current;
+    if (t.tone === "error") api.noteError([t.title, t.detail].filter(Boolean).join(": ")).catch(() => {});
     setToasts((all) => [...all.slice(-2), { ...t, id }]);
     if (t.sticky) return;
     setTimeout(() => setToasts((all) => all.filter((x) => x.id !== id)), t.tone === "error" ? 9000 : 6000);

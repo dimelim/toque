@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Switch } from "@/components/ui/switch";
 import { AppIcon } from "@/components/Logo";
-import { IconDownload, IconRefresh, IconRevert, IconSound } from "@/components/icons";
+import { IconDownload, IconImport, IconRefresh, IconRevert, IconSound } from "@/components/icons";
 
 const licenses = [
   { name: "Intel PresentMon", license: "MIT", use: "Captura de frames por ETW" },
@@ -34,6 +34,7 @@ export function Settings() {
   const { overview, run, task, toast, update, setUpdate } = useApp();
   const [sound, setSound] = useState(soundEnabled());
   const [checking, setChecking] = useState(false);
+  const [exporting, setExporting] = useState(false);
   return (
     <div>
       <PageHeader eyebrow="Ajustes" title="Preferencias" />
@@ -147,6 +148,36 @@ export function Settings() {
               }}
             >
               Revertir todos los cambios
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="col-span-2 flex items-center justify-between gap-6 p-5">
+          <div>
+            <p className="flex items-center gap-1.5 text-body-medium text-ink">
+              <IconImport className="size-4 text-ink-3" />
+              Informe de errores
+            </p>
+            <p className="mt-1 max-w-[640px] text-body-regular text-ink-2">Guarda en tu escritorio un .zip con los errores de Toque, tus flags y los últimos registros de Roblox. Envíalo a quien te da soporte. Incluye tu usuario de Roblox y las IP de los servidores en los que jugaste.</p>
+          </div>
+          <div className="shrink-0">
+            <Button
+              variant="secondary"
+              leadingIcon={IconImport}
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  const path = await api.exportReport();
+                  toast({ tone: "ok", title: "Informe guardado en el escritorio", detail: path.split("\\").pop() });
+                } catch (e) {
+                  toast({ tone: "error", title: "No se pudo crear el informe", detail: errorText(e) });
+                } finally {
+                  setExporting(false);
+                }
+              }}
+            >
+              Crear informe
             </Button>
           </div>
         </Card>
