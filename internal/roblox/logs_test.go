@@ -44,3 +44,11 @@ func TestParseLineReadsDatacenter(t *testing.T) {
 		t.Fatalf("ParseLine = %+v, %v; want datacenter 25774", ev, ok)
 	}
 }
+
+func TestParseLineReadsReplicatorAddress(t *testing.T) {
+	line := "2026-10-27T16:42:37.376Z,5.376985,0a28,7 [FLog::Network] Replicator created for player 128.116.95.33|55422"
+	ev, ok := ParseLine(line)
+	if !ok || ev.Kind != EventConnected || ev.IP != "128.116.95.33" || ev.Port != 55422 {
+		t.Fatalf("ParseLine = %+v, %v; want connected to 128.116.95.33:55422", ev, ok)
+	}
+}

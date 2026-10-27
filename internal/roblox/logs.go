@@ -42,6 +42,7 @@ var (
 	reUdmux       = regexp.MustCompile(`UDMUX Address = ([0-9.]+), Port = (\d+)`)
 	reLoadTime    = regexp.MustCompile(`game_join_loadtime: placeid:(\d+), join_time:([0-9.]+)`)
 	reServerStart = regexp.MustCompile(`Server Prefix: \S*_(\d{8}T\d{6}Z)_RCC_`)
+	reReplicator  = regexp.MustCompile(`Replicator created for player ([0-9.]+)\|(\d+)`)
 )
 
 func ParseLine(line string) (Event, bool) {
@@ -74,7 +75,12 @@ func ParseLine(line string) (Event, bool) {
 			return Event{Time: ts, Kind: EventLoadTime, PlaceID: id, Seconds: s}, true
 		}
 	case strings.Contains(line, "Replicator created for player"):
-		return Event{Time: ts, Kind: EventConnected}, true
+		ev := Event{Time: ts, Kind: EventConnected}
+		if m := reReplicator.FindStringSubmatch(line); m != nil {
+			ev.IP = m[1]
+			ev.Port, _ = strconv.Atoi(m[2])
+		}
+		return ev, true
 	case strings.Contains(line, "Client:Disconnect"):
 		return Event{Time: ts, Kind: EventDisconnected}, true
 	case strings.Contains(line, "Server Prefix:"):

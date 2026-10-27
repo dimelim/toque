@@ -66,6 +66,10 @@ func (t *Tail) apply(ev Event) {
 		t.state = LogState{JobID: ev.JobID, PlaceID: ev.PlaceID}
 	case EventUdmux:
 		t.state.ServerIP, t.state.ServerPort = ev.IP, ev.Port
+	case EventConnected:
+		if t.state.ServerIP == "" {
+			t.state.ServerIP, t.state.ServerPort = ev.IP, ev.Port
+		}
 	case EventDisconnected:
 		t.state.ServerIP = ""
 	}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,6 +28,9 @@ func (s *Service) PlayPrivate(link, region string) (PlayResult, error) {
 	if err != nil {
 		if ctx.Err() != nil {
 			return PlayResult{}, ctx.Err()
+		}
+		if errors.Is(err, roblox.ErrNotDetected) && len(roblox.Running()) > 0 {
+			return PlayResult{}, errors.New("Roblox sigue abierto, pero no pude confirmar en qué servidor entraste")
 		}
 		return PlayResult{}, fmt.Errorf("no pude entrar en tu servidor privado: %w", err)
 	}

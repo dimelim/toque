@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.13.1"
+const Version = "1.13.2"
 
 type Emitter func(name string, data any)
 

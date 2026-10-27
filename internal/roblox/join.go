@@ -64,8 +64,9 @@ func CloseAll(timeout time.Duration) {
 }
 
 var (
-	ErrRejected = errors.New("server rejected")
-	ErrQueued   = errors.New("roblox put the join in a queue")
+	ErrRejected    = errors.New("server rejected")
+	ErrQueued      = errors.New("roblox put the join in a queue")
+	ErrNotDetected = errors.New("join not detected before timeout")
 )
 
 const queueWait = 15 * time.Second
@@ -89,7 +90,8 @@ func JoinIf(ctx context.Context, inst Install, t Target, timeout time.Duration, 
 	}
 	s.PID = pid
 	s, err = watchJoin(ctx, inst, s, t.JobID != "", timeout, accept)
-	if err != nil {
+	probing := accept != nil || t.JobID != ""
+	if err != nil && (probing || ctx.Err() != nil) {
 		CloseAll(10 * time.Second)
 		if ctx.Err() != nil {
 			return s, ctx.Err()
@@ -101,8 +103,9 @@ func JoinIf(ctx context.Context, inst Install, t Target, timeout time.Duration, 
 func watchJoin(ctx context.Context, inst Install, s Session, canQueue bool, timeout time.Duration, accept func(Session) bool) (Session, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	since := s.LaunchedAt.Add(-time.Second)
 	for s.LogPath == "" {
-		if s.LogPath = NewestPlayerLog(inst.LogDir(), s.LaunchedAt.Add(-time.Second)); s.LogPath != "" {
+		if s.LogPath = NewestPlayerLog(inst.LogDir(), since); s.LogPath != "" {
 			break
 		}
 		select {
@@ -111,21 +114,17 @@ func watchJoin(ctx context.Context, inst Install, s Session, canQueue bool, time
 		case <-time.After(250 * time.Millisecond):
 		}
 	}
-	events := make(chan Event, 64)
-	go func() {
-		Follow(ctx, s.LogPath, true, func(ev Event) {
-			select {
-			case events <- ev:
-			case <-ctx.Done():
-			}
-		})
-	}()
+	events, stop := followEvents(ctx, s.LogPath)
+	defer func() { stop() }()
+	relog := time.NewTicker(time.Second)
+	defer relog.Stop()
 	var queued <-chan time.Time
 	if canQueue {
 		timer := time.NewTimer(queueWait)
 		defer timer.Stop()
 		queued = timer.C
 	}
+	accepted := false
 	for {
 		select {
 		case ev := <-events:
@@ -140,21 +139,48 @@ func watchJoin(ctx context.Context, inst Install, s Session, canQueue bool, time
 				if accept != nil && !accept(s) {
 					return s, ErrRejected
 				}
+				accepted = true
 			case EventLoadTime:
 				s.JoinSecs = ev.Seconds
 			case EventConnected:
-				if s.ServerIP != "" {
-					s.JoinedAt = time.Now()
-					if pids := Running(); len(pids) > 0 {
-						s.PID = pids[0]
-					}
-					return s, nil
+				if s.ServerIP == "" {
+					s.ServerIP, s.ServerPort = ev.IP, ev.Port
 				}
+				if s.ServerIP == "" {
+					continue
+				}
+				if !accepted && accept != nil && !accept(s) {
+					return s, ErrRejected
+				}
+				s.JoinedAt = time.Now()
+				if pids := Running(); len(pids) > 0 {
+					s.PID = pids[0]
+				}
+				return s, nil
+			}
+		case <-relog.C:
+			if newest := NewestPlayerLog(inst.LogDir(), since); newest != "" && newest != s.LogPath {
+				stop()
+				s = Session{PID: s.PID, PlaceID: s.PlaceID, LaunchedAt: s.LaunchedAt, LogPath: newest}
+				accepted = false
+				events, stop = followEvents(ctx, newest)
 			}
 		case <-queued:
 			return s, ErrQueued
 		case <-ctx.Done():
-			return s, errors.New("join not detected before timeout")
+			return s, ErrNotDetected
 		}
 	}
+}
+
+func followEvents(ctx context.Context, path string) (<-chan Event, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(ctx)
+	events := make(chan Event, 64)
+	go Follow(ctx, path, true, func(ev Event) {
+		select {
+		case events <- ev:
+		case <-ctx.Done():
+		}
+	})
+	return events, cancel
 }
