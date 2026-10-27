@@ -157,6 +157,18 @@ var Catalog = []Entry{
 		Lab:      "Descartada para Realistic Street Soccer. En 12 reaperturas la GPU por frame bajó un 1,8 % (2,61 a 2,56 ms) sin llegar al umbral de la prueba, y la latencia de render quedó igual (7,02 frente a 6,96 ms).",
 	},
 	{
+		ID:       "nic:*InterruptModeration=0",
+		Title:    "Tarjeta de red sin moderación de interrupciones",
+		Category: "red",
+		What:     "Desactiva la moderación de interrupciones de la tarjeta de red, que agrupa varios paquetes antes de avisar al procesador.",
+		Why:      "Es de los ajustes de red más recomendados para jugar, porque en teoría cada paquete del servidor llega al juego unas décimas de milisegundo antes.",
+		Metric:   "Ping real dentro del juego y jitter.",
+		Risk:     "Más interrupciones y algo más de uso de CPU cuando hay mucho tráfico. Al aplicarla la conexión se corta unos segundos mientras la tarjeta se reinicia.",
+		Revert:   "Vuelve a activar la moderación. La tarjeta se reinicia otra vez.",
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada. En 10 reaperturas válidas el ping real quedó igual (49,19 frente a 49,17 ms) y el jitter no cambió de forma medible. La diferencia teórica es menor que lo que varía el propio servidor.",
+	},
+	{
 		ID:       "flag:DFFlagTextureQualityOverrideEnabled=True,DFIntTextureQualityOverride=1",
 		Title:    "Texturas ligeras",
 		Category: "memoria",
@@ -173,6 +185,7 @@ var Catalog = []Entry{
 var labTitles = map[string]string{
 	"power-plan:381b4222-f694-41f0-9685-ff5bb260df2e": "Plan Equilibrado frente al plan personalizado",
 	"proc-priority-high":                              "Prioridad alta para Roblox (en vivo)",
+	"nic:*FlowControl=0":                              "Tarjeta de red sin control de flujo",
 }
 
 func Find(id string) (Entry, bool) {

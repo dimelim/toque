@@ -192,6 +192,12 @@ func parametric(id string) (Tweak, error) {
 			return nil, errors.New("bad setting tweak")
 		}
 		return basicSetting{kind: kind, name: name, value: value}, nil
+	case strings.HasPrefix(id, "nic:"):
+		keyword, value, ok := strings.Cut(strings.TrimPrefix(id, "nic:"), "=")
+		if !ok || !nicKeywords[keyword] || !digitsOnly(value) {
+			return nil, errors.New("bad nic tweak")
+		}
+		return nicProperty{keyword: keyword, value: value}, nil
 	case strings.HasPrefix(id, "flag:"):
 		flags := map[string]any{}
 		for _, part := range strings.Split(strings.TrimPrefix(id, "flag:"), ",") {

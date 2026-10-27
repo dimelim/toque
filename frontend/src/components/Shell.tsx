@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { win, api } from "@/lib/api";
 import { play } from "@/lib/sound";
+import { installUpdate } from "@/lib/updates";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
 import { Wordmark } from "./Logo";
@@ -21,6 +22,7 @@ import {
   IconOk,
   IconBad,
   IconInfo,
+  IconDownload,
 } from "./icons";
 
 const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string }> }[] = [
@@ -79,6 +81,40 @@ function RobloxStatus() {
   );
 }
 
+function UpdateCard() {
+  const { update, task, toast } = useApp();
+  return (
+    <AnimatePresence initial={false}>
+      {update?.state === "ready" ? (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+          className="rounded-xl bg-surface-1 p-3 shadow-[inset_0_0_0_1px_var(--color-line)]"
+        >
+          <div className="flex items-center gap-2">
+            <IconDownload className="size-4 text-volt" />
+            <span className="text-caption-1-semibold text-ink">Toque {update.latest} lista</span>
+          </div>
+          <p className="mt-1 text-caption-1-medium text-ink-3">Se instala sola al volver a abrir Toque.</p>
+          <Button
+            size="small"
+            className="mt-3 w-full"
+            disabled={!!task}
+            onClick={() => {
+              play("tap");
+              installUpdate(toast);
+            }}
+          >
+            Actualizar ahora
+          </Button>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 function Sidebar() {
   const { screen, go, overview } = useApp();
   return (
@@ -110,6 +146,7 @@ function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-3">
+        <UpdateCard />
         <RobloxStatus />
         <p className="px-3 text-caption-1-medium text-ink-4">Toque {overview?.version ?? ""}</p>
       </div>

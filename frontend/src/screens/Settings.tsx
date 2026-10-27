@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api, errorText } from "@/lib/api";
 import { play, setSoundEnabled, soundEnabled } from "@/lib/sound";
+import { installUpdate, updateLine } from "@/lib/updates";
 import { useApp } from "@/state";
 import { Card, Eyebrow, PageHeader, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AppIcon } from "@/components/Logo";
-import { IconRevert } from "@/components/icons";
+import { IconDownload, IconRefresh, IconRevert } from "@/components/icons";
 
 const licenses = [
   { name: "Intel PresentMon", license: "MIT", use: "Captura de frames por ETW" },
@@ -20,8 +21,9 @@ const licenses = [
 ];
 
 export function Settings() {
-  const { overview, run, task, toast } = useApp();
+  const { overview, run, task, toast, update, setUpdate } = useApp();
   const [sound, setSound] = useState(soundEnabled());
+  const [checking, setChecking] = useState(false);
   return (
     <div>
       <PageHeader eyebrow="Ajustes" title="Preferencias" />
@@ -79,6 +81,37 @@ export function Settings() {
               <StatRow label="Roblox" value={overview?.roblox.installed ? overview.roblox.version.replace("version-", "") : "No instalado"} />
               <StatRow label="Datos y resultados" value="C:\ProgramData\Toque" />
             </div>
+          </Card>
+          <Card className="p-5">
+            <Eyebrow>Actualizaciones</Eyebrow>
+            <p className="mt-3 text-body-regular text-ink-2">{updateLine(update)}</p>
+            {update?.notes && (update.state === "ready" || update.state === "downloading") ? (
+              <p className="mt-2 text-caption-1-medium text-ink-3">{update.notes}</p>
+            ) : null}
+            {update?.state === "ready" ? (
+              <Button className="mt-4" leadingIcon={IconDownload} disabled={!!task} onClick={() => installUpdate(toast)}>
+                Instalar Toque {update.latest}
+              </Button>
+            ) : (
+              <Button
+                className="mt-4"
+                variant="secondary"
+                leadingIcon={IconRefresh}
+                disabled={checking || update?.state === "checking" || update?.state === "downloading"}
+                onClick={async () => {
+                  setChecking(true);
+                  try {
+                    setUpdate(await api.checkUpdate());
+                  } catch (e) {
+                    toast({ tone: "error", title: "No se pudo comprobar", detail: errorText(e) });
+                  } finally {
+                    setChecking(false);
+                  }
+                }}
+              >
+                Buscar actualizaciones
+              </Button>
+            )}
           </Card>
           <Card className="p-5">
             <Eyebrow>Software de terceros</Eyebrow>

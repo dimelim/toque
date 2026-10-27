@@ -2,13 +2,17 @@ package main
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"golang.org/x/sys/windows"
 
+	"toque/internal/app"
 	"toque/internal/install"
 	"toque/internal/roblox"
 	"toque/internal/tweaks"
+	"toque/internal/update"
 )
 
 const (
@@ -63,6 +67,17 @@ func runCLI() bool {
 		if !quiet {
 			message("Toque se desinstaló y todo volvió a como estaba.", mbIconInfo)
 		}
+		return true
+	case has("--apply-update"):
+		target, err := install.Install(app.Version, install.HasDesktopShortcut())
+		if err != nil {
+			update.Clear()
+			message("No se pudo instalar la actualización de Toque.\n\n"+err.Error(), mbIconWarning)
+			target = filepath.Join(install.Dir(), "Toque.exe")
+		}
+		cmd := exec.Command(target, "--launched")
+		cmd.Dir = install.Dir()
+		cmd.Start()
 		return true
 	case has("--revert-all"):
 		if err := revertAll(); err != nil {

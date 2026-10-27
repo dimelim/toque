@@ -52,6 +52,15 @@ func startMenuShortcut() string {
 	return filepath.Join(p, "Toque.lnk")
 }
 
+func HasDesktopShortcut() bool {
+	d := desktopShortcut()
+	if d == "" {
+		return false
+	}
+	_, err := os.Stat(d)
+	return err == nil
+}
+
 func desktopShortcut() string {
 	p, err := windows.KnownFolderPath(windows.FOLDERID_PublicDesktop, 0)
 	if err != nil {
@@ -72,11 +81,11 @@ func Current(version string) State {
 	}
 	exe, _ := os.Executable()
 	st.RunningInstalled = strings.EqualFold(filepath.Clean(filepath.Dir(exe)), filepath.Clean(st.Dir))
-	st.Newer = st.Installed && compare(version, st.InstalledVersion) > 0
+	st.Newer = st.Installed && Compare(version, st.InstalledVersion) > 0
 	return st
 }
 
-func compare(a, b string) int {
+func Compare(a, b string) int {
 	pa, pb := strings.Split(a, "."), strings.Split(b, ".")
 	for i := 0; i < 3; i++ {
 		var x, y int

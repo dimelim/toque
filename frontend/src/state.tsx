@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api, errorText, onProgress } from "@/lib/api";
+import { api, errorText, onProgress, onUpdate } from "@/lib/api";
 import { play } from "@/lib/sound";
-import type { Overview, Progress } from "@/lib/types";
+import type { Overview, Progress, UpdateInfo } from "@/lib/types";
 
 export type Screen = "home" | "diagnose" | "optimize" | "tests" | "settings";
 
@@ -25,6 +25,8 @@ interface AppState {
   toast: (t: Omit<Toast, "id">) => void;
   dismiss: (id: number) => void;
   taskLabel: string;
+  update: UpdateInfo | null;
+  setUpdate: (u: UpdateInfo) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -36,6 +38,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [task, setTask] = useState<string | null>(null);
   const [taskLabel, setTaskLabel] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -48,11 +51,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh();
+    api.updateStatus().then(setUpdate).catch(() => undefined);
     const t = setInterval(refresh, 4000);
     const off = onProgress((p) => setProgress(p.step === "done" ? null : p));
+    const offUpdate = onUpdate(setUpdate);
     return () => {
       clearInterval(t);
       off();
+      offUpdate();
     };
   }, [refresh]);
 
@@ -88,8 +94,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AppState>(
-    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel }),
-    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel],
+    () => ({ screen, go: setScreen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update, setUpdate }),
+    [screen, overview, refresh, progress, task, run, toasts, toast, dismiss, taskLabel, update],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -25,4 +25,6 @@
   Server as IconServer,
   BroadcastSignal as IconRouter,
   Flask as IconFlask,
+  ArrowDownToLine as IconDownload,
+  ArrowsRotateRight as IconRefresh,
 } from "@gravity-ui/icons";

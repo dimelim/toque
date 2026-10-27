@@ -10,6 +10,7 @@ import type {
   RunRecord,
   ServerProbe,
   ServerSearch,
+  UpdateInfo,
 } from "./types";
 
 export const api = {
@@ -30,10 +31,17 @@ export const api = {
   quickPing: () => Service.QuickPing() as Promise<ServerProbe>,
   play: () => Service.Play() as Promise<void>,
   cancel: () => Service.Cancel() as Promise<void>,
+  updateStatus: () => Service.UpdateStatus() as Promise<UpdateInfo>,
+  checkUpdate: () => Service.CheckUpdate() as Promise<UpdateInfo>,
+  applyUpdate: () => Service.ApplyUpdate() as Promise<void>,
 };
 
 export function onProgress(cb: (p: Progress) => void) {
   return EventsOn("progress", cb);
+}
+
+export function onUpdate(cb: (u: UpdateInfo) => void) {
+  return EventsOn("update", cb);
 }
 
 export const win = {

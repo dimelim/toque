@@ -43,7 +43,7 @@ func instanceID() string {
 }
 
 func main() {
-	if runCLI() {
+	if runCLI() || app.ApplyPendingUpdate() {
 		return
 	}
 	var started atomic.Value
@@ -67,6 +67,7 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			started.Store(ctx)
 			svc.Recover()
+			svc.StartUpdates()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: instanceID(),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"toque/internal/bench"
@@ -13,7 +14,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 type Emitter func(name string, data any)
 
@@ -30,10 +31,13 @@ type Service struct {
 	mu         sync.Mutex
 	busy       string
 	cancel     context.CancelFunc
+	updMu      sync.Mutex
+	upd        UpdateInfo
+	checking   atomic.Bool
 }
 
 func New(presentMon string, emit Emitter) *Service {
-	return &Service{presentMon: presentMon, emit: emit}
+	return &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}}
 }
 
 var ErrBusy = errors.New("toque ya está ejecutando otra tarea")

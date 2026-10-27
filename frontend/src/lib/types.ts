@@ -118,6 +118,13 @@ export interface ExperimentRecord {
   summary: string;
   valid: number;
   compare: Record<string, Delta>;
+  windows: WindowPoint[] | null;
+}
+
+export interface WindowPoint {
+  arm: "A" | "B" | string;
+  valid: boolean;
+  values: Record<string, number>;
 }
 
 export interface Optimization {
@@ -233,6 +240,15 @@ export interface BloatResult {
   addedMs: number;
   maxLossPct: number;
   grade: string;
+}
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  notes: string;
+  state: "idle" | "checking" | "downloading" | "ready" | "current" | "error" | string;
+  error: string;
+  checked: string;
 }
 
 export interface Progress {

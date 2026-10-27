@@ -69,6 +69,13 @@ type ExperimentRecord struct {
 	Stress  string           `json:"stress"`
 	Primary []string         `json:"primary"`
 	Compare map[string]Delta `json:"compare"`
+	Windows []WindowPoint    `json:"windows"`
+}
+
+type WindowPoint struct {
+	Arm    string             `json:"arm"`
+	Valid  bool               `json:"valid"`
+	Values map[string]float64 `json:"values"`
 }
 
 type Delta struct {
@@ -90,6 +97,13 @@ func toRecord(res bench.ABResult) ExperimentRecord {
 		if smp.Valid {
 			rec.Valid++
 		}
+		wp := WindowPoint{Arm: smp.Arm, Valid: smp.Valid, Values: map[string]float64{}}
+		for _, k := range res.Config.Primary {
+			if v, ok := smp.Metrics[k]; ok {
+				wp.Values[k] = v
+			}
+		}
+		rec.Windows = append(rec.Windows, wp)
 	}
 	for k, c := range res.Compare {
 		rec.Compare[k] = Delta{A: c.MedianA, B: c.MedianB, Pct: c.DeltaPct, Low: c.CILowPct, High: c.CIHighPct, P: c.PValue, Conclusive: c.Conclusive}

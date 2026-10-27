@@ -104,7 +104,7 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 		return ABResult{}, errors.New("este cambio ya estaba así antes de Toque, así que no hay un estado sin él con el que comparar")
 	}
 	res = ABResult{Config: cfg, Kind: t.Kind(), Started: time.Now()}
-	safe := strings.NewReplacer(":", "_", "=", "-", ",", "+", "/", "_").Replace(cfg.Tweak)
+	safe := strings.NewReplacer(":", "_", "=", "-", ",", "+", "/", "_", "*", "").Replace(cfg.Tweak)
 	res.Dir = filepath.Join(winx.DataDir("experiments"), time.Now().Format("20060102-150405")+"-"+safe)
 	os.MkdirAll(res.Dir, 0o755)
 	stop := StartStress(cfg.Stress)
