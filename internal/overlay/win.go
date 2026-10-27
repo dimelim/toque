@@ -74,6 +74,10 @@ const (
 	swpNoMove     = 0x0002
 	hwndTopmost   = ^uintptr(0) // (HWND)-1
 	htCaption     = 2
+	swHide        = 0
+	swShowNA      = 8
+	frameMs       = 16
+	hiddenMs      = 250
 	nullPen       = 8
 	transparentBk = 1
 	dtCenter      = 0x00000001
@@ -164,8 +168,8 @@ func (h *HUD) loop(ready chan struct{}) {
 	alpha := uintptr(cfg.Opacity) * 255 / 100
 	setLayeredAttrs.Call(hwnd, keyColor, alpha, lwaColorKey|lwaAlpha)
 	setWindowPos.Call(hwnd, hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
-	showWindow.Call(hwnd, 8) // SW_SHOWNA
-	setTimer.Call(hwnd, 1, 16, 0)
+	h.shown, h.drawn = false, false
+	setTimer.Call(hwnd, 1, hiddenMs, 0)
 	close(ready)
 
 	var m msg
@@ -191,7 +195,7 @@ func (h *HUD) loop(ready chan struct{}) {
 func (h *HUD) wndProc(hwnd windows.HWND, message uint32, wparam, lparam uintptr) uintptr {
 	switch message {
 	case wmTimer:
-		invalidateRect.Call(uintptr(hwnd), 0, 0)
+		h.onTick(hwnd)
 		return 0
 	case wmPaint:
 		h.paint(hwnd)
@@ -203,11 +207,50 @@ func (h *HUD) wndProc(hwnd windows.HWND, message uint32, wparam, lparam uintptr)
 		}
 	case wmDestroy:
 		killTimer.Call(uintptr(hwnd), 1)
+		h.dropFonts()
 		postQuitMessage.Call(0)
 		return 0
 	}
 	r, _, _ := defWindowProcW.Call(uintptr(hwnd), uintptr(message), wparam, lparam)
 	return r
+}
+
+func (h *HUD) onTick(hwnd windows.HWND) {
+	cfg, ping := h.snapshot()
+	visible := cfg.Move || cfg.Demo || robloxInFront()
+	if visible != h.shown {
+		h.shown, h.drawn = visible, false
+		if visible {
+			setWindowPos.Call(uintptr(hwnd), hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
+			showWindow.Call(uintptr(hwnd), swShowNA)
+			setTimer.Call(uintptr(hwnd), 1, frameMs, 0)
+		} else {
+			showWindow.Call(uintptr(hwnd), swHide)
+			setTimer.Call(uintptr(hwnd), 1, hiddenMs, 0)
+		}
+	}
+	if !visible {
+		return
+	}
+	fr := h.nextFrame(cfg, ping)
+	if !h.drawn || fr != h.frame {
+		h.frame, h.drawn = fr, true
+		invalidateRect.Call(uintptr(hwnd), 0, 0)
+	}
+	h.tick++
+	if h.tick%120 == 0 {
+		setWindowPos.Call(uintptr(hwnd), hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
+	}
+}
+
+func robloxInFront() bool {
+	fg := windows.GetForegroundWindow()
+	if fg == 0 {
+		return false
+	}
+	buf := make([]uint16, 32)
+	n, _ := windows.GetClassName(fg, &buf[0], int32(len(buf)))
+	return windows.UTF16ToString(buf[:n]) == "WINDOWSCLIENT"
 }
 
 func stock(id int) (windows.Handle, uintptr) {

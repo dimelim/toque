@@ -1,4 +1,4 @@
-﻿package app
+package app
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.14.0"
+const Version = "1.14.1"
 
 type Emitter func(name string, data any)
 

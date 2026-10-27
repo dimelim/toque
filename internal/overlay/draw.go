@@ -170,8 +170,59 @@ func fade(vk int32, down bool) float64 {
 	return f
 }
 
+type frame struct {
+	ping  float64
+	keys  [6]float64
+	mouse [2]float64
+	dot   rect
+}
+
+func quant(f float64) float64 { return float64(int(f*16)) / 16 }
+
+func (h *HUD) nextFrame(cfg Config, ping float64) frame {
+	l := layoutOf(cfg)
+	var fr frame
+	if cfg.Demo && ping == 0 {
+		ping = 23
+	}
+	fr.ping = float64(int(ping))
+	for i, k := range l.keys {
+		down := keyDown(k.vk) || cfg.Demo && (k.label == "W" || k.label == "S" || k.label == "Space")
+		fr.keys[i] = quant(fade(k.vk, down))
+	}
+	if cfg.ShowMouse {
+		for i, vk := range []int32{0x01, 0x02} {
+			down := keyDown(vk) || cfg.Demo && vk == 0x01
+			fr.mouse[i] = quant(fade(vk, down))
+		}
+		fr.dot = mouseDot(l.dot, cfg)
+	}
+	return fr
+}
+
+func (h *HUD) fonts(scale float64) (key, small, ping uintptr) {
+	if h.fontScale != scale {
+		h.dropFonts()
+		h.fontKey = createFont(int(15*scale), true)
+		h.fontSmall = createFont(int(12*scale), true)
+		h.fontPing = createFont(int(16*scale), true)
+		h.fontScale = scale
+	}
+	return h.fontKey, h.fontSmall, h.fontPing
+}
+
+func (h *HUD) dropFonts() {
+	for _, f := range []uintptr{h.fontKey, h.fontSmall, h.fontPing} {
+		if f != 0 {
+			deleteObject.Call(f)
+		}
+	}
+	h.fontKey, h.fontSmall, h.fontPing, h.fontScale = 0, 0, 0, 0
+}
+
 func (h *HUD) paint(hwnd windows.HWND) {
-	cfg, ping := h.snapshot()
+	cfg, _ := h.snapshot()
+	fr := h.frame
 	l := layoutOf(cfg)
 	var ps paintStruct
 	hdc, _, _ := beginPaint.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&ps)))
@@ -188,17 +239,12 @@ func (h *HUD) paint(hwnd windows.HWND) {
 	radius := int(18 * cfg.Scale)
 	fillRound(mem, full, radius, cPanel, cEdge)
 
-	fontKey := createFont(int(15*cfg.Scale), true)
-	fontSmall := createFont(int(12*cfg.Scale), true)
-	fontPing := createFont(int(16*cfg.Scale), true)
+	fontKey, fontSmall, fontPing := h.fonts(cfg.Scale)
 
 	if cfg.ShowPing {
 		txt := "sin medir"
 		col := cMuted
-		if cfg.Demo && ping == 0 {
-			ping = 23
-		}
-		if ping > 0 {
+		if ping := fr.ping; ping > 0 {
 			txt = fmt.Sprintf("%.0f ms de ping", ping)
 			if ping <= 60 {
 				col = cKeyLit
@@ -209,12 +255,8 @@ func (h *HUD) paint(hwnd windows.HWND) {
 		drawText(mem, l.ping, txt, col, fontPing, dtLeft|dtVCenter|dtSingleLine)
 	}
 
-	for _, k := range l.keys {
-		down := keyDown(k.vk)
-		if cfg.Demo && (k.label == "W" || k.label == "S" || k.label == "Space") {
-			down = true
-		}
-		f := fade(k.vk, down)
+	for i, k := range l.keys {
+		f := fr.keys[i]
 		fill := lerp(cKeyIdle, cKeyLit, f)
 		edge := lerp(cEdge, cKeyLit, f)
 		txt := lerp(cTxtIdle, cTxtLit, f)
@@ -228,15 +270,11 @@ func (h *HUD) paint(hwnd windows.HWND) {
 
 	if cfg.ShowMouse {
 		fillRound(mem, l.mouse, int(float64(l.mouse.right-l.mouse.left)*0.45), cMouse, cEdge)
-		for vk, r := range map[int32]rect{0x01: l.lmb, 0x02: l.rmb} {
-			down := keyDown(vk)
-			if cfg.Demo && vk == 0x01 {
-				down = true
-			}
-			f := fade(vk, down)
+		for i, r := range []rect{l.lmb, l.rmb} {
+			f := fr.mouse[i]
 			fillRound(mem, r, int(7*cfg.Scale), lerp(cKeyIdle, cKeyLit, f), lerp(cEdge, cKeyLit, f))
 		}
-		dot := mouseDot(l.dot, cfg)
+		dot := fr.dot
 		db, _, _ := createSolidBrush.Call(cMuted.ref())
 		penH, _ := stock(nullPen)
 		op, _, _ := selectObject.Call(mem, uintptr(penH))
@@ -249,18 +287,10 @@ func (h *HUD) paint(hwnd windows.HWND) {
 
 	bitBlt.Call(hdc, 0, 0, uintptr(l.w), uintptr(l.ht), mem, 0, 0, 0x00CC0020)
 
-	deleteObject.Call(fontKey)
-	deleteObject.Call(fontSmall)
-	deleteObject.Call(fontPing)
 	selectObject.Call(mem, old)
 	deleteObject.Call(bmp)
 	deleteDC.Call(mem)
 	endPaint.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&ps)))
-
-	h.tick++
-	if h.tick%60 == 0 {
-		setWindowPos.Call(uintptr(hwnd), hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
-	}
 }
 
 func mouseDot(base rect, cfg Config) rect {

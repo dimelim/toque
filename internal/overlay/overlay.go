@@ -54,6 +54,14 @@ type HUD struct {
 	tid  uint32
 	tick int
 	hwnd windows.HWND
+
+	frame     frame
+	drawn     bool
+	shown     bool
+	fontScale float64
+	fontKey   uintptr
+	fontSmall uintptr
+	fontPing  uintptr
 }
 
 func New() *HUD { return &HUD{cfg: Defaults()} }

@@ -136,7 +136,7 @@ export function Hud() {
       <Card className="mb-8 p-5">
         <Eyebrow>Qué es</Eyebrow>
         <p className="mt-2 max-w-[80ch] text-body-regular text-ink-2">
-          Una capa encima de Roblox con tu ping, las teclas W A S D y los botones del ratón, que se encienden al pulsarlas. Útil para grabar o para ver tus entradas mientras juegas.
+          Una capa encima de Roblox con tu ping, las teclas W A S D y los botones del ratón, que se encienden al pulsarlas. Útil para grabar o para ver tus entradas mientras juegas. Solo aparece mientras Roblox está en primer plano y solo se redibuja cuando algo cambia, para no quitarte FPS.
         </p>
         <p className="mt-2 text-caption-1-medium text-ink-3">
           {running ? "Roblox está abierto. Juega en ventana o pantalla completa sin bordes para verlo encima." : "Se ve encima de Roblox en ventana o pantalla completa sin bordes, no en pantalla completa exclusiva."}
