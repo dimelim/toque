@@ -197,7 +197,6 @@ var Catalog = []Entry{
 var labTitles = map[string]string{
 	"power-plan:381b4222-f694-41f0-9685-ff5bb260df2e": "Plan Equilibrado frente al plan personalizado",
 	"proc-priority-high":                              "Prioridad alta para Roblox (en vivo)",
-	"nic:*FlowControl=0":                              "Tarjeta de red sin control de flujo",
 }
 
 func Find(id string) (Entry, bool) {

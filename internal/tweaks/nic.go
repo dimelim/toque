@@ -12,8 +12,6 @@ import (
 
 var nicKeywords = map[string]bool{
 	"*InterruptModeration": true,
-	"*FlowControl":         true,
-	"*EEE":                 true,
 }
 
 const gameAdapter = `$a = (Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -First 1 | Get-NetAdapter).Name; `
