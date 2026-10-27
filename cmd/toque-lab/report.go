@@ -30,7 +30,7 @@ var reportMetrics = []struct {
 }
 
 func cmdReport(args []string) error {
-	out := "docs/BENCHMARKS.md"
+	out := "dist/BENCHMARKS.md"
 	if len(args) > 0 {
 		out = args[0]
 	}
@@ -42,7 +42,6 @@ func cmdReport(args []string) error {
 	b.WriteString("Se compara la mediana de cada métrica por ventana, con intervalo de confianza bootstrap al 95 % y prueba de Mann-Whitney. ")
 	b.WriteString("En cada prueba, una métrica principal solo cuenta si el intervalo no cruza el cero y p queda por debajo de 0,05 dividido entre el número de métricas principales (Bonferroni). ")
 	b.WriteString("Todo lo que pasó una primera prueba se repitió, y al juntar los datos el umbral es p < 0,01.\n\n")
-	b.WriteString("\n\n")
 	b.WriteString(summary())
 	b.WriteString("## Cada experimento por separado\n\n")
 	b.WriteString("Una prueba suelta puede dar un falso positivo, y aquí hay dos (la primera del temporizador y la primera del plan de energía), que las réplicas desmintieron. El veredicto que cuenta es el del resumen de arriba y el de los resultados combinados del final.\n\n")

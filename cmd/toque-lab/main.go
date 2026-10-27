@@ -82,7 +82,7 @@ func env() (bench.Env, error) {
 	exe, _ := os.Executable()
 	pm := filepath.Join(filepath.Dir(exe), "PresentMon.exe")
 	if _, err := os.Stat(pm); err != nil {
-		pm = `.dev\bin\PresentMon.exe`
+		pm = filepath.Join(".dev", "bin", "PresentMon.exe")
 	}
 	return bench.Env{PresentMon: pm, Install: inst, Dir: winx.DataDir("runs"), KeepRaw: true}, nil
 }

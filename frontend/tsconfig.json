@@ -16,5 +16,5 @@
       "@wails/*": ["wailsjs/*"]
     }
   },
-  "include": ["src", "wailsjs"]
+  "include": ["src"]
 }

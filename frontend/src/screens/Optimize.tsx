@@ -129,7 +129,7 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
         </div>
         <div className="flex min-w-0 flex-col rounded-xl bg-background-inner-default p-4 shadow-card">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-caption-1-medium text-ink-3">{o.mine ? `${metricMeta[metric]?.label ?? "Resultado"} en tu PC · ${when(o.mine.at)}` : "En las pruebas"}</p>
+            <p className="text-caption-1-medium text-ink-3">{o.mine ? `${metricMeta[metric]?.label ?? "Resultado"} en tu PC · ${when(o.mine.at)}` : "En las pruebas de Toque"}</p>
             {!rejected ? (
               <Switch
                 size="md"
