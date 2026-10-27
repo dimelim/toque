@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -150,13 +151,12 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 		}
 		hwnd := winx.MainWindow(sess.PID)
 		winx.Focus(hwnd)
-		idleBefore := winx.IdleTime()
 		w := Measure(ctx, env, sess, cfg.Window, filepath.Join(res.Dir, fmt.Sprintf("%02d-%s", i+1, arm)), arm)
 		smp := Sample{Arm: arm, Valid: true, Metrics: MetricsOf(w), Window: w}
 		switch {
 		case !w.Foreground:
 			smp.Valid, smp.Reason = false, "roblox lost focus"
-		case winx.IdleTime() < idleBefore && winx.IdleTime() < cfg.Window:
+		case winx.IdleTime() < cfg.Window-2*time.Second:
 			smp.Valid, smp.Reason = false, "user input during window"
 		case w.Frames.Frames == 0:
 			smp.Valid, smp.Reason = false, "no frames captured"
@@ -204,9 +204,9 @@ func Evaluate(samples []Sample, primary []string) (map[string]stats.Comparison, 
 			continue
 		}
 		if c.DeltaPct*float64(Better[k]) > 0 {
-			improved = append(improved, fmt.Sprintf("%s %+.1f%%", k, c.DeltaPct))
+			improved = append(improved, describe(k, c.DeltaPct))
 		} else {
-			worsened = append(worsened, fmt.Sprintf("%s %+.1f%%", k, c.DeltaPct))
+			worsened = append(worsened, describe(k, c.DeltaPct))
 		}
 	}
 	guardWorse := []string{}
@@ -215,19 +215,53 @@ func Evaluate(samples []Sample, primary []string) (map[string]stats.Comparison, 
 			continue
 		}
 		if c.DeltaPct*float64(Better[k]) < -2 {
-			guardWorse = append(guardWorse, fmt.Sprintf("%s %+.1f%%", k, c.DeltaPct))
+			guardWorse = append(guardWorse, describe(k, c.DeltaPct))
 		}
 	}
+	sort.Strings(guardWorse)
 	switch {
 	case len(worsened) > 0:
-		return cmp, "worse", "empeora: " + strings.Join(worsened, ", ")
+		return cmp, "worse", "Empeora " + join(worsened)
 	case len(improved) > 0 && len(guardWorse) == 0:
-		return cmp, "improves", "mejora: " + strings.Join(improved, ", ")
+		return cmp, "improves", "Mejora " + join(improved)
 	case len(improved) > 0:
-		return cmp, "tradeoff", "mejora " + strings.Join(improved, ", ") + " pero empeora " + strings.Join(guardWorse, ", ")
+		return cmp, "tradeoff", "Mejora " + join(improved) + ", pero empeora " + join(guardWorse)
 	default:
-		return cmp, "no-effect", "sin efecto medible en " + strings.Join(primary, ", ")
+		labels := make([]string, 0, len(primary))
+		for _, k := range primary {
+			labels = append(labels, label(k))
+		}
+		return cmp, "no-effect", "Sin efecto medible en " + join(labels)
 	}
+}
+
+var labels = map[string]string{
+	"fps": "los FPS medios", "low1": "el 1 % low", "low01": "el 0,1 % low", "stutterMin": "los tirones",
+	"latMs": "la latencia de render", "ftStdev": "la variación del frametime", "cpuBusy": "la CPU por frame",
+	"gpuBusy": "la GPU por frame", "rtt": "el ping", "jitter": "el jitter", "lossDown": "la pérdida de paquetes",
+	"maxGap": "el mayor corte de red", "hardFaults": "las lecturas de paginación", "ramRoblox": "la RAM de Roblox",
+	"cpuRoblox": "la CPU de Roblox",
+}
+
+func label(k string) string {
+	if l, ok := labels[k]; ok {
+		return l
+	}
+	return k
+}
+
+func describe(k string, delta float64) string {
+	return fmt.Sprintf("%s (%s)", label(k), strings.Replace(fmt.Sprintf("%+.1f %%", delta), ".", ",", 1))
+}
+
+func join(items []string) string {
+	switch len(items) {
+	case 0:
+		return ""
+	case 1:
+		return items[0]
+	}
+	return strings.Join(items[:len(items)-1], ", ") + " y " + items[len(items)-1]
 }
 
 func contains(list []string, s string) bool {

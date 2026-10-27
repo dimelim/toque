@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Geist Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Bahnschrift", "Segoe UI", sans-serif;
+
+  --color-canvas: oklch(0.145 0.008 125);
+  --color-surface-1: oklch(0.178 0.009 125);
+  --color-surface-2: oklch(0.212 0.01 125);
+  --color-surface-3: oklch(0.248 0.011 125);
+  --color-surface-4: oklch(0.29 0.012 125);
+  --color-line: oklch(0.96 0.01 120 / 0.07);
+  --color-line-strong: oklch(0.96 0.01 120 / 0.13);
+
+  --color-ink: oklch(0.955 0.008 118);
+  --color-ink-2: oklch(0.77 0.012 118);
+  --color-ink-3: oklch(0.6 0.012 118);
+  --color-ink-4: oklch(0.47 0.01 118);
+
+  --color-volt: oklch(0.91 0.195 123);
+  --color-volt-strong: oklch(0.86 0.2 124);
+  --color-volt-ink: oklch(0.2 0.03 125);
+  --color-volt-soft: oklch(0.91 0.195 123 / 0.12);
+  --color-volt-line: oklch(0.91 0.195 123 / 0.32);
+
+  --color-good: oklch(0.91 0.195 123);
+  --color-bad: oklch(0.72 0.155 28);
+  --color-bad-soft: oklch(0.72 0.155 28 / 0.13);
+  --color-warn: oklch(0.83 0.135 82);
+  --color-warn-soft: oklch(0.83 0.135 82 / 0.12);
+  --color-before: oklch(0.63 0.012 118);
+
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: var(--color-ink-2);
+  --color-text-tertiary: var(--color-ink-3);
+  --color-text-white: var(--color-volt-ink);
+  --color-button-primary: var(--color-volt);
+  --color-button-danger: var(--color-bad);
+  --color-button-primary-disabled-foreground: oklch(0.2 0.03 125 / 0.5);
+  --color-button-ghost-background: transparent;
+  --color-button-ghost-foreground: var(--color-ink-2);
+  --color-button-ghost-hover: oklch(0.96 0.01 120 / 0.06);
+  --color-button-ghost-active: oklch(0.96 0.01 120 / 0.1);
+  --color-button-ghost-disabled: transparent;
+  --color-button-ghost-disabled-foreground: var(--color-ink-4);
+  --color-background-primary-default: var(--color-surface-2);
+  --color-background-primary-hover: var(--color-surface-3);
+  --color-background-primary-active: var(--color-surface-4);
+  --color-background-primary-disabled: var(--color-surface-1);
+  --color-background-tertiary-default: var(--color-surface-3);
+  --color-border-button-default: var(--color-line-strong);
+  --color-border-button-hover: oklch(0.96 0.01 120 / 0.2);
+  --color-border-button-active: oklch(0.96 0.01 120 / 0.24);
+  --color-border-focus-ring: oklch(0.91 0.195 123 / 0.7);
+  --color-foreground-disabled-danger: oklch(0.2 0.03 125 / 0.5);
+  --color-accent-500: var(--color-volt);
+  --color-accent-600: var(--color-volt-strong);
+  --color-switch-on-chip-start: oklch(0.95 0.15 123);
+  --color-switch-on-chip-end: var(--color-volt-strong);
+  --color-switch-off-chip-start: var(--color-surface-4);
+  --color-switch-off-chip-end: var(--color-surface-3);
+  --color-control-indicator-background: oklch(0.98 0.004 118);
+  --color-control-indicator-background-subtle: oklch(0.88 0.006 118);
+  --color-segmented-control-background: var(--color-surface-1);
+  --color-segmented-control-selected-background: var(--color-surface-4);
+
+  --radius-2lg: 0.625rem;
+
+  --shadow-2xs: 0 1px 0 0 oklch(1 0 0 / 0.04) inset;
+  --shadow-xs: 0 1px 0 0 oklch(1 0 0 / 0.06) inset, 0 1px 2px 0 oklch(0 0 0 / 0.3);
+  --shadow-dropdown: 0 0 0 1px oklch(1 0 0 / 0.08), 0 12px 32px -8px oklch(0 0 0 / 0.6);
+  --shadow-checkbox-selected: inset 0 2px 0 0 oklch(1 0 0 / 0.3), inset 0 0 0 1px var(--color-volt-strong);
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@utility text-body-regular {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 400;
+}
+@utility text-body-medium {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+@utility text-caption-1-medium {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+@utility text-caption-1-semibold {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+@utility button-press-motion {
+  transition-property: scale, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out-quint);
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    scale: 0.96;
+  }
+}
+
+@utility num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  letter-spacing: -0.01em;
+}
+
+@utility label-caps {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@utility drag {
+  --wails-draggable: drag;
+}
+@utility no-drag {
+  --wails-draggable: no-drag;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    color-scheme: dark;
+    background: var(--color-canvas);
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    user-select: none;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: oklch(0.91 0.195 123 / 0.3);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.96 0.01 120 / 0.12);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+.pitch-lines {
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 0 59px, oklch(0.91 0.195 123 / 0.045) 60px 61px, transparent 62px),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), oklch(0.91 0.195 123 / 0.045) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: currentColor;
+  animation: pulse-ring 1.8s var(--ease-out-quint) infinite;
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.progress-sweep {
+  animation: sweep 1.6s var(--ease-out-quint) infinite;
+}

@@ -51,6 +51,21 @@ func Focus(h windows.HWND) bool {
 	return windows.GetForegroundWindow() == h
 }
 
+var (
+	procFindWindowW  = user32.NewProc("FindWindowW")
+	procPostMessageW = user32.NewProc("PostMessageW")
+)
+
+func CloseWindowByClass(class string) bool {
+	c, _ := windows.UTF16PtrFromString(class)
+	h, _, _ := procFindWindowW.Call(uintptr(unsafe.Pointer(c)), 0)
+	if h == 0 {
+		return false
+	}
+	r, _, _ := procPostMessageW.Call(h, 0x0010, 0, 0)
+	return r != 0
+}
+
 func IsForeground(h windows.HWND) bool {
 	return h != 0 && windows.GetForegroundWindow() == h
 }

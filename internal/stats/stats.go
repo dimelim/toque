@@ -146,6 +146,6 @@ func MannWhitney(a, b []float64) float64 {
 	if sigma == 0 {
 		return 1
 	}
-	z := (math.Abs(u-mu) - 0.5) / sigma
-	return math.Erfc(z / math.Sqrt2)
+	z := math.Max(0, math.Abs(u-mu)-0.5) / sigma
+	return math.Min(1, math.Erfc(z/math.Sqrt2))
 }

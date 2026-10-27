@@ -1,0 +1,134 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/netip"
+	"path/filepath"
+	"time"
+
+	"toque/internal/netq"
+	"toque/internal/roblox"
+	"toque/internal/winx"
+)
+
+type ServerProbe struct {
+	JobID   string  `json:"jobId"`
+	IP      string  `json:"ip"`
+	RTT     float64 `json:"rttMs"`
+	Jitter  float64 `json:"jitterMs"`
+	Loss    float64 `json:"lossPct"`
+	Playing int     `json:"playing"`
+	Max     int     `json:"max"`
+	Current bool    `json:"current"`
+	Error   string  `json:"error,omitempty"`
+}
+
+type ServerSearch struct {
+	Probes []ServerProbe `json:"probes"`
+	Best   *ServerProbe  `json:"best"`
+	Joined bool          `json:"joined"`
+}
+
+func measureServer(ctx context.Context, ip string, dur time.Duration) (netq.Summary, error) {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return netq.Summary{}, err
+	}
+	dir := filepath.Join(winx.DataDir("finder"), time.Now().Format("150405.000"))
+	pcap, err := netq.Record(ctx, ip, dur, dir)
+	if err != nil {
+		return netq.Summary{}, err
+	}
+	pk, err := netq.ReadPcapng(pcap, addr)
+	if err != nil {
+		return netq.Summary{}, err
+	}
+	sum := netq.Analyze(pk)
+	if !sum.Confident {
+		return sum, errors.New("muy poco tráfico para medir")
+	}
+	return sum, nil
+}
+
+func (s *Service) FindServer(tries int) (ServerSearch, error) {
+	ctx, done, err := s.begin("finder")
+	if err != nil {
+		return ServerSearch{}, err
+	}
+	defer done()
+	if tries <= 0 || tries > 6 {
+		tries = 3
+	}
+	inst, err := roblox.Find()
+	if err != nil {
+		return ServerSearch{}, err
+	}
+	var res ServerSearch
+	exclude := map[string]bool{}
+	steps := float64(tries + 2)
+	step := 0.0
+	tick := func(msg string) {
+		step++
+		s.progress("finder", "probe", step/steps, msg)
+	}
+	if sess, err := currentSession(inst); err == nil {
+		tick("Midiendo el ping del servidor actual")
+		exclude[sess.JobID] = true
+		p := ServerProbe{JobID: sess.JobID, IP: sess.ServerIP, Current: true}
+		if sum, err := measureServer(ctx, sess.ServerIP, 8*time.Second); err == nil {
+			p.RTT, p.Jitter, p.Loss = sum.RTT, sum.Jitter, sum.LossDownPct
+		} else {
+			p.Error = err.Error()
+		}
+		res.Probes = append(res.Probes, p)
+	}
+	tick("Consultando la lista pública de servidores")
+	servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 2)
+	if err != nil && len(servers) == 0 {
+		return res, fmt.Errorf("no pude leer la lista de servidores: %w", err)
+	}
+	for _, c := range roblox.RankCandidates(servers, exclude, tries) {
+		if ctx.Err() != nil {
+			break
+		}
+		tick(fmt.Sprintf("Probando un servidor con %d/%d jugadores", c.Playing, c.MaxPlayers))
+		p := ServerProbe{JobID: c.ID, Playing: c.Playing, Max: c.MaxPlayers}
+		sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, c.ID, 60*time.Second)
+		if err != nil || sess.JobID != c.ID {
+			p.Error = "no se pudo entrar (servidor lleno o cerrado)"
+			res.Probes = append(res.Probes, p)
+			continue
+		}
+		p.IP = sess.ServerIP
+		time.Sleep(4 * time.Second)
+		if sum, err := measureServer(ctx, sess.ServerIP, 8*time.Second); err == nil {
+			p.RTT, p.Jitter, p.Loss = sum.RTT, sum.Jitter, sum.LossDownPct
+		} else {
+			p.Error = err.Error()
+		}
+		res.Probes = append(res.Probes, p)
+	}
+	var best *ServerProbe
+	for i := range res.Probes {
+		p := &res.Probes[i]
+		if p.Error == "" && p.RTT > 0 && (best == nil || p.RTT < best.RTT-1) {
+			best = p
+		}
+	}
+	if best == nil {
+		return res, errors.New("no pude medir ningún servidor")
+	}
+	res.Best = best
+	last := res.Probes[len(res.Probes)-1]
+	if last.JobID == best.JobID && last.Error == "" {
+		res.Joined = true
+		return res, nil
+	}
+	tick("Entrando al servidor con menos ping")
+	if sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, best.JobID, 60*time.Second); err == nil && sess.JobID == best.JobID {
+		res.Joined = true
+	}
+	return res, nil
+}

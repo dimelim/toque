@@ -42,6 +42,10 @@ func main() {
 		err = cmdTweak(os.Args[2:])
 	case "ab":
 		err = cmdAB(os.Args[2:])
+	case "report":
+		err = cmdReport(os.Args[2:])
+	case "bloat":
+		err = cmdBloat(os.Args[2:])
 	case "analyze-pcap":
 		err = cmdAnalyzePcap(os.Args[2:])
 	case "analyze-csv":
@@ -316,6 +320,32 @@ func cmdAB(args []string) error {
 	}
 	fmt.Println("VERDICT:", res.Verdict, "-", res.Summary)
 	fmt.Println("dir:", res.Dir)
+	return nil
+}
+
+func cmdBloat(args []string) error {
+	fs := flag.NewFlagSet("bloat", flag.ExitOnError)
+	target := fs.String("target", "", "ip to ping (default: first public hop toward roblox)")
+	phase := fs.Duration("phase", 15*time.Second, "duration of each phase")
+	fs.Parse(args)
+	dst, err := netip.ParseAddr(*target)
+	if err != nil {
+		hops := netq.Trace(netip.MustParseAddr("128.116.127.33"), 8, 2)
+		for _, h := range hops {
+			if !h.Private {
+				dst = netip.MustParseAddr(h.Addr)
+				break
+			}
+		}
+		if !dst.IsValid() && len(hops) > 0 {
+			dst = netip.MustParseAddr(hops[0].Addr)
+		}
+	}
+	if !dst.IsValid() {
+		return errors.New("no target to ping")
+	}
+	res := netq.Bufferbloat(context.Background(), dst, *phase, func(kind string) func() { return bench.StartStress(kind) })
+	printJSON(res)
 	return nil
 }
 
