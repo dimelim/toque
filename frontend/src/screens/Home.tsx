@@ -21,7 +21,11 @@ function ServerFinder() {
     const res = await run("finder", "Buscando el servidor con menos ping", () => api.findServer(3));
     if (res) {
       setResult(res);
-      if (res.best) toast({ tone: "ok", title: `Mejor servidor a ${num(res.best.rttMs, 0)} ms`, detail: res.joined ? "Ya estás dentro." : "No pude entrar, pruébalo de nuevo." });
+      if (res.best?.current) {
+        toast({ tone: "ok", title: `Tu servidor ya era el mejor (${num(res.best.rttMs, 0)} ms)`, detail: "Probé otros y todos tenían más ping. Te dejé donde estabas." });
+      } else if (res.best) {
+        toast({ tone: "ok", title: `Mejor servidor a ${num(res.best.rttMs, 0)} ms`, detail: res.joined ? "Ya estás dentro." : "No pude entrar, pruébalo de nuevo." });
+      }
     }
   };
   const probes = (result?.probes ?? []).filter((p) => p.rttMs > 0).sort((a, b) => a.rttMs - b.rttMs);

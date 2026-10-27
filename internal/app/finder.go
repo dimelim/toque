@@ -22,6 +22,7 @@ type ServerProbe struct {
 	Playing int     `json:"playing"`
 	Max     int     `json:"max"`
 	Current bool    `json:"current"`
+	Cached  bool    `json:"cached"`
 	Error   string  `json:"error,omitempty"`
 }
 
@@ -49,6 +50,7 @@ func measureServer(ctx context.Context, ip string, dur time.Duration) (netq.Summ
 	if !sum.Confident {
 		return sum, errors.New("muy poco tráfico para medir")
 	}
+	rememberDatacenter(ip, sum.RTT)
 	return sum, nil
 }
 
@@ -91,7 +93,7 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 	}
 	var res ServerSearch
 	exclude := map[string]bool{}
-	steps := float64(tries + 2)
+	steps := float64(tries + 3)
 	step := 0.0
 	tick := func(msg string) {
 		step++
@@ -113,7 +115,7 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 	if err != nil && len(servers) == 0 {
 		return res, fmt.Errorf("no pude leer la lista de servidores: %w", err)
 	}
-	for _, c := range roblox.RankCandidates(servers, exclude, tries) {
+	for _, c := range roblox.SampleCandidates(servers, exclude, tries, time.Now().UnixNano()) {
 		if ctx.Err() != nil {
 			break
 		}
@@ -126,6 +128,11 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 			continue
 		}
 		p.IP = sess.ServerIP
+		if rtt, ok := knownDatacenter(sess.ServerIP); ok {
+			p.RTT, p.Cached = rtt, true
+			res.Probes = append(res.Probes, p)
+			continue
+		}
 		time.Sleep(4 * time.Second)
 		if sum, err := measureServer(ctx, sess.ServerIP, 8*time.Second); err == nil {
 			p.RTT, p.Jitter, p.Loss = sum.RTT, sum.Jitter, sum.LossDownPct

@@ -208,6 +208,7 @@ export interface ServerProbe {
   playing: number;
   max: number;
   current: boolean;
+  cached: boolean;
   error?: string;
 }
 

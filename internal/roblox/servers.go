@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
-	"sort"
 	"time"
 )
 
@@ -60,15 +60,16 @@ func PublicServers(ctx context.Context, placeID int64, pages int) ([]PublicServe
 	return all, nil
 }
 
-func RankCandidates(servers []PublicServer, exclude map[string]bool, n int) []PublicServer {
+func SampleCandidates(servers []PublicServer, exclude map[string]bool, n int, seed int64) []PublicServer {
 	var c []PublicServer
 	for _, s := range servers {
-		if exclude[s.ID] || s.Playing >= s.MaxPlayers || s.Playing == 0 || s.Ping <= 0 {
+		if exclude[s.ID] || s.Playing >= s.MaxPlayers || s.Playing == 0 {
 			continue
 		}
 		c = append(c, s)
 	}
-	sort.Slice(c, func(i, j int) bool { return c[i].Ping < c[j].Ping })
+	rng := rand.New(rand.NewSource(seed))
+	rng.Shuffle(len(c), func(i, j int) { c[i], c[j] = c[j], c[i] })
 	if len(c) > n {
 		c = c[:n]
 	}

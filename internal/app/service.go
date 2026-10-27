@@ -137,6 +137,8 @@ func (s *Service) Overview() Overview {
 	return o
 }
 
+var logTail roblox.Tail
+
 func currentSession(inst roblox.Install) (roblox.Session, error) {
 	pids := roblox.Running()
 	if len(pids) == 0 {
@@ -146,17 +148,8 @@ func currentSession(inst roblox.Install) (roblox.Session, error) {
 	if log == "" {
 		return roblox.Session{PID: pids[0]}, errors.New("no log")
 	}
-	sess := roblox.Session{PID: pids[0], LogPath: log}
-	for _, ev := range roblox.ScanFile(log) {
-		switch ev.Kind {
-		case roblox.EventJoining:
-			sess.JobID, sess.PlaceID, sess.ServerIP = ev.JobID, ev.PlaceID, ""
-		case roblox.EventUdmux:
-			sess.ServerIP, sess.ServerPort = ev.IP, ev.Port
-		case roblox.EventDisconnected:
-			sess.ServerIP = ""
-		}
-	}
+	st := logTail.Read(log)
+	sess := roblox.Session{PID: pids[0], LogPath: log, JobID: st.JobID, PlaceID: st.PlaceID, ServerIP: st.ServerIP, ServerPort: st.ServerPort}
 	if sess.ServerIP == "" {
 		return sess, errors.New("not in game")
 	}
