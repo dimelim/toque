@@ -1,7 +1,6 @@
 package tweaks
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -43,11 +42,7 @@ func (f flagSet) Snapshot(c Context) (Undo, error) {
 	}
 	u := Undo{}
 	for k := range f.flags {
-		u[k] = ""
-		if old, ok := cur[k]; ok {
-			b, _ := json.Marshal(old)
-			u[k] = string(b)
-		}
+		u[k] = snapshotFlag(cur, k)
 	}
 	return u, nil
 }
@@ -75,13 +70,7 @@ func (f flagSet) Revert(c Context, u Undo) error {
 		return err
 	}
 	for k, old := range u {
-		if old == "" {
-			delete(cur, k)
-			continue
-		}
-		var v any
-		json.Unmarshal([]byte(old), &v)
-		cur[k] = v
+		restoreFlag(cur, k, old)
 	}
 	return roblox.WriteFlags(c.Install.VersionDir, cur)
 }
@@ -199,25 +188,11 @@ func parametric(id string) (Tweak, error) {
 		}
 		return nicProperty{keyword: keyword, value: value}, nil
 	case strings.HasPrefix(id, "flag:"):
-		flags := map[string]any{}
-		for _, part := range strings.Split(strings.TrimPrefix(id, "flag:"), ",") {
-			k, v, ok := strings.Cut(part, "=")
-			if !ok || !roblox.AllowedFlags[k] {
-				return nil, errors.New("bad flag tweak: " + part)
-			}
-			flags[k] = parseFlagValue(v)
+		flags, err := parseFlagID(id)
+		if err != nil {
+			return nil, err
 		}
 		return flagSet{id: id, flags: flags}, nil
 	}
 	return nil, errors.New("not parametric")
-}
-
-func parseFlagValue(v string) any {
-	switch strings.ToLower(v) {
-	case "true":
-		return "True"
-	case "false":
-		return "False"
-	}
-	return v
 }

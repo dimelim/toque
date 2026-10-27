@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -234,19 +235,36 @@ func Resync(ctx Context) error {
 	}
 	var errs []error
 	forgot := false
+	cur, flagsErr := roblox.ReadFlags(ctx.Install.VersionDir)
+	if ctx.Install.VersionDir == "" {
+		flagsErr = errors.New("roblox not installed")
+	}
+	missing := map[string]any{}
 	for _, id := range j.ids() {
 		t, err := Get(id)
-		if err != nil || t.State(ctx).Applied {
+		if err != nil {
 			continue
 		}
-		switch t.(type) {
+		switch f := t.(type) {
 		case flagSet:
-			if err := t.Apply(ctx); err != nil {
-				errs = append(errs, fmt.Errorf("%s: %w", id, err))
+			for k, v := range f.flags {
+				if flagsErr == nil && fmt.Sprint(cur[k]) != fmt.Sprint(v) {
+					missing[k] = v
+				}
 			}
 		case basicSetting:
-			delete(j.Applied, id)
-			forgot = true
+			if !t.State(ctx).Applied {
+				delete(j.Applied, id)
+				forgot = true
+			}
+		}
+	}
+	if len(missing) > 0 {
+		if len(roblox.Running()) > 0 {
+			errs = append(errs, errRobloxOpen)
+		} else {
+			maps.Copy(cur, missing)
+			errs = append(errs, roblox.WriteFlags(ctx.Install.VersionDir, cur))
 		}
 	}
 	if forgot {

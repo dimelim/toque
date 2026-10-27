@@ -24,6 +24,12 @@ Si no hay ninguno, el vigía revisa la lista de menos a más llena, una página 
 
 Roblox abre un servidor privado vacío en el centro de datos que elige para quien entra primero, cerca de su conexión y según el sitio libre que tenga. Toque no puede cambiar esa decisión, y los centros nuevos como Lima, Santiago o Querétaro casi no reciben partidas. Si eliges una ciudad en «Abrir en», Toque entra y lee en el log en qué ciudad quedó y cuándo arrancó el servidor. Así distingue si ya estaba abierto o si Roblox eligió otra ciudad al abrirlo, y te dice qué hacer. Para que se abra en otra ciudad tiene que estar vacío y tiene que entrar primero alguien que se conecte desde allí, o con una VPN de allí. Toque no configura ninguna VPN.
 
+## Cómo aplica las flags
+
+Toque escribe las flags en `ClientSettings\ClientAppSettings.json`, dentro de la carpeta de la versión de Roblox, que es el único sitio de donde Roblox las lee. Desde septiembre de 2025 Roblox solo aplica las 18 de su lista oficial y las demás las ignora sin avisar. Por eso la pantalla Flags enseña esas 18 con controles, y las que importas o añades fuera de la lista quedan guardadas y marcadas como ignoradas. Cada cambio entra en el diario igual que una optimización, y Toque lo vuelve a poner cuando una actualización de Roblox borra la carpeta.
+
+Toque nunca escribe flags en la memoria de Roblox. Es la única forma de forzar las que no están en la lista, y el anticheat de Roblox lo trata como una trampa que puede acabar en baneo.
+
 ## Cómo deshace los cambios
 
 Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que había antes y solo después aplica el cambio, así que un cierre a mitad nunca deja algo aplicado sin forma de deshacerlo. El diario se escribe con un archivo temporal, se vuelca al disco y se renombra, y si aparece dañado Toque avisa en lugar de sobrescribirlo. Un experimento deja una marca mientras dura y, si se interrumpe, Toque devuelve el cambio a como estaba al volver a abrirse. Cuando Roblox se actualiza borra sus flags, y Toque las vuelve a poner al arrancar. Si el usuario cambia desde el menú de Roblox un ajuste que había puesto Toque, Toque lo da por suyo y no lo vuelve a imponer.

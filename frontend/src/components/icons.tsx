@@ -43,4 +43,8 @@
   Check as IconCheck,
   MapPin as IconPin,
   Lock as IconLock,
+  Flag as IconFlag,
+  Copy as IconCopy,
+  FileArrowUp as IconImport,
+  Plus as IconPlus,
 } from "@gravity-ui/icons";

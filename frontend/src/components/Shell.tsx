@@ -20,6 +20,7 @@ import {
   IconMaximize,
   IconMinimize,
   IconOptimize,
+  IconFlag,
   IconPlay,
   IconSettings,
   IconTests,
@@ -33,6 +34,7 @@ const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string
   { id: "home", label: "Inicio", icon: IconHome },
   { id: "diagnose", label: "Diagnóstico", icon: IconDiagnose },
   { id: "optimize", label: "Optimizar", icon: IconOptimize },
+  { id: "flags", label: "Flags", icon: IconFlag },
   { id: "tests", label: "Pruebas", icon: IconTests },
   { id: "settings", label: "Ajustes", icon: IconSettings },
 ];

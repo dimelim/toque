@@ -259,6 +259,17 @@ export interface PlayResult {
   exitCountry: string;
 }
 
+export interface FlagEntry {
+  name: string;
+  value: string;
+  allowed: boolean;
+}
+
+export interface FlagsInfo {
+  flags: FlagEntry[];
+  allowlist: string[];
+}
+
 export interface Account {
   userId: number;
   username: string;

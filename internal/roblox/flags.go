@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"toque/internal/winx"
 )
@@ -30,6 +31,12 @@ var AllowedFlags = map[string]bool{
 	"FIntGrassMovementReducedMotionFactor":      true,
 }
 
+var reFlagName = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,127}$`)
+
+func ValidFlagName(name string) bool {
+	return reFlagName.MatchString(name)
+}
+
 func FlagsPath(versionDir string) string {
 	return filepath.Join(versionDir, "ClientSettings", "ClientAppSettings.json")
 }
@@ -53,11 +60,6 @@ func ReadFlags(versionDir string) (map[string]any, error) {
 }
 
 func WriteFlags(versionDir string, flags map[string]any) error {
-	for k := range flags {
-		if !AllowedFlags[k] {
-			return errors.New("flag not in Roblox allowlist: " + k)
-		}
-	}
 	b, err := json.MarshalIndent(flags, "", "  ")
 	if err != nil {
 		return err

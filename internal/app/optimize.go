@@ -44,6 +44,9 @@ func (s *Service) describe(e catalog.Entry, managed map[string]tweaks.Undo, exps
 	o.Kind = string(t.Kind())
 	o.Applicable, o.Applied, o.Detail = st.Applicable, st.Applied, st.Detail
 	_, o.Managed = managed[e.ID]
+	if strings.HasPrefix(e.ID, "flag:") {
+		o.Managed = tweaks.FlagsManaged(managed, e.ID)
+	}
 	for i := range exps {
 		if exps[i].Tweak == e.ID {
 			o.Mine = &exps[i]

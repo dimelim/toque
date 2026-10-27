@@ -1,11 +1,12 @@
 import * as Service from "@wails/go/app/Service";
-import { EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } from "@wails/runtime/runtime";
+import { ClipboardSetText, EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } from "@wails/runtime/runtime";
 import type {
   Account,
   BloatResult,
   Diagnosis,
   ExperimentGroup,
   ExperimentRecord,
+  FlagsInfo,
   Optimization,
   Overview,
   PingPoint,
@@ -42,6 +43,9 @@ export const api = {
   stopWatch: () => Service.StopWatch() as Promise<WatchInfo>,
   watchStatus: () => Service.WatchStatus() as Promise<WatchInfo>,
   account: () => Service.Account() as Promise<Account>,
+  flags: () => Service.Flags() as Promise<FlagsInfo>,
+  updateFlags: (set: Record<string, string>, clear: string[]) => Service.UpdateFlags(set, clear) as Promise<FlagsInfo>,
+  copyText: (text: string) => ClipboardSetText(text),
   cancel: () => Service.Cancel() as Promise<void>,
   lastDiagnosis: () => Service.LastDiagnosis() as Promise<Diagnosis | null>,
   lastBloat: () => Service.LastBloat() as Promise<BloatResult | null>,
