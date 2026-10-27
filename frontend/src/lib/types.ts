@@ -262,12 +262,6 @@ export interface PlayResult {
 export interface FlagEntry {
   name: string;
   value: string;
-  allowed: boolean;
-}
-
-export interface FlagsInfo {
-  flags: FlagEntry[];
-  allowlist: string[];
 }
 
 export interface Account {

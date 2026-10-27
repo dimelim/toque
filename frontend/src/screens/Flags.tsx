@@ -4,9 +4,9 @@ import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
 import { num } from "@/lib/format";
 import { play } from "@/lib/sound";
-import { FLAG_NAME, flagSections, flagType, flagTypeLabel, groupState, officialKeys, parseFlagsJSON, validValue } from "@/lib/flags";
+import { FLAG_NAME, flagSections, flagType, flagTypeLabel, groupState, parseFlagsJSON, validValue } from "@/lib/flags";
 import type { FlagGroup, FlagType, FlagValues } from "@/lib/flags";
-import type { FlagEntry, FlagsInfo } from "@/lib/types";
+import type { FlagEntry } from "@/lib/types";
 import { useApp } from "@/state";
 import { Card, Empty, Eyebrow, PageHeader, Pill } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ function GroupCard({ group, values, disabled, update }: { group: FlagGroup; valu
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-[16px] leading-snug font-semibold text-ink">{group.title}</h3>
-            {state.custom ? <Pill tone="warn">Valor propio</Pill> : state.active ? <Pill tone="volt">Activa</Pill> : null}
+            {state.custom ? <Pill>Valor propio</Pill> : state.active ? <Pill tone="volt">Activa</Pill> : null}
           </div>
           <p className="mt-1 text-body-regular text-ink-2">{group.text}</p>
         </div>
@@ -94,7 +94,7 @@ function GroupCard({ group, values, disabled, update }: { group: FlagGroup; valu
       ) : null}
       {group.control === "level" ? <LevelSlider group={group} value={Number(state.selected ?? 0)} disabled={disabled} onCommit={(v) => choose(String(v))} /> : null}
       <div className="mt-auto pt-4">
-        {state.custom ? <p className="mb-1.5 text-caption-1-medium text-warn">Tiene un valor que no está entre las opciones ({state.custom}).</p> : null}
+        {state.custom ? <p className="mb-1.5 text-caption-1-medium text-ink-3">Valor actual: {state.custom}.</p> : null}
         {group.note ? <p className="text-caption-1-medium text-ink-3">{group.note}</p> : null}
         <p className="mt-2 truncate font-mono text-[11px] text-ink-4" title={group.keys.join("\n")}>
           {group.keys.join(" · ")}
@@ -150,7 +150,7 @@ function ValueCell({ flag, disabled, update }: { flag: FlagEntry; disabled: bool
   );
 }
 
-function CustomFlags({ flags, disabled, update }: { flags: FlagEntry[]; disabled: boolean; update: Update }) {
+function FlagEditor({ flags, disabled, update }: { flags: FlagEntry[]; disabled: boolean; update: Update }) {
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [filter, setFilter] = useState("");
@@ -178,14 +178,14 @@ function CustomFlags({ flags, disabled, update }: { flags: FlagEntry[]; disabled
     }
     clearTimeout(timer.current);
     setConfirm(false);
-    update({}, flags.map((f) => f.name), "Quitadas todas tus flags");
+    update({}, flags.map((f) => f.name), "Quitadas todas las flags");
   };
   const field = "h-10 w-full rounded-lg bg-background-inner-default px-3 font-mono text-[13px] text-ink shadow-card outline-none placeholder:font-sans placeholder:text-ink-4 focus:ring-2 focus:ring-border-focus-ring";
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-baseline justify-between gap-4">
-        <h2 className="text-[15px] font-semibold text-ink">Tus flags</h2>
-        <p className="text-caption-1-medium text-ink-3">Fuera de la lista oficial. Roblox no las aplica, pero quedan guardadas</p>
+        <h2 className="text-[15px] font-semibold text-ink">Editor de flags</h2>
+        <p className="text-caption-1-medium text-ink-3">Cualquier flag de cualquier tipo, como en Bloxstrap o Fishstrap</p>
       </div>
       <Card className="p-3">
         <form
@@ -206,12 +206,12 @@ function CustomFlags({ flags, disabled, update }: { flags: FlagEntry[]; disabled
           </Button>
         </form>
         {validName && type === "unknown" ? (
-          <p className="mt-2 px-1 text-caption-1-medium text-warn">Roblox solo reconoce nombres que empiezan por FFlag, FInt, FString o FLog, con D o S delante o sin ella.</p>
+          <p className="mt-2 px-1 text-caption-1-medium text-ink-3">Las flags de Roblox empiezan por FFlag, FInt, FString o FLog, con D o S delante o sin ella.</p>
         ) : null}
         {validName && value.trim() && !validVal ? <p className="mt-2 px-1 text-caption-1-medium text-bad">Esta flag espera {valueHint[type].toLowerCase()}.</p> : null}
         {flags.length > 8 ? (
           <div className="mt-3 flex items-center gap-2">
-            <TextField aria-label="Buscar entre tus flags" value={filter} onChange={setFilter} className="relative min-w-0 flex-1">
+            <TextField aria-label="Buscar flags" value={filter} onChange={setFilter} className="relative min-w-0 flex-1">
               <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
               <Input placeholder={`Buscar entre ${num(flags.length)} flags`} className={cx(field, "pl-9 font-sans")} />
             </TextField>
@@ -221,17 +221,16 @@ function CustomFlags({ flags, disabled, update }: { flags: FlagEntry[]; disabled
           </div>
         ) : null}
         {flags.length === 0 ? (
-          <p className="px-1 pt-3 text-body-regular text-ink-3">Todavía no tienes flags propias. Añade una arriba o importa una lista en JSON.</p>
+          <p className="px-1 pt-3 text-body-regular text-ink-3">Todavía no tienes flags. Añade una arriba o importa una lista en JSON.</p>
         ) : (
           <ul className="mt-2 max-h-[420px] overflow-y-auto">
             {shown.map((f) => (
               <li key={f.name} className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-surface-2">
-                <span className={cx("w-[76px] shrink-0 text-caption-1-medium", flagType(f.name) === "unknown" ? "text-warn" : "text-ink-3")}>{flagTypeLabel[flagType(f.name)]}</span>
+                <span className="w-[76px] shrink-0 text-caption-1-medium text-ink-3">{flagTypeLabel[flagType(f.name)]}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink" title={f.name}>
                   {f.name}
                 </span>
                 <ValueCell flag={f} disabled={disabled} update={update} />
-                <Pill tone={f.allowed ? "volt" : "neutral"}>{f.allowed ? "La aplica" : "La ignora"}</Pill>
                 <Button variant="ghost" size="xs" iconOnly leadingIcon={IconTrash} aria-label={`Quitar ${f.name}`} disabled={disabled} onClick={() => update({}, [f.name])} />
               </li>
             ))}
@@ -243,10 +242,10 @@ function CustomFlags({ flags, disabled, update }: { flags: FlagEntry[]; disabled
   );
 }
 
-function ImportDialog({ open, allowlist, disabled, onClose, update }: { open: boolean; allowlist: Set<string>; disabled: boolean; onClose: () => void; update: Update }) {
+function ImportDialog({ open, disabled, onClose, update }: { open: boolean; disabled: boolean; onClose: () => void; update: Update }) {
   const [text, setText] = useState("");
   const file = useRef<HTMLInputElement>(null);
-  const parsed = useMemo(() => parseFlagsJSON(text, allowlist), [text, allowlist]);
+  const parsed = useMemo(() => parseFlagsJSON(text), [text]);
   const readFile = async (picked: File | undefined) => {
     if (picked) setText(await picked.text());
     if (file.current) file.current.value = "";
@@ -257,9 +256,7 @@ function ImportDialog({ open, allowlist, disabled, onClose, update }: { open: bo
   };
   const submit = async () => {
     if (parsed.state !== "ok" || parsed.count === 0) return;
-    const ignored = parsed.count - parsed.applied;
-    const detail = ignored ? `Roblox aplica ${num(parsed.applied)} y las otras ${num(ignored)} quedan guardadas en Tus flags.` : undefined;
-    if (await update(parsed.values, [], `Importadas ${num(parsed.count)} flags${detail ? `. ${detail}` : ""}`)) close();
+    if (await update(parsed.values, [], `Importadas ${num(parsed.count)} flags`)) close();
   };
   return (
     <ModalOverlay
@@ -274,7 +271,7 @@ function ImportDialog({ open, allowlist, disabled, onClose, update }: { open: bo
             <Heading slot="title" className="text-[19px] font-semibold text-ink">
               Importar flags
             </Heading>
-            <p className="mt-1 text-body-regular text-ink-2">Pega un JSON como los de Bloxstrap o Fishstrap. Las oficiales pasan a sus controles y el resto se guarda en Tus flags.</p>
+            <p className="mt-1 text-body-regular text-ink-2">Pega un JSON como los de Bloxstrap o Fishstrap, o abre el archivo. Se suman a las flags que ya tienes.</p>
           </div>
           <TextField aria-label="JSON de flags" value={text} onChange={setText} autoFocus>
             <TextArea
@@ -288,11 +285,9 @@ function ImportDialog({ open, allowlist, disabled, onClose, update }: { open: bo
             {parsed.state === "invalid" ? <p className="text-body-medium text-bad">Eso no es un JSON de flags. Tiene que ser un objeto con nombre y valor.</p> : null}
             {parsed.state === "ok" ? (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Pill>{num(parsed.count)} flags</Pill>
-                <Pill tone="volt">Roblox aplica {num(parsed.applied)}</Pill>
-                {parsed.count - parsed.applied > 0 ? <Pill>Ignora {num(parsed.count - parsed.applied)}</Pill> : null}
-                {parsed.mistyped > 0 ? <Pill tone="warn">{num(parsed.mistyped)} con un valor de otro tipo</Pill> : null}
-                {parsed.skipped > 0 ? <Pill tone="warn">{num(parsed.skipped)} no válidas, se saltan</Pill> : null}
+                <Pill tone="volt">{num(parsed.count)} flags</Pill>
+                {parsed.mistyped > 0 ? <Pill>{num(parsed.mistyped)} con un valor de otro tipo</Pill> : null}
+                {parsed.skipped > 0 ? <Pill>{num(parsed.skipped)} no son flags y se saltan</Pill> : null}
               </div>
             ) : null}
           </div>
@@ -317,13 +312,13 @@ function ImportDialog({ open, allowlist, disabled, onClose, update }: { open: bo
 
 export function Flags() {
   const { task, toast, overview } = useApp();
-  const [info, setInfo] = useState<FlagsInfo | null>(null);
+  const [flags, setFlags] = useState<FlagEntry[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [importing, setImporting] = useState(false);
   const load = useCallback(async () => {
     try {
-      setInfo(await api.flags());
+      setFlags(await api.flags());
       setError("");
     } catch (e) {
       setError(errorText(e));
@@ -332,14 +327,12 @@ export function Flags() {
   useEffect(() => {
     load();
   }, [load]);
-  const values = useMemo<FlagValues>(() => Object.fromEntries((info?.flags ?? []).map((f) => [f.name, f.value])), [info]);
-  const allowlist = useMemo(() => new Set(info?.allowlist ?? []), [info]);
-  const custom = useMemo(() => (info?.flags ?? []).filter((f) => !officialKeys.has(f.name)), [info]);
-  const disabled = busy || !!task || !info;
+  const values = useMemo<FlagValues>(() => Object.fromEntries((flags ?? []).map((f) => [f.name, f.value])), [flags]);
+  const disabled = busy || !!task || !flags;
   const update: Update = async (set, clear, done) => {
     setBusy(true);
     try {
-      setInfo(await api.updateFlags(set, clear));
+      setFlags(await api.updateFlags(set, clear));
       play(Object.keys(set).length ? "on" : "off");
       if (done) toast({ tone: "ok", title: done });
       return true;
@@ -353,13 +346,11 @@ export function Flags() {
   };
   const copy = async () => {
     const json = JSON.stringify(values, null, 2);
-    if (await api.copyText(json)) toast({ tone: "ok", title: `Copiadas ${num(info?.flags.length ?? 0)} flags en JSON` });
+    if (await api.copyText(json)) toast({ tone: "ok", title: `Copiadas ${num(flags?.length ?? 0)} flags en JSON` });
   };
   const active = flagSections.flatMap((s) => s.groups).filter((g) => groupState(g, values).active).length;
-  const applied = (info?.flags ?? []).filter((f) => f.allowed).length;
-  const ignored = (info?.flags.length ?? 0) - applied;
 
-  if (error && !info) {
+  if (error && !flags) {
     return (
       <div>
         <PageHeader eyebrow="Flags" title="Ajustes internos de Roblox" />
@@ -373,7 +364,7 @@ export function Flags() {
   return (
     <div>
       <PageHeader eyebrow="Flags" title="Ajustes internos de Roblox">
-        <Button variant="secondary" leadingIcon={IconCopy} disabled={!info?.flags.length} onClick={copy}>
+        <Button variant="secondary" leadingIcon={IconCopy} disabled={!flags?.length} onClick={copy}>
           Copiar JSON
         </Button>
         <Button leadingIcon={IconImport} disabled={disabled} onClick={() => setImporting(true)}>
@@ -382,9 +373,9 @@ export function Flags() {
       </PageHeader>
       <Card className="mb-8 flex items-center gap-6 p-5">
         <div className="flex-1">
-          <Eyebrow>Lo que Roblox acepta</Eyebrow>
+          <Eyebrow>Cómo funciona</Eyebrow>
           <p className="mt-2 max-w-[78ch] text-body-regular text-ink-2">
-            Desde septiembre de 2025 Roblox solo aplica las 18 flags de su lista oficial y las demás las ignora sin avisar. Aquí tienes esas 18 con controles claros. Las otras puedes guardarlas en Tus flags por si algún día vuelve a aceptarlas.
+            Arriba tienes los ajustes más usados con controles fáciles. Abajo está el editor con todas tus flags, donde puedes añadir cualquiera o importar una lista en JSON, como en Bloxstrap o Fishstrap.
           </p>
           <p className="mt-2 text-caption-1-medium text-ink-3">
             {overview?.roblox.running ? "Roblox está abierto. Los cambios se verán cuando lo vuelvas a abrir." : "Los cambios se aplican la próxima vez que abras Roblox."}
@@ -392,9 +383,8 @@ export function Flags() {
         </div>
         <div className="flex gap-6 text-right">
           {[
-            { n: active, label: "activas", tone: "text-volt" },
-            { n: applied, label: "las aplica Roblox", tone: "text-ink-2" },
-            { n: ignored, label: "las ignora", tone: "text-ink-3" },
+            { n: active, label: "ajustes activos", tone: "text-volt" },
+            { n: flags?.length ?? 0, label: "flags en total", tone: "text-ink-2" },
           ].map((c) => (
             <div key={c.label}>
               <p className={cx("num text-[34px] leading-none font-semibold", c.tone)}>{num(c.n)}</p>
@@ -416,8 +406,8 @@ export function Flags() {
           </div>
         </div>
       ))}
-      <CustomFlags flags={custom} disabled={disabled} update={update} />
-      <ImportDialog open={importing} allowlist={allowlist} disabled={disabled} onClose={() => setImporting(false)} update={update} />
+      <FlagEditor flags={flags ?? []} disabled={disabled} update={update} />
+      <ImportDialog open={importing} disabled={disabled} onClose={() => setImporting(false)} update={update} />
     </div>
   );
 }

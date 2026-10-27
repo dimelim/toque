@@ -26,9 +26,9 @@ Roblox abre un servidor privado vacío en el centro de datos que elige para quie
 
 ## Cómo aplica las flags
 
-Toque escribe las flags en `ClientSettings\ClientAppSettings.json`, dentro de la carpeta de la versión de Roblox, que es el único sitio de donde Roblox las lee. Desde septiembre de 2025 Roblox solo aplica las 18 de su lista oficial y las demás las ignora sin avisar. Por eso la pantalla Flags enseña esas 18 con controles, y las que importas o añades fuera de la lista quedan guardadas y marcadas como ignoradas. Cada cambio entra en el diario igual que una optimización, y Toque lo vuelve a poner cuando una actualización de Roblox borra la carpeta.
+Toque escribe las flags en `ClientSettings\ClientAppSettings.json`, dentro de la carpeta de la versión de Roblox, igual que Bloxstrap y Fishstrap. Acepta cualquier flag de cualquier tipo, y los ajustes más usados tienen controles propios. Cada cambio entra en el diario igual que una optimización, y Toque lo vuelve a poner cuando una actualización de Roblox borra la carpeta.
 
-Toque nunca escribe flags en la memoria de Roblox. Es la única forma de forzar las que no están en la lista, y el anticheat de Roblox lo trata como una trampa que puede acabar en baneo.
+Desde septiembre de 2025 Roblox solo hace caso a las flags de su lista oficial. Toque nunca escribe flags en la memoria de Roblox para saltarse esa lista, porque el anticheat lo trata como una trampa que puede acabar en baneo.
 
 ## Cómo deshace los cambios
 

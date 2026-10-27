@@ -3,8 +3,6 @@ package app
 import (
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
 	"sort"
 	"strconv"
 
@@ -13,39 +11,33 @@ import (
 )
 
 type FlagEntry struct {
-	Name    string `json:"name"`
-	Value   string `json:"value"`
-	Allowed bool   `json:"allowed"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
-type FlagsInfo struct {
-	Flags     []FlagEntry `json:"flags"`
-	Allowlist []string    `json:"allowlist"`
-}
-
-func (s *Service) Flags() (FlagsInfo, error) {
-	info := FlagsInfo{Flags: []FlagEntry{}, Allowlist: slices.Sorted(maps.Keys(roblox.AllowedFlags))}
+func (s *Service) Flags() ([]FlagEntry, error) {
 	dir := s.context().Install.VersionDir
 	if dir == "" {
-		return info, errors.New("Roblox no está instalado")
+		return []FlagEntry{}, errors.New("Roblox no está instalado")
 	}
 	cur, err := roblox.ReadFlags(dir)
 	if err != nil {
-		return info, fmt.Errorf("no pude leer las flags de Roblox: %w", err)
+		return []FlagEntry{}, fmt.Errorf("no pude leer las flags de Roblox: %w", err)
 	}
+	out := make([]FlagEntry, 0, len(cur))
 	for k, v := range cur {
-		info.Flags = append(info.Flags, FlagEntry{Name: k, Value: flagText(v), Allowed: roblox.AllowedFlags[k]})
+		out = append(out, FlagEntry{Name: k, Value: flagText(v)})
 	}
-	sort.Slice(info.Flags, func(i, j int) bool { return info.Flags[i].Name < info.Flags[j].Name })
-	return info, nil
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out, nil
 }
 
-func (s *Service) UpdateFlags(set map[string]string, clear []string) (FlagsInfo, error) {
+func (s *Service) UpdateFlags(set map[string]string, clear []string) ([]FlagEntry, error) {
 	if err := s.idle(); err != nil {
-		return FlagsInfo{}, err
+		return nil, err
 	}
 	if err := tweaks.UpdateFlags(s.context(), set, clear); err != nil {
-		return FlagsInfo{}, err
+		return nil, err
 	}
 	return s.Flags()
 }

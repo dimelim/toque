@@ -10,27 +10,6 @@ import (
 	"toque/internal/winx"
 )
 
-var AllowedFlags = map[string]bool{
-	"DFIntCSGLevelOfDetailSwitchingDistance":    true,
-	"DFIntCSGLevelOfDetailSwitchingDistanceL12": true,
-	"DFIntCSGLevelOfDetailSwitchingDistanceL23": true,
-	"DFIntCSGLevelOfDetailSwitchingDistanceL34": true,
-	"FFlagHandleAltEnterFullscreenManually":     true,
-	"DFFlagTextureQualityOverrideEnabled":       true,
-	"DFIntTextureQualityOverride":               true,
-	"FIntDebugForceMSAASamples":                 true,
-	"DFFlagDisableDPIScale":                     true,
-	"FFlagDebugGraphicsPreferD3D11":             true,
-	"FFlagDebugSkyGray":                         true,
-	"DFFlagDebugPauseVoxelizer":                 true,
-	"DFIntDebugFRMQualityLevelOverride":         true,
-	"FIntFRMMaxGrassDistance":                   true,
-	"FIntFRMMinGrassDistance":                   true,
-	"FFlagDebugGraphicsPreferVulkan":            true,
-	"FFlagDebugGraphicsPreferOpenGL":            true,
-	"FIntGrassMovementReducedMotionFactor":      true,
-}
-
 var reFlagName = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,127}$`)
 
 func ValidFlagName(name string) bool {

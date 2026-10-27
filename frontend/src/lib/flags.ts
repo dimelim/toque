@@ -188,12 +188,22 @@ export const flagSections: FlagSection[] = [
   },
 ];
 
-export const officialKeys = new Set(flagSections.flatMap((s) => s.groups.flatMap((g) => g.keys)));
+const robloxDefaults: FlagValues = {
+  [D3D11]: "False",
+  [VULKAN]: "False",
+  [OPENGL]: "False",
+  [TEXTURES_ON]: "False",
+  [MSAA]: "0",
+  [VOXEL]: "False",
+  [SKY]: "False",
+  [ALT_ENTER]: "True",
+  [DPI]: "False",
+};
 
-const same = (a: string | undefined, b: string) => a !== undefined && a.toLowerCase() === b.toLowerCase();
+const same = (a: string | undefined, b: string | undefined) => a !== undefined && b !== undefined && a.toLowerCase() === b.toLowerCase();
 
 function matches(group: FlagGroup, values: FlagValues, target: FlagValues) {
-  return group.keys.every((k) => (k in target ? same(values[k], target[k]) : values[k] === undefined));
+  return group.keys.every((k) => (k in target ? same(values[k], target[k]) : values[k] === undefined || same(values[k], robloxDefaults[k])));
 }
 
 export interface GroupState {
@@ -245,9 +255,9 @@ export function validValue(type: FlagType, value: string) {
 export type ParsedFlags =
   | { state: "empty" }
   | { state: "invalid" }
-  | { state: "ok"; values: FlagValues; count: number; applied: number; skipped: number; mistyped: number };
+  | { state: "ok"; values: FlagValues; count: number; skipped: number; mistyped: number };
 
-export function parseFlagsJSON(text: string, allowlist: Set<string>): ParsedFlags {
+export function parseFlagsJSON(text: string): ParsedFlags {
   if (!text.trim()) return { state: "empty" };
   let data: unknown;
   try {
@@ -270,7 +280,6 @@ export function parseFlagsJSON(text: string, allowlist: Set<string>): ParsedFlag
     state: "ok",
     values,
     count: names.length,
-    applied: names.filter((n) => allowlist.has(n)).length,
     skipped,
     mistyped: names.filter((n) => !validValue(flagType(n), values[n])).length,
   };
