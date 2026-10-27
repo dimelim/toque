@@ -49,6 +49,18 @@ var Catalog = []Entry{
 		Lab:      "Descartada tras tres pruebas con 10 hilos de carga de fondo (25 ventanas por lado). Las dos primeras apuntaban a mejor 1 % low sin llegar a ser concluyentes, y la réplica final salió al revés. Juntando todo, +3,9 % con p = 0,52.",
 	},
 	{
+		ID:       "proc-affinity-skip-core0",
+		Title:    "Roblox fuera del núcleo 0 de la CPU",
+		Category: "sistema",
+		What:     "Quita a Roblox los dos primeros hilos de la CPU, donde Windows atiende buena parte de las interrupciones de la red, el disco y la gráfica.",
+		Why:      "La idea es que el hilo principal del juego no compita con esas interrupciones y entregue frames más regulares.",
+		Metric:   "1 % low, tirones y latencia de render.",
+		Risk:     "Roblox tiene dos hilos menos para repartir su trabajo.",
+		Revert:   "Devuelve a Roblox todos los hilos. También se pierde al cerrar el juego.",
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada. En 12 ventanas, con el cambio aplicado en vivo, la latencia de render quedó igual (6,98 frente a 6,99 ms) y los tirones también (10,8 por minuto en los dos casos). El 1 % low varió mucho entre ventanas y no mostró un efecto claro.",
+	},
+	{
 		ID:       "power-plan:8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
 		Title:    "Plan de energía de alto rendimiento",
 		Category: "sistema",

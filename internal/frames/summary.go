@@ -25,16 +25,21 @@ type Summary struct {
 	Bound          string  `json:"bound"`
 	PresentMode    string  `json:"presentMode"`
 	Tearing        bool    `json:"tearing"`
+	InputLatency   float64 `json:"inputLatencyMs"`
+	InputEvents    int     `json:"inputEvents"`
 }
 
 func valid(v float64) bool { return !math.IsNaN(v) && v > 0 }
 
 func Summarize(fr []Frame) Summary {
 	var s Summary
-	var ft, lat, cpu, gpu []float64
+	var ft, lat, cpu, gpu, input []float64
 	modes := map[string]int{}
 	tear := 0
 	for _, f := range fr {
+		if valid(f.InputToPhoton) {
+			input = append(input, f.InputToPhoton)
+		}
 		if !valid(f.BetweenPresents) {
 			continue
 		}
@@ -81,6 +86,10 @@ func Summarize(fr []Frame) Summary {
 	}
 	s.CPUBusy = stats.Mean(cpu)
 	s.GPUBusy = stats.Mean(gpu)
+	if len(input) > 0 {
+		s.InputLatency = stats.Percentile(stats.Sorted(input), 50)
+		s.InputEvents = len(input)
+	}
 	switch {
 	case s.GPUBusy > 0.85*s.FrametimeP50:
 		s.Bound = "gpu"

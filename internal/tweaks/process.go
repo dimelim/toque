@@ -2,7 +2,9 @@ package tweaks
 
 import (
 	"errors"
+	"math/bits"
 	"strconv"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -71,6 +73,93 @@ func (p procPriority) Revert(c Context, u Undo) error {
 		prev = windows.NORMAL_PRIORITY_CLASS
 	}
 	return setPriority(c.PID, uint32(prev))
+}
+
+var (
+	kernel32                   = windows.NewLazySystemDLL("kernel32.dll")
+	procGetProcessAffinityMask = kernel32.NewProc("GetProcessAffinityMask")
+	procSetProcessAffinityMask = kernel32.NewProc("SetProcessAffinityMask")
+)
+
+type affinitySkipFirstCore struct{}
+
+func (affinitySkipFirstCore) ID() string { return "proc-affinity-skip-core0" }
+func (affinitySkipFirstCore) Kind() Kind { return Live }
+
+func affinityOf(pid uint32) (process, system uintptr, err error) {
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer windows.CloseHandle(h)
+	if r, _, e := procGetProcessAffinityMask.Call(uintptr(h), uintptr(unsafe.Pointer(&process)), uintptr(unsafe.Pointer(&system))); r == 0 {
+		return 0, 0, e
+	}
+	return process, system, nil
+}
+
+func setAffinity(pid uint32, mask uintptr) error {
+	h, err := windows.OpenProcess(windows.PROCESS_SET_INFORMATION|windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return err
+	}
+	defer windows.CloseHandle(h)
+	if r, _, e := procSetProcessAffinityMask.Call(uintptr(h), mask); r == 0 {
+		return e
+	}
+	return nil
+}
+
+func skipFirstCore(system uintptr) uintptr {
+	return system &^ 0b11
+}
+
+func (affinitySkipFirstCore) State(c Context) State {
+	if c.PID == 0 {
+		return State{Applicable: false, Detail: "roblox not running"}
+	}
+	cur, sys, err := affinityOf(c.PID)
+	if err != nil {
+		return State{Detail: err.Error()}
+	}
+	return State{Applicable: bits.OnesCount64(uint64(sys)) > 4, Applied: cur == skipFirstCore(sys), Detail: "mask 0x" + strconv.FormatUint(uint64(cur), 16)}
+}
+
+func (affinitySkipFirstCore) Snapshot(c Context) (Undo, error) {
+	if c.PID == 0 {
+		return nil, errors.New("roblox not running")
+	}
+	cur, _, err := affinityOf(c.PID)
+	if err != nil {
+		return nil, err
+	}
+	return Undo{"mask": strconv.FormatUint(uint64(cur), 10)}, nil
+}
+
+func (affinitySkipFirstCore) Apply(c Context) error {
+	if c.PID == 0 {
+		return errors.New("roblox not running")
+	}
+	_, sys, err := affinityOf(c.PID)
+	if err != nil {
+		return err
+	}
+	return setAffinity(c.PID, skipFirstCore(sys))
+}
+
+func (affinitySkipFirstCore) Revert(c Context, u Undo) error {
+	if c.PID == 0 {
+		return nil
+	}
+	mask, err := strconv.ParseUint(u["mask"], 10, 64)
+	if err != nil || mask == 0 {
+		_, sys, err := affinityOf(c.PID)
+		if err != nil {
+			return err
+		}
+		mask = uint64(sys)
+	}
+	return setAffinity(c.PID, uintptr(mask))
 }
 
 const (
@@ -173,4 +262,5 @@ func (ifeoPriority) Revert(_ Context, u Undo) error {
 func init() {
 	Register(procPriority{class: windows.HIGH_PRIORITY_CLASS})
 	Register(ifeoPriority{})
+	Register(affinitySkipFirstCore{})
 }

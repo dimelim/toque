@@ -23,6 +23,7 @@ export const metricMeta: Record<string, { label: string; unit: string; better: 1
   low01: { label: "0,1 % low", unit: "FPS", better: 1, digits: 0 },
   stutterMin: { label: "Tirones", unit: "/min", better: -1, digits: 0 },
   latMs: { label: "Latencia de render", unit: "ms", better: -1, digits: 1 },
+  inputLatency: { label: "Latencia de entrada", unit: "ms", better: -1, digits: 1 },
   ftStdev: { label: "Variación del frametime", unit: "ms", better: -1, digits: 2 },
   rtt: { label: "Ping real", unit: "ms", better: -1, digits: 1 },
   jitter: { label: "Jitter", unit: "ms", better: -1, digits: 1 },

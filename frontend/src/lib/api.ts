@@ -3,6 +3,7 @@ import { EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } 
 import type {
   BloatResult,
   Diagnosis,
+  ExperimentGroup,
   ExperimentRecord,
   Optimization,
   Overview,
@@ -23,6 +24,7 @@ export const api = {
   revertAll: () => Service.RevertAll() as Promise<void>,
   verify: (id: string) => Service.Verify(id) as Promise<ExperimentRecord>,
   experiments: () => Service.Experiments() as Promise<ExperimentRecord[]>,
+  experimentGroups: () => Service.ExperimentGroups() as Promise<ExperimentGroup[]>,
   benchmark: (label: string) => Service.Benchmark(label) as Promise<RunRecord>,
   runs: () => Service.Runs() as Promise<RunRecord[]>,
   removeRun: (id: string) => Service.RemoveRun(id) as Promise<void>,

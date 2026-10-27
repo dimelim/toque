@@ -21,7 +21,7 @@ export function updateLine(u: UpdateInfo | null) {
     case "ready":
       return `Toque ${u.latest} está descargada y verificada. Se instala sola la próxima vez que abras Toque, o ahora mismo si prefieres.`;
     case "current":
-      return `Tienes la última versión. Comprobado ${when(u.checked)}.`;
+      return `Tienes la última versión. Última comprobación ${when(u.checked)}`;
     case "error":
       return `No se pudo comprobar si hay versión nueva (${u.error}).`;
     default:

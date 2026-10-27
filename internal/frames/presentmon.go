@@ -26,6 +26,7 @@ type Frame struct {
 	GPUBusy              float64
 	GPUWait              float64
 	ClickToPhoton        float64
+	InputToPhoton        float64
 	PresentMode          string
 	AllowsTearing        bool
 }
@@ -107,6 +108,7 @@ func ParseCSV(path string) ([]Frame, error) {
 			GPUBusy:              num(rec, "MsGPUBusy"),
 			GPUWait:              num(rec, "MsGPUWait"),
 			ClickToPhoton:        num(rec, "MsClickToPhotonLatency"),
+			InputToPhoton:        num(rec, "MsAllInputToPhotonLatency"),
 			PresentMode:          str(rec, "PresentMode"),
 			AllowsTearing:        str(rec, "AllowsTearing") == "1",
 		})

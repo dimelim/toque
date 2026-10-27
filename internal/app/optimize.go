@@ -173,3 +173,7 @@ func (s *Service) Verify(id string) (ExperimentRecord, error) {
 func (s *Service) Experiments() []ExperimentRecord {
 	return LoadExperiments()
 }
+
+func (s *Service) ExperimentGroups() []ExperimentGroup {
+	return LoadExperimentGroups()
+}

@@ -41,6 +41,8 @@ Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes d
 | `internal/bench` | Medición de ventanas, experimentos A/B, carga artificial |
 | `internal/app` | Servicio que usa la interfaz (diagnóstico, catálogo, pruebas, buscador de servidor, instalador) |
 | `internal/install` | Autoinstalación en Program Files, accesos directos, desinstalación |
+| `internal/update` | Comprueba, descarga y verifica las versiones nuevas firmadas |
+| `cmd/toque-sign` | Genera la clave de firma y firma el manifiesto de cada versión |
 | `frontend` | React 19, Tailwind 4, componentes de BoardUI, iconos Gravity UI |
 
 ## Compilar
@@ -51,4 +53,10 @@ Hace falta Go 1.27, Node 24 y Wails CLI 2.17.
 .\build.ps1
 ```
 
-El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo. Se compila sin símbolos ni rutas del equipo de desarrollo. La ofuscación con garble se probó y se descartó porque Microsoft Defender marca el binario ofuscado como troyano (Trojan:Win32/Gracing.I), mientras que el binario normal sale limpio.
+El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo.
+
+## Publicar una versión
+
+Sube `Version` en `internal/app/service.go`, haz commit y ejecuta `.\release.ps1 -Notes "..."`. El guion compila, firma `latest.json` con la clave de `%USERPROFILE%\.toque\update-signing.key` y publica el ejecutable en [dimelim/toque-releases](https://github.com/dimelim/toque-releases), que es público y solo tiene binarios, y en este repositorio.
+
+Las copias instaladas consultan el manifiesto al abrirse y cada 6 horas. Si hay una versión nueva la descargan, comprueban la firma Ed25519 y el SHA-256 y la instalan al volver a abrir Toque o al pulsar Actualizar, nunca a mitad de una prueba. La clave privada no está en el repositorio. Si se pierde, las copias instaladas dejarán de aceptar versiones nuevas hasta que se instale a mano una que lleve la clave nueva. Se compila sin símbolos ni rutas del equipo de desarrollo. La ofuscación con garble se probó y se descartó porque Microsoft Defender marca el binario ofuscado como troyano (Trojan:Win32/Gracing.I), mientras que el binario normal sale limpio.

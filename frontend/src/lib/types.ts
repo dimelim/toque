@@ -35,6 +35,8 @@ export interface FrameSummary {
   bound: string;
   presentMode: string;
   tearing: boolean;
+  inputLatencyMs: number;
+  inputEvents: number;
 }
 
 export interface NetSummary {
@@ -119,6 +121,15 @@ export interface ExperimentRecord {
   valid: number;
   compare: Record<string, Delta>;
   windows: WindowPoint[] | null;
+}
+
+export interface ExperimentGroup {
+  tweak: string;
+  title: string;
+  stress: string;
+  verdict: "improves" | "unconfirmed" | "no-effect" | "worse" | "tradeoff" | string;
+  pooled: Record<string, Delta>;
+  tests: ExperimentRecord[];
 }
 
 export interface WindowPoint {

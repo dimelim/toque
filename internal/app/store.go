@@ -11,6 +11,7 @@ import (
 
 	"toque/internal/bench"
 	"toque/internal/catalog"
+	"toque/internal/stats"
 	"toque/internal/winx"
 )
 
@@ -106,15 +107,19 @@ func toRecord(res bench.ABResult) ExperimentRecord {
 		rec.Windows = append(rec.Windows, wp)
 	}
 	for k, c := range res.Compare {
-		rec.Compare[k] = Delta{A: c.MedianA, B: c.MedianB, Pct: c.DeltaPct, Low: c.CILowPct, High: c.CIHighPct, P: c.PValue, Conclusive: c.Conclusive}
+		rec.Compare[k] = delta(c)
 	}
 	return rec
 }
 
-func LoadExperiments() []ExperimentRecord {
-	dirs, _ := filepath.Glob(filepath.Join(winx.DataDir("experiments"), "*", "result.json"))
-	var out []ExperimentRecord
-	for _, f := range dirs {
+func delta(c stats.Comparison) Delta {
+	return Delta{A: c.MedianA, B: c.MedianB, Pct: c.DeltaPct, Low: c.CILowPct, High: c.CIHighPct, P: c.PValue, Conclusive: c.Conclusive}
+}
+
+func loadResults() []bench.ABResult {
+	files, _ := filepath.Glob(filepath.Join(winx.DataDir("experiments"), "*", "result.json"))
+	var out []bench.ABResult
+	for _, f := range files {
 		b, err := os.ReadFile(f)
 		if err != nil {
 			continue
@@ -122,10 +127,54 @@ func LoadExperiments() []ExperimentRecord {
 		var res bench.ABResult
 		if json.Unmarshal(b, &res) == nil {
 			res.Compare, res.Verdict, res.Summary = bench.Evaluate(res.Samples, res.Config.Primary)
-			out = append(out, toRecord(res))
+			out = append(out, res)
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].At.After(out[j].At) })
+	sort.Slice(out, func(i, j int) bool { return out[i].Started.After(out[j].Started) })
+	return out
+}
+
+func LoadExperiments() []ExperimentRecord {
+	var out []ExperimentRecord
+	for _, r := range loadResults() {
+		out = append(out, toRecord(r))
+	}
+	return out
+}
+
+type ExperimentGroup struct {
+	Tweak   string             `json:"tweak"`
+	Title   string             `json:"title"`
+	Stress  string             `json:"stress"`
+	Verdict string             `json:"verdict"`
+	Pooled  map[string]Delta   `json:"pooled"`
+	Tests   []ExperimentRecord `json:"tests"`
+}
+
+func LoadExperimentGroups() []ExperimentGroup {
+	var out []ExperimentGroup
+	for _, p := range bench.PoolResults(loadResults()) {
+		g := ExperimentGroup{Tweak: p.Tweak, Title: catalog.Title(p.Tweak), Stress: p.Stress, Pooled: map[string]Delta{}}
+		improvedOnce := false
+		for _, r := range p.Results {
+			rec := toRecord(r)
+			g.Tests = append(g.Tests, rec)
+			improvedOnce = improvedOnce || rec.Verdict == "improves" || rec.Verdict == "tradeoff"
+		}
+		for _, k := range p.Primary() {
+			if c, ok := p.Compare(k); ok {
+				g.Pooled[k] = delta(c)
+			}
+		}
+		g.Verdict = g.Tests[0].Verdict
+		if len(p.Results) > 1 {
+			g.Verdict = p.Verdict()
+			if g.Verdict == "no-effect" && improvedOnce {
+				g.Verdict = "unconfirmed"
+			}
+		}
+		out = append(out, g)
+	}
 	return out
 }
 
