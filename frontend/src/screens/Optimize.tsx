@@ -123,11 +123,9 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
         <Button variant="ghost" size="small" trailingIcon={IconChevronDown} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {open ? "Ocultar detalles" : "Ver detalles"}
         </Button>
-        {!rejected ? (
-          <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
-            Probar en mi PC
-          </Button>
-        ) : null}
+        <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
+          {rejected ? "Probarla igualmente en mi PC" : "Probar en mi PC"}
+        </Button>
         {o.mine ? <span className="ml-auto text-caption-1-medium text-ink-3">Última prueba {when(o.mine.at)}</span> : null}
       </div>
       <AnimatePresence initial={false}>

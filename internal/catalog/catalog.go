@@ -52,7 +52,8 @@ var Catalog = []Entry{
 		Metric:   "1 % low, tirones y latencia de render.",
 		Risk:     "Más consumo y temperatura en reposo.",
 		Revert:   "Vuelve al plan que tenías antes.",
-		Verdict:  VerdictPending,
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada en las pruebas, hechas en un PC de escritorio. Alto rendimiento frente a Equilibrado no cambió el 1 % low, los tirones ni la latencia en 12 ventanas. En portátiles puede ser distinto, por eso puedes probarla en el tuyo.",
 	},
 	{
 		ID:       "timer-res-0.5ms",
@@ -63,8 +64,8 @@ var Catalog = []Entry{
 		Metric:   "Estabilidad del frametime y 1 % low.",
 		Risk:     "Algo más de consumo de energía.",
 		Revert:   "Se libera al cerrar Roblox o al desactivarla.",
-		Verdict:  VerdictProven,
-		Lab:      "En las pruebas, 1 % low de 96 a 114 FPS (+18 %) y variación del frametime −35 %, alternando 5 veces con y sin el cambio.",
+		Verdict:  VerdictPending,
+		Lab:      "Sin demostrar. La primera prueba dio +18 % en el 1 % low, pero la réplica con más ventanas no lo confirmó. Juntando las 26 ventanas, +15 % con p = 0,051, justo por encima del umbral.",
 	},
 	{
 		ID:       "flag:FFlagDebugGraphicsPreferD3D11=True",
@@ -99,8 +100,8 @@ var Catalog = []Entry{
 		Metric:   "Latencia de render y tiempo de GPU por frame.",
 		Risk:     "La iluminación del mapa deja de recalcularse, y algunos efectos de luz dinámicos pueden verse menos realistas.",
 		Revert:   "Quita la opción del archivo de configuración de Roblox.",
-		Verdict:  VerdictProven,
-		Lab:      "Mejora pequeña pero medible. Latencia de render −3,6 % (6,98 a 6,72 ms) y GPU por frame −5,3 %. Sin cambio medible en tirones.",
+		Verdict:  VerdictPending,
+		Lab:      "En réplica. La primera prueba, con 4 reaperturas por lado, bajó la latencia de render un 3,6 % y la GPU por frame un 5,3 % en todas las ventanas, pero con tan pocas muestras no llega al umbral estricto.",
 	},
 	{
 		ID:       "flag:FIntFRMMinGrassDistance=0,FIntFRMMaxGrassDistance=0",

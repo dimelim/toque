@@ -103,9 +103,20 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 	tctx := tweaks.Context{Install: env.Install}
 	seq := armSequence(cfg.Cycles)
 	var sess roblox.Session
+	wasApplied := j.Has(t.ID())
+	writeMarker(t.ID(), wasApplied)
 	defer func() {
 		tctx.PID = sess.PID
-		j.Revert(tctx, t)
+		if t.Kind() != tweaks.Live {
+			roblox.CloseAll(10 * time.Second)
+			tctx.PID = 0
+		}
+		arm := "A"
+		if wasApplied {
+			arm = "B"
+		}
+		setArm(tctx, t, j, arm)
+		clearMarker()
 	}()
 	joinFresh := func() error {
 		s, err := roblox.Join(ctx, env.Install, cfg.PlaceID, sess.JobID, 90*time.Second)
@@ -191,11 +202,17 @@ func Evaluate(samples []Sample, primary []string) (map[string]stats.Comparison, 
 			}
 		}
 	}
+	primaryAlpha := 0.05 / float64(max(1, len(primary)))
 	cmp := map[string]stats.Comparison{}
 	for k := range Better {
-		if len(a[k]) > 0 && len(b[k]) > 0 {
-			cmp[k] = stats.Compare(a[k], b[k], 42)
+		if len(a[k]) == 0 || len(b[k]) == 0 {
+			continue
 		}
+		alpha := 0.01
+		if contains(primary, k) {
+			alpha = primaryAlpha
+		}
+		cmp[k] = stats.CompareAlpha(a[k], b[k], 42, alpha)
 	}
 	improved, worsened := []string{}, []string{}
 	for _, k := range primary {

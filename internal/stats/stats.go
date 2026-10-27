@@ -72,6 +72,12 @@ type Comparison struct {
 	Conclusive bool    `json:"conclusive"`
 }
 
+func CompareAlpha(a, b []float64, seed int64, alpha float64) Comparison {
+	c := Compare(a, b, seed)
+	c.Conclusive = (c.CILowPct > 0 || c.CIHighPct < 0) && c.PValue < alpha
+	return c
+}
+
 func Compare(a, b []float64, seed int64) Comparison {
 	c := Comparison{MedianA: Median(a), MedianB: Median(b), Samples: len(a) + len(b)}
 	if len(a) == 0 || len(b) == 0 || c.MedianA == 0 {

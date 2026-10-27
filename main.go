@@ -42,6 +42,7 @@ func main() {
 			runtime.EventsEmit(wctx, name, data)
 		}
 	})
+	svc.Recover()
 	svc.StartSession()
 	defer svc.StopSession()
 	err := wails.Run(&options.App{

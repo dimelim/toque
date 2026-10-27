@@ -40,6 +40,11 @@ export function Settings() {
                 <p className="mt-1 max-w-[52ch] text-body-regular text-ink-2">
                   Un agente ligero, sin ventana y con menos de 15 MB de memoria, aplica las optimizaciones en vivo solo mientras Roblox está abierto y las retira al cerrarlo.
                 </p>
+                <p className="mt-2 max-w-[52ch] text-caption-1-medium text-ink-3">
+                  {overview?.live.tweaks?.length
+                    ? `Ahora aplicaría ${overview.live.tweaks.join(", ")}.`
+                    : "Ahora mismo ninguna optimización probada necesita aplicarse en vivo, así que el agente no cambiaría nada."}
+                </p>
               </div>
               <Switch
                 size="md"

@@ -1,6 +1,7 @@
 import * as Service from "@wails/go/app/Service";
 import { EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } from "@wails/runtime/runtime";
 import type {
+  BloatResult,
   Diagnosis,
   ExperimentRecord,
   Optimization,
@@ -24,6 +25,7 @@ export const api = {
   runs: () => Service.Runs() as Promise<RunRecord[]>,
   removeRun: (id: string) => Service.RemoveRun(id) as Promise<void>,
   findServer: (tries: number) => Service.FindServer(tries) as Promise<ServerSearch>,
+  bufferbloat: () => Service.Bufferbloat() as Promise<BloatResult>,
   play: () => Service.Play() as Promise<void>,
   cancel: () => Service.Cancel() as Promise<void>,
 };

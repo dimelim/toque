@@ -192,6 +192,7 @@ export interface Diagnosis {
   game: Window | null;
   pagefile: PagefileInfo;
   powerPlan: string;
+  powerName: string;
   ramAvailMb: number;
   hogs: ProcMem[] | null;
   framerateCap: number;
@@ -214,6 +215,21 @@ export interface ServerSearch {
   probes: ServerProbe[] | null;
   best: ServerProbe | null;
   joined: boolean;
+}
+
+export interface LoadPhase {
+  phase: string;
+  rttMs: number;
+  p95Ms: number;
+  jitterMs: number;
+  lossPct: number;
+}
+
+export interface BloatResult {
+  target: string;
+  phases: LoadPhase[] | null;
+  addedMs: number;
+  grade: string;
 }
 
 export interface Progress {

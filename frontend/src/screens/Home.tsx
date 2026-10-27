@@ -5,7 +5,7 @@ import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
 import type { ServerSearch } from "@/lib/types";
 import { useApp } from "@/state";
-import { BigNumber, Card, Eyebrow, PageHeader, Pill } from "@/components/primitives";
+import { BigNumber, Card, Eyebrow, PageHeader, Pill, Spark } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { IconArrowRight, IconDiagnose, IconOptimize, IconSearch, IconStopwatch } from "@/components/icons";
 
@@ -87,6 +87,7 @@ export function Home() {
               </div>
               <div className="mt-6">
                 <BigNumber value={w.net.confident ? w.net.rttMs : null} unit="ms" label="Ping real dentro del juego" size="xl" digits={0} tone={pingTone(w.net.rttMs)} />
+                {w.net.rttSeries && w.net.rttSeries.length >= 3 ? <Spark values={w.net.rttSeries} className="mt-3" /> : null}
               </div>
               <p className="mt-3 max-w-[38ch] text-body-regular text-ink-2">
                 Medido sobre el tráfico real de Roblox, sin tocar el juego. Variación de {num(w.net.jitterMs, 1)} ms y {num(w.net.lossDownPct, 1)} % de pérdida.

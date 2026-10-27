@@ -33,6 +33,25 @@ func ActivePlan() (string, error) {
 	return strings.ToLower(strings.Trim(g.String(), "{}")), nil
 }
 
+var procPowerReadFriendlyName = powrprof.NewProc("PowerReadFriendlyName")
+
+func PlanName(id string) string {
+	g, err := windows.GUIDFromString("{" + id + "}")
+	if err != nil {
+		return ""
+	}
+	var size uint32
+	procPowerReadFriendlyName.Call(0, uintptr(unsafe.Pointer(&g)), 0, 0, 0, uintptr(unsafe.Pointer(&size)))
+	if size == 0 || size > 4096 {
+		return ""
+	}
+	buf := make([]uint16, size/2+1)
+	if r, _, _ := procPowerReadFriendlyName.Call(0, uintptr(unsafe.Pointer(&g)), 0, 0, uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size))); r != 0 {
+		return ""
+	}
+	return windows.UTF16ToString(buf)
+}
+
 func SetPlan(id string) error {
 	g, err := windows.GUIDFromString("{" + id + "}")
 	if err != nil {

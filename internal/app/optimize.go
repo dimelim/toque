@@ -145,9 +145,8 @@ func (s *Service) Verify(id string) (ExperimentRecord, error) {
 	if err != nil {
 		return ExperimentRecord{}, err
 	}
-	cycles := 4
+	cycles := 6
 	if t.Kind() == tweaks.Live {
-		cycles = 5
 		defer s.pauseLive()()
 	}
 	cfg := bench.ABConfig{

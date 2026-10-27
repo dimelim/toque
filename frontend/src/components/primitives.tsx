@@ -96,6 +96,23 @@ export function StatRow({ label, value, hint }: { label: string; value: ReactNod
   );
 }
 
+export function Spark({ values, className }: { values: number[]; className?: string }) {
+  if (values.length < 3) return null;
+  const w = 220;
+  const h = 36;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(4, max - min);
+  const mid = (min + max) / 2;
+  const lo = mid - span / 2;
+  const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - 4 - ((v - lo) / span) * (h - 8)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className={cx("h-9 w-[220px] overflow-visible", className)} aria-hidden>
+      <polyline points={pts} fill="none" stroke="var(--color-volt)" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl px-8 py-14 text-center shadow-[inset_0_0_0_1px_var(--color-line)]">

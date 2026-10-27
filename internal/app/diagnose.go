@@ -40,6 +40,7 @@ type Diagnosis struct {
 	Game         *bench.Window       `json:"game"`
 	Pagefile     tweaks.PagefileInfo `json:"pagefile"`
 	PowerPlan    string              `json:"powerPlan"`
+	PowerName    string              `json:"powerName"`
 	RAMAvailMB   float64             `json:"ramAvailMb"`
 	Hogs         []sysmon.ProcMem    `json:"hogs"`
 	FramerateCap int                 `json:"framerateCap"`
@@ -102,6 +103,7 @@ func (s *Service) Diagnose(withGame bool) (Diagnosis, error) {
 	d.RAMAvailMB = sysmon.AvailableMB()
 	if plan, err := tweaks.ActivePlan(); err == nil {
 		d.PowerPlan = plan
+		d.PowerName = tweaks.PlanName(plan)
 	}
 	procs, _ := winx.Processes()
 	list := make([]sysmon.Proc, 0, len(procs))
@@ -189,15 +191,12 @@ func findings(d Diagnosis) []Finding {
 		add("ram-low", "warn", "memoria", "Poca RAM libre para jugar",
 			fmt.Sprintf("Quedan %.0f MB libres y Roblox usa cerca de 2 GB. Lo que más ocupa ahora es %s. Cerrarlo antes de jugar reduce los tirones.", d.RAMAvailMB, strings.Join(names, ", ")), "")
 	}
-	switch name := knownPlans[d.PowerPlan]; {
-	case d.PowerPlan == tweaks.PlanBalanced || d.PowerPlan == "a1841308-3541-4fab-bc81-f71556f20b4a":
-		add("power-plan", "warn", "sistema", "Plan de energía "+name, "Este plan baja la frecuencia del procesador entre frames.", "power-plan:"+tweaks.PlanHigh)
-	default:
-		label := name
-		if label == "" {
-			label = "personalizado de alto rendimiento"
-		}
-		add("power-plan-ok", "ok", "sistema", "Plan de energía "+label, "El procesador no se frena entre frames.", "")
+	planName := d.PowerName
+	if planName == "" {
+		planName = knownPlans[d.PowerPlan]
+	}
+	if planName != "" {
+		add("power-plan", "info", "sistema", "Plan de energía "+planName, "En las pruebas, cambiar entre Equilibrado, Alto rendimiento y un plan personalizado no movió los FPS ni los tirones en un PC de escritorio, así que Toque no lo toca.", "")
 	}
 	if d.FramerateCap > 0 && d.FramerateCap < d.System.RefreshHz {
 		add("fps-cap", "warn", "fps", fmt.Sprintf("Roblox limitado a %d FPS con un monitor de %d Hz", d.FramerateCap, d.System.RefreshHz),

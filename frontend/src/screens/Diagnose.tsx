@@ -4,7 +4,7 @@ import { cx } from "@/utils/cx";
 import { api } from "@/lib/api";
 import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
-import type { Diagnosis, Finding, PathStep } from "@/lib/types";
+import type { BloatResult, Diagnosis, Finding, PathStep } from "@/lib/types";
 import { useApp } from "@/state";
 import { Card, Empty, Eyebrow, PageHeader, Pill, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,50 @@ function FindingRow({ f }: { f: Finding }) {
   );
 }
 
+const gradeTone: Record<string, "volt" | "warn" | "bad" | "neutral"> = { "A+": "volt", A: "volt", B: "warn", C: "warn", D: "bad", F: "bad" };
+
+function BloatCard() {
+  const { run, task } = useApp();
+  const [res, setRes] = useState<BloatResult | null>(null);
+  const start = async () => {
+    const r = await run("bloat", "Probando tu red bajo carga", () => api.bufferbloat());
+    if (r) setRes(r);
+  };
+  const phases = res?.phases ?? [];
+  const idle = phases[0]?.rttMs ?? 0;
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <Eyebrow>Red bajo carga</Eyebrow>
+          <p className="mt-3 text-body-medium text-ink">¿Se dispara el ping cuando alguien descarga?</p>
+          <p className="mt-1 max-w-[60ch] text-body-regular text-ink-2">
+            Satura tu conexión unos 40 segundos y mide el ping hasta tu proveedor en reposo, descargando y subiendo. Si sube mucho, los tirones de red vienen del router o del proveedor, no de tu PC.
+          </p>
+        </div>
+        {res ? <Pill tone={gradeTone[res.grade] ?? "neutral"} className="h-8 px-3 text-[15px]">Nota {res.grade}</Pill> : null}
+      </div>
+      {phases.length > 0 ? (
+        <div className="mt-5 grid grid-cols-3 gap-4">
+          {phases.map((p) => (
+            <div key={p.phase} className="rounded-xl bg-surface-2 p-4">
+              <p className="text-caption-1-medium text-ink-3 capitalize">{p.phase}</p>
+              <p className={cx("num mt-1 text-[30px] leading-none font-semibold", p.p95Ms - idle > 30 ? "text-warn" : "text-ink")}>
+                {num(p.p95Ms, 0)}
+                <span className="ml-1 font-sans text-[12px] font-medium text-ink-3">ms</span>
+              </p>
+              <p className="mt-1 text-caption-1-medium text-ink-3">mediana {num(p.rttMs, 0)} ms · pérdida {num(p.lossPct, 0)} %</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <Button className="mt-5" size="small" variant="secondary" disabled={!!task} onClick={start}>
+        {res ? "Repetir prueba" : "Probar mi red bajo carga"}
+      </Button>
+    </Card>
+  );
+}
+
 export function Diagnose() {
   const { run, task } = useApp();
   const [withGame, setWithGame] = useState(true);
@@ -165,7 +209,7 @@ export function Diagnose() {
                 <StatRow label="Memoria" value={`${num(d.system.ramGb, 0)} GB`} hint={`${num(d.ramAvailMb, 0)} MB libres ahora`} />
                 <StatRow label="Monitor" value={`${d.system.refreshHz} Hz`} hint={d.framerateCap > 0 ? `Roblox limitado a ${d.framerateCap} FPS` : undefined} />
                 <StatRow label="Paginación" value={d.pagefile.drives?.length ? `${d.pagefile.drives.join(", ")}: ${d.pagefile.onHdd ? "disco mecánico" : "SSD"}` : "—"} />
-                <StatRow label="Plan de energía" value={planNames[d.powerPlan] ?? "Personalizado"} />
+                <StatRow label="Plan de energía" value={d.powerName || planNames[d.powerPlan] || "Personalizado"} />
               </div>
             </Card>
             <Card className="p-5">
@@ -195,6 +239,9 @@ export function Diagnose() {
           </div>
         </div>
       )}
+      <div className="mt-4">
+        <BloatCard />
+      </div>
     </div>
   );
 }

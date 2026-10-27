@@ -4,7 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"toque/internal/bench"
 	"toque/internal/catalog"
+	"toque/internal/roblox"
 	"toque/internal/session"
 )
 
@@ -13,6 +15,12 @@ type liveSession struct {
 	cancel  context.CancelFunc
 	done    chan struct{}
 	release func()
+}
+
+func (s *Service) Recover() {
+	if inst, err := roblox.Find(); err == nil {
+		bench.RecoverInterrupted(inst)
+	}
 }
 
 func (s *Service) StartSession() {
