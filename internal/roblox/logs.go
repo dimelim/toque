@@ -21,6 +21,7 @@ const (
 	EventLoadTime
 	EventConnected
 	EventDisconnected
+	EventServerStart
 )
 
 type Event struct {
@@ -32,13 +33,15 @@ type Event struct {
 	Port       int
 	Seconds    float64
 	Datacenter int
+	Started    time.Time
 }
 
 var (
-	reJoining    = regexp.MustCompile(`! Joining game '([0-9a-f-]{36})' place (\d+) at ([0-9.]+)`)
-	reDatacenter = regexp.MustCompile(`DatacenterId=(\d+)`)
-	reUdmux      = regexp.MustCompile(`UDMUX Address = ([0-9.]+), Port = (\d+)`)
-	reLoadTime   = regexp.MustCompile(`game_join_loadtime: placeid:(\d+), join_time:([0-9.]+)`)
+	reJoining     = regexp.MustCompile(`! Joining game '([0-9a-f-]{36})' place (\d+) at ([0-9.]+)`)
+	reDatacenter  = regexp.MustCompile(`DatacenterId=(\d+)`)
+	reUdmux       = regexp.MustCompile(`UDMUX Address = ([0-9.]+), Port = (\d+)`)
+	reLoadTime    = regexp.MustCompile(`game_join_loadtime: placeid:(\d+), join_time:([0-9.]+)`)
+	reServerStart = regexp.MustCompile(`Server Prefix: \S*_(\d{8}T\d{6}Z)_RCC_`)
 )
 
 func ParseLine(line string) (Event, bool) {
@@ -74,8 +77,27 @@ func ParseLine(line string) (Event, bool) {
 		return Event{Time: ts, Kind: EventConnected}, true
 	case strings.Contains(line, "Client:Disconnect"):
 		return Event{Time: ts, Kind: EventDisconnected}, true
+	case strings.Contains(line, "Server Prefix:"):
+		if m := reServerStart.FindStringSubmatch(line); m != nil {
+			if started, err := time.Parse("20060102T150405Z", m[1]); err == nil {
+				return Event{Time: ts, Kind: EventServerStart, Started: started}, true
+			}
+		}
 	}
 	return Event{}, false
+}
+
+func ServerStart(ctx context.Context, s Session, timeout time.Duration) (time.Time, bool) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	var started time.Time
+	Follow(ctx, s.LogPath, true, func(ev Event) {
+		if ev.Kind == EventServerStart && started.IsZero() {
+			started = ev.Started
+			cancel()
+		}
+	})
+	return started, !started.IsZero()
 }
 
 func NewestPlayerLog(dir string, since time.Time) string {

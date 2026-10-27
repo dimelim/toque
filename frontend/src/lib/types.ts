@@ -255,6 +255,7 @@ export interface PlayResult {
   found: boolean;
   tried: number;
   private: boolean;
+  alreadyOpen: boolean;
   exitCountry: string;
 }
 

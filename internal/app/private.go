@@ -37,10 +37,14 @@ func (s *Service) PlayPrivate(link, region string) (PlayResult, error) {
 		return res, nil
 	}
 	res.Found = sessionIn(ctx, sess, region)
-	if !res.Found {
-		if exit, err := geo.Self(ctx); err == nil {
-			res.ExitCountry = exit.Country
-		}
+	if res.Found {
+		return res, nil
+	}
+	if started, ok := roblox.ServerStart(ctx, sess, 10*time.Second); ok {
+		res.AlreadyOpen = started.Before(sess.LaunchedAt.Add(-10 * time.Second))
+	}
+	if exit, err := geo.Self(ctx); err == nil {
+		res.ExitCountry = exit.Country
 	}
 	return res, nil
 }

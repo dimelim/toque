@@ -81,6 +81,7 @@ type PlayResult struct {
 	Found       bool        `json:"found"`
 	Tried       int         `json:"tried"`
 	Private     bool        `json:"private"`
+	AlreadyOpen bool        `json:"alreadyOpen"`
 	ExitCountry string      `json:"exitCountry"`
 }
 

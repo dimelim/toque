@@ -11,6 +11,7 @@ export interface Toast {
   tone: "ok" | "error" | "info";
   title: string;
   detail?: string;
+  sticky?: boolean;
 }
 
 interface AppState {
@@ -107,6 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((t: Omit<Toast, "id">) => {
     const id = ++seq.current;
     setToasts((all) => [...all.slice(-2), { ...t, id }]);
+    if (t.sticky) return;
     setTimeout(() => setToasts((all) => all.filter((x) => x.id !== id)), t.tone === "error" ? 9000 : 6000);
   }, []);
 

@@ -18,12 +18,20 @@ function privateMessage(r: PlayResult) {
   if (!r.region) return { title: `Dentro de tu servidor privado${where(f)}${ping(f)}` };
   const city = regionCity(r.region);
   if (r.found) return { title: `Dentro de tu servidor privado en ${city}${ping(f)}`, detail: `Seguirá en ${city} mientras quede alguien dentro.` };
-  const country = countryName(regionCountry(r.region));
-  const title = `Tu servidor privado se abrió${where(f)}, no en ${city}`;
-  if (r.exitCountry === regionCountry(r.region)) {
-    return { title, detail: `Tu conexión ya sale por ${country}, así que había alguien dentro o tu VPN de ${country} está en realidad en otro país.` };
+  if (r.alreadyOpen) {
+    return {
+      title: `Tu servidor privado ya estaba abierto${where(f)}`,
+      detail: "Roblox solo elige la ciudad cuando lo abre. Cuando no quede nadie dentro, espera un minuto a que se cierre y vuelve a pulsar Jugar.",
+    };
   }
-  return { title, detail: `Roblox lo abre cerca de quien entra primero. Para abrirlo en ${city}, sal, espera un minuto sin nadie dentro y entra con una VPN de ${country}.` };
+  const code = regionCountry(r.region);
+  const country = countryName(code);
+  const title = `Roblox abrió tu servidor${where(f)}, no en ${city}`;
+  if (r.exitCountry === code) {
+    return { title, detail: `Tu conexión ya sale por ${country}, pero Roblox también reparte según el sitio libre que tiene. Sal, espera un minuto y vuelve a probar.` };
+  }
+  const exit = r.exitCountry ? ` y tu conexión sale por ${countryName(r.exitCountry)}` : "";
+  return { title, detail: `Lo abre cerca de quien entra primero${exit}. Para que se abra en ${city} tiene que entrar primero alguien desde ${country}, o tú con una VPN de ${country}.` };
 }
 
 export function playMessage(r: PlayResult) {
@@ -52,7 +60,7 @@ export function usePlay() {
       region === PRIVATE
         ? await run("play", "Entrando en tu servidor privado", () => api.playPrivate(privateLink, privateRegion))
         : await run("play", region ? `Buscando partidas de ${regionCity(region)}` : "Entrando en un servidor cercano", () => api.play(region));
-    if (r) toast({ tone: r.region && !r.found ? "info" : "ok", ...playMessage(r) });
+    if (r) toast({ tone: r.region && !r.found ? "info" : "ok", sticky: r.private && !!r.region && !r.found, ...playMessage(r) });
     return r;
   };
 }

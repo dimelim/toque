@@ -32,7 +32,7 @@ function intro(inGame: boolean, region: string, privateRegion: string, watching:
   if (inGame) return { title: "Ya estás jugando", text: "Mide el ping de este servidor o cámbiate a otro con la región que elijas." };
   if (region === PRIVATE && privateRegion) {
     const target = regionCity(privateRegion);
-    return { title: `Abrir tu servidor privado en ${target}`, text: `Toque entra y comprueba en qué ciudad se abrió. Si ya hay alguien dentro, seguirá donde esté aunque elijas ${target}.` };
+    return { title: `Tu servidor privado en ${target}`, text: `Roblox elige la ciudad al abrirlo, cerca de quien entra primero. Toque entra, comprueba dónde quedó y, si no es ${target}, te dice qué hacer.` };
   }
   if (region === PRIVATE) return { title: "Jugar en tu servidor privado", text: "Pega el enlace de invitación. Toque lo guarda solo en este PC y entra directo." };
   if (city) return { title: `Jugar en ${city}`, text: `Toque busca con RoValra una partida de ${city} con sitio y entra directo. Si no hay ninguna, déjalo vigilando.` };

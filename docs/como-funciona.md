@@ -22,7 +22,7 @@ Elegir ciudad no usa ninguna API privada ni la cookie de la cuenta. Toque lee la
 
 Si no hay ninguno, el vigía revisa la lista de menos a más llena, una página cada 25 segundos para no pasar el límite de Roblox de 3 consultas por minuto, y entra en cuanto aparece una partida de esa ciudad, aunque estés jugando en otra. Se detiene a la hora.
 
-Roblox suele abrir un servidor privado vacío en el centro de datos más cercano a quien entra primero, y Toque no puede cambiar esa decisión. Si eliges una ciudad en «Abrir en», Toque entra, lee en el log en qué ciudad se abrió y, si no es la elegida, te dice por qué. Para abrirlo en otra ciudad tiene que estar vacío y tu conexión tiene que salir cerca de allí, que es lo que hace la gente con una VPN. Toque no configura ninguna VPN.
+Roblox abre un servidor privado vacío en el centro de datos que elige para quien entra primero, cerca de su conexión y según el sitio libre que tenga. Toque no puede cambiar esa decisión, y los centros nuevos como Lima, Santiago o Querétaro casi no reciben partidas. Si eliges una ciudad en «Abrir en», Toque entra y lee en el log en qué ciudad quedó y cuándo arrancó el servidor. Así distingue si ya estaba abierto o si Roblox eligió otra ciudad al abrirlo, y te dice qué hacer. Para que se abra en otra ciudad tiene que estar vacío y tiene que entrar primero alguien que se conecte desde allí, o con una VPN de allí. Toque no configura ninguna VPN.
 
 ## Cómo deshace los cambios
 
