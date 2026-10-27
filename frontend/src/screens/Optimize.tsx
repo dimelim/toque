@@ -30,6 +30,7 @@ function evidenceKeys(o: Optimization) {
   const primary = mine.primary ?? [];
   return Object.keys(mine.compare)
     .filter((k) => metricMeta[k] && mine.compare[k].conclusive && Math.abs(mine.compare[k].pct) >= 1)
+    .filter((k) => primary.includes(k) || improvement(k, mine.compare[k].pct) < 0)
     .sort((a, b) => {
       const pa = primary.includes(a) ? 0 : 1;
       const pb = primary.includes(b) ? 0 : 1;

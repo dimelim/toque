@@ -249,7 +249,9 @@ func Uninstall() error {
 	}
 	registry.DeleteKey(registry.LOCAL_MACHINE, uninstallKey)
 	data := filepath.Join(winx.ProgramData(), "Toque")
+	webview := filepath.Join(winx.LocalAppData(), "Toque")
 	os.RemoveAll(data)
+	os.RemoveAll(webview)
 	dir := Dir()
 	exe, _ := os.Executable()
 	entries, _ := os.ReadDir(dir)
@@ -263,7 +265,7 @@ func Uninstall() error {
 	deleteOnReboot(exe)
 	deleteOnReboot(dir)
 	cmdExe := filepath.Join(os.Getenv("SystemRoot"), "System32", "cmd.exe")
-	line := fmt.Sprintf(`"%s" /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "%s" & rmdir /s /q "%s"`, cmdExe, dir, data)
+	line := fmt.Sprintf(`"%s" /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "%s" & rmdir /s /q "%s" & rmdir /s /q "%s"`, cmdExe, dir, data, webview)
 	const noWindow, detached, breakaway = 0x08000000, 0x00000008, 0x01000000
 	for _, flags := range []uint32{noWindow | detached | breakaway, noWindow | detached} {
 		cmd := exec.Command(cmdExe)

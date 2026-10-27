@@ -18,6 +18,14 @@ Todo lo que pasó una primera prueba se repitió antes de darlo por bueno. Dos r
 
 Los resultados completos están en [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
+## Cómo deshace los cambios
+
+Cada optimización guarda en `C:\ProgramData\Toque\journal.json` el estado que había antes y solo después aplica el cambio, así que un cierre a mitad nunca deja algo aplicado sin forma de deshacerlo. El diario se escribe con un archivo temporal, se vuelca al disco y se renombra, y si aparece dañado Toque avisa en lugar de sobrescribirlo. Un experimento deja una marca mientras dura y, si se interrumpe, Toque devuelve el cambio a como estaba al volver a abrirse. Cuando Roblox se actualiza borra sus flags, y Toque las vuelve a poner al arrancar. Si cambias desde el menú de Roblox un ajuste que había puesto Toque, Toque lo da por tuyo y no lo vuelve a imponer.
+
+## Qué protege
+
+Toque necesita permisos de administrador para PresentMon, pktmon y los ajustes de Windows. Las escrituras en las carpetas de Roblox, que son del usuario, se hacen con el token normal del usuario, de modo que un enlace o junction plantado ahí no puede desviarlas a una carpeta protegida. `C:\ProgramData\Toque` pertenece a Administradores y los usuarios solo pueden leerlo. Solo se usan flags de la lista oficial que Roblox permite, nunca se lee la cookie de la cuenta ni se toca la memoria del juego.
+
 ## Estructura
 
 | Ruta | Qué hace |

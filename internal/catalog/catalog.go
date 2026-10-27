@@ -1,5 +1,7 @@
 package catalog
 
+import "strings"
+
 type Entry struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`
@@ -107,16 +109,16 @@ var Catalog = []Entry{
 		Lab:      "Probada y replicada. En la réplica, con 6 reaperturas por lado, la latencia de render bajó un 4,4 % (7,08 a 6,77 ms, p = 0,008) y la GPU por frame un 6 % (p = 0,020). La primera prueba ya había dado −3,6 % y −5,3 %. Es una mejora pequeña pero constante.",
 	},
 	{
-		ID:       "setting:SavedQualityLevel=1",
-		Title:    "Gráficos al mínimo",
+		ID:       "setting:SavedQualityLevel=8",
+		Title:    "Gráficos en nivel 8 de 10",
 		Category: "fps",
-		What:     "Fija la calidad gráfica de Roblox en el nivel más bajo en lugar de dejarla en automático.",
-		Why:      "En automático Roblox sube y baja el detalle sobre la marcha. Fijarlo al mínimo reduce el trabajo de la GPU y la CPU en cada frame.",
-		Metric:   "Latencia de render, 1 % low y tiempo de GPU por frame.",
-		Risk:     "El juego se ve bastante peor, con menos detalle, sombras y distancia de dibujado.",
+		What:     "Fija la calidad gráfica de Roblox en el nivel 8 de 10 en lugar de dejarla en automático.",
+		Why:      "En este PC el modo automático rinde igual que el nivel 10, el máximo. Por debajo de ese punto Roblox ahorra trabajo de GPU en cada frame, y el nivel 8 es el más alto que conserva todo el ahorro.",
+		Metric:   "Latencia de render, tiempo de GPU por frame y RAM de Roblox.",
+		Risk:     "El juego se ve un poco peor que en automático, con algo menos de detalle.",
 		Revert:   "Vuelve a la calidad que tenías antes en la configuración de Roblox.",
 		Verdict:  VerdictTradeoff,
-		Lab:      "Probada y replicada frente a la calidad automática. En dos pruebas de 12 reaperturas cada una, la latencia de render bajó un 12 % (de unos 6,97 a 6,12 ms), la GPU por frame un 28 % y la RAM de Roblox unos 80 MB, en todas las reaperturas. A cambio el juego se ve peor.",
+		Lab:      "Probada frente a la calidad automática con 12 reaperturas por nivel. Con el nivel 8 la latencia de render bajó un 13 % (7,01 a 6,10 ms), la GPU por frame un 31 % y la RAM de Roblox unos 60 MB. Los niveles 1, 4 y 6 dieron la misma mejora, el 4 en dos pruebas, y el 10 ninguna porque en las pruebas equivalía al automático.",
 	},
 	{
 		ID:       "flag:FIntDebugForceMSAASamples=0",
@@ -188,6 +190,9 @@ func Title(id string) string {
 	}
 	if t, ok := labTitles[id]; ok {
 		return t
+	}
+	if level, ok := strings.CutPrefix(id, "setting:SavedQualityLevel="); ok {
+		return "Gráficos en nivel " + level + " de 10"
 	}
 	return id
 }

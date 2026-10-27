@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -45,11 +46,14 @@ func main() {
 	if runCLI() {
 		return
 	}
-	var wctx context.Context
-	svc := app.New(presentMonPath(), func(name string, data any) {
-		if wctx != nil {
-			runtime.EventsEmit(wctx, name, data)
+	var started atomic.Value
+	withContext := func(fn func(context.Context)) {
+		if ctx, ok := started.Load().(context.Context); ok {
+			fn(ctx)
 		}
+	}
+	svc := app.New(presentMonPath(), func(name string, data any) {
+		withContext(func(ctx context.Context) { runtime.EventsEmit(ctx, name, data) })
 	})
 	err := wails.Run(&options.App{
 		Title:            "Toque",
@@ -61,20 +65,22 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 15, G: 18, B: 13, A: 255},
 		AssetServer:      &assetserver.Options{Assets: assets},
 		OnStartup: func(ctx context.Context) {
-			wctx = ctx
+			started.Store(ctx)
 			svc.Recover()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: instanceID(),
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
-				runtime.WindowUnminimise(wctx)
-				runtime.WindowShow(wctx)
+				withContext(func(ctx context.Context) {
+					runtime.WindowUnminimise(ctx)
+					runtime.WindowShow(ctx)
+				})
 			},
 		},
 		Bind: []interface{}{svc},
 		Windows: &windows.Options{
 			Theme:                windows.Dark,
-			WebviewUserDataPath:  winx.DataDir("WebView2"),
+			WebviewUserDataPath:  filepath.Join(winx.LocalAppData(), "Toque", "WebView2"),
 			DisableWindowIcon:    false,
 			WebviewGpuIsDisabled: false,
 		},
