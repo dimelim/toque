@@ -30,7 +30,6 @@ type Service struct {
 	mu         sync.Mutex
 	busy       string
 	cancel     context.CancelFunc
-	live       liveSession
 }
 
 func New(presentMon string, emit Emitter) *Service {
@@ -88,12 +87,6 @@ type RobloxState struct {
 	ServerIP  string `json:"serverIp"`
 }
 
-type LiveState struct {
-	Agent  bool     `json:"agent"`
-	Active bool     `json:"active"`
-	Tweaks []string `json:"tweaks"`
-}
-
 type Overview struct {
 	Version   string      `json:"version"`
 	Elevated  bool        `json:"elevated"`
@@ -101,10 +94,10 @@ type Overview struct {
 	System    SystemInfo  `json:"system"`
 	Applied   int         `json:"applied"`
 	Proven    int         `json:"proven"`
+	Tested    int         `json:"tested"`
 	LastRun   *RunRecord  `json:"lastRun"`
 	Busy      string      `json:"busy"`
 	UptimeMin int         `json:"uptimeMin"`
-	Live      LiveState   `json:"live"`
 }
 
 var (
@@ -128,9 +121,8 @@ func (s *Service) Overview() Overview {
 			o.Roblox.Running = len(roblox.Running()) > 0
 		}
 	}
-	live := catalog.LiveProven()
-	o.Live = LiveState{Agent: AgentRunning(), Active: o.Roblox.Running && len(live) > 0, Tweaks: catalog.Titles(live)}
 	o.Applied = len(tweaks.OpenJournal().Applied)
+	o.Tested = len(catalog.Catalog)
 	for _, e := range catalog.Catalog {
 		if e.Verdict == catalog.VerdictProven {
 			o.Proven++
@@ -169,6 +161,30 @@ func currentSession(inst roblox.Install) (roblox.Session, error) {
 		return sess, errors.New("not in game")
 	}
 	return sess, nil
+}
+
+func (s *Service) Recover() {
+	inst, err := roblox.Find()
+	if err != nil {
+		return
+	}
+	bench.RecoverInterrupted(inst)
+	if len(roblox.Running()) > 0 {
+		return
+	}
+	ctx := tweaks.Context{Install: inst}
+	j := tweaks.OpenJournal()
+	for id := range j.Applied {
+		t, err := tweaks.Get(id)
+		if err != nil || t.Kind() != tweaks.Relaunch || t.State(ctx).Applied {
+			continue
+		}
+		undo := j.Applied[id]
+		delete(j.Applied, id)
+		if err := j.Apply(ctx, t); err != nil {
+			j.Applied[id] = undo
+		}
+	}
 }
 
 func (s *Service) Play() error {

@@ -146,10 +146,10 @@ export interface Overview {
   system: SystemInfo;
   applied: number;
   proven: number;
+  tested: number;
   lastRun: RunRecord | null;
   busy: string;
   uptimeMin: number;
-  live: { agent: boolean; active: boolean; tweaks: string[] | null };
 }
 
 export interface Finding {

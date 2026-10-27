@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import { play, setSoundEnabled, soundEnabled } from "@/lib/sound";
 import { useApp } from "@/state";
@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AppIcon } from "@/components/Logo";
 import { IconRevert } from "@/components/icons";
-import * as Service from "@wails/go/app/Service";
 
 const licenses = [
   { name: "Intel PresentMon", license: "MIT", use: "Captura de frames por ETW" },
@@ -23,45 +22,11 @@ const licenses = [
 export function Settings() {
   const { overview, run, task, toast } = useApp();
   const [sound, setSound] = useState(soundEnabled());
-  const [agent, setAgent] = useState(false);
-  useEffect(() => {
-    Service.AgentEnabled().then(setAgent).catch(() => setAgent(false));
-  }, []);
   return (
     <div>
       <PageHeader eyebrow="Ajustes" title="Preferencias" />
       <div className="grid grid-cols-[1.2fr_1fr] gap-4">
         <div className="flex flex-col gap-4">
-          <Card className="p-5">
-            <Eyebrow>Durante la partida</Eyebrow>
-            <div className="mt-4 flex items-start justify-between gap-6">
-              <div>
-                <p className="text-body-medium text-ink">Activar Toque al iniciar Windows</p>
-                <p className="mt-1 max-w-[52ch] text-body-regular text-ink-2">
-                  Un agente ligero, sin ventana y con menos de 15 MB de memoria, aplica las optimizaciones en vivo solo mientras Roblox está abierto y las retira al cerrarlo.
-                </p>
-                <p className="mt-2 max-w-[52ch] text-caption-1-medium text-ink-3">
-                  {overview?.live.tweaks?.length
-                    ? `Ahora aplicaría ${overview.live.tweaks.join(", ")}.`
-                    : "Ahora mismo ninguna optimización probada necesita aplicarse en vivo, así que el agente no cambiaría nada."}
-                </p>
-              </div>
-              <Switch
-                size="md"
-                isSelected={agent}
-                onChange={async (v) => {
-                  try {
-                    await Service.SetAgentEnabled(v);
-                    setAgent(v);
-                    play(v ? "on" : "off");
-                  } catch {
-                    play("error");
-                  }
-                }}
-                aria-label="Activar Toque al iniciar Windows"
-              />
-            </div>
-          </Card>
           <Card className="p-5">
             <Eyebrow>Interfaz</Eyebrow>
             <div className="mt-4 flex items-start justify-between gap-6">

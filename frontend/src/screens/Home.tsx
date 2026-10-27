@@ -3,7 +3,7 @@ import { cx } from "@/utils/cx";
 import { api } from "@/lib/api";
 import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
-import type { ServerSearch } from "@/lib/types";
+import type { ServerProbe, ServerSearch } from "@/lib/types";
 import { useApp } from "@/state";
 import { BigNumber, Card, Eyebrow, PageHeader, Pill, Spark } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,35 @@ function ServerFinder() {
   );
 }
 
+function LivePing() {
+  const { overview, run, task } = useApp();
+  const [probe, setProbe] = useState<ServerProbe | null>(null);
+  if (!overview?.roblox.inGame) return null;
+  const measure = async () => {
+    const p = await run("ping", "Midiendo tu ping ahora", () => api.quickPing());
+    if (p) setProbe(p);
+  };
+  const fresh = probe && probe.jobId === overview.roblox.jobId ? probe : null;
+  return (
+    <Card className="mb-4 flex items-center gap-5 px-5 py-4">
+      <span className="live-dot relative size-2.5 rounded-full bg-volt text-volt" />
+      <div className="min-w-0 flex-1">
+        <p className="text-body-medium text-ink">Estás en partida</p>
+        <p className="truncate text-caption-1-medium text-ink-3">Servidor {overview.roblox.serverIp}</p>
+      </div>
+      {fresh ? (
+        <p className={cx("num text-[30px] leading-none font-semibold", fresh.rttMs <= 80 ? "text-volt" : "text-warn")}>
+          {num(fresh.rttMs, 0)}
+          <span className="ml-1 font-sans text-[12px] font-medium text-ink-3">ms</span>
+        </p>
+      ) : null}
+      <Button size="small" variant="secondary" disabled={!!task} onClick={measure}>
+        {fresh ? "Medir de nuevo" : "Medir mi ping ahora"}
+      </Button>
+    </Card>
+  );
+}
+
 export function Home() {
   const { overview, go, run, task, refresh } = useApp();
   const last = overview?.lastRun;
@@ -77,6 +106,7 @@ export function Home() {
         </Button>
       </PageHeader>
 
+      <LivePing />
       <Card className="pitch-lines relative overflow-hidden p-7">
         {w ? (
           <div className="grid grid-cols-[1.1fr_1fr] gap-8">
@@ -136,7 +166,11 @@ export function Home() {
           </div>
           <h3 className="mt-3 text-[17px] font-semibold text-ink">Solo lo que demostró funcionar</h3>
           <p className="mt-1.5 text-body-regular text-ink-2">
-            {overview ? `${overview.proven} cambios probados con mediciones reales. ${overview.applied} aplicados en este PC.` : "Cargando"}
+            {!overview
+              ? "Cargando"
+              : overview.proven > 0
+                ? `${overview.proven} de ${overview.tested} cambios típicos mejoraron de forma medible. ${overview.applied} aplicados en este PC.`
+                : `Probamos ${overview.tested} cambios típicos con mediciones reales. Mira cuáles ayudan según tu PC y cuáles no sirven.`}
           </p>
           <div className="mt-auto pt-5">
             <Button variant="secondary" size="small" trailingIcon={IconArrowRight} onClick={() => { play("tap"); go("optimize"); }}>

@@ -21,13 +21,13 @@ Los resultados completos están en [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 | Ruta | Qué hace |
 |---|---|
 | `main.go`, `cli.go` | App Wails (ventana, enlaces con el frontend) y modos `--uninstall` / `--revert-all` |
-| `cmd/toque-agent` | Agente sin ventana con icono en la bandeja que aplica los cambios en vivo mientras Roblox está abierto |
 | `cmd/toque-lab` | CLI de laboratorio para experimentos y el informe de benchmarks |
 | `internal/roblox` | Instalación, log, configuración, FFlags permitidas, unión por enlace profundo, lista de servidores |
 | `internal/frames` | PresentMon y resumen de frames |
 | `internal/netq` | pktmon, lector pcapng, estimador de ping, traceroute ICMP |
 | `internal/sysmon` | Muestreo PDH de CPU, GPU, memoria y disco |
 | `internal/tweaks` | Cada optimización con aplicar, revertir y estado, más el diario que permite deshacerlo todo |
+| `internal/catalog` | Qué cambia cada optimización, por qué, su riesgo y el veredicto de las pruebas |
 | `internal/bench` | Medición de ventanas, experimentos A/B, carga artificial |
 | `internal/app` | Servicio que usa la interfaz (diagnóstico, catálogo, pruebas, buscador de servidor, instalador) |
 | `internal/install` | Autoinstalación en Program Files, accesos directos, desinstalación |

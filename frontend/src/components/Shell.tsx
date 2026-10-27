@@ -60,9 +60,6 @@ function RobloxStatus() {
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
       <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : "Realistic Street Soccer"}</p>
-      {overview?.live.active && overview.live.tweaks?.length ? (
-        <p className="mt-2 text-caption-1-medium text-volt">En vivo · {overview.live.tweaks.join(", ")}</p>
-      ) : null}
       {!r.running && r.installed ? (
         <Button
           size="small"

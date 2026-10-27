@@ -214,7 +214,7 @@ export function Optimize() {
             refresh();
           }}
         >
-          {ready > 0 ? `Aplicar ${ready} probadas` : "Todo aplicado"}
+          {proven.length === 0 ? "Nada probado todavía" : ready > 0 ? `Aplicar ${ready} probadas` : "Todo aplicado"}
         </Button>
       </PageHeader>
       <Card className="mb-8 flex items-center gap-6 p-5">

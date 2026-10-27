@@ -8,6 +8,7 @@ import type {
   Overview,
   Progress,
   RunRecord,
+  ServerProbe,
   ServerSearch,
 } from "./types";
 
@@ -26,6 +27,7 @@ export const api = {
   removeRun: (id: string) => Service.RemoveRun(id) as Promise<void>,
   findServer: (tries: number) => Service.FindServer(tries) as Promise<ServerSearch>,
   bufferbloat: () => Service.Bufferbloat() as Promise<BloatResult>,
+  quickPing: () => Service.QuickPing() as Promise<ServerProbe>,
   play: () => Service.Play() as Promise<void>,
   cancel: () => Service.Cancel() as Promise<void>,
 };

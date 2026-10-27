@@ -24,10 +24,7 @@ import (
 //go:embed payload
 var payload embed.FS
 
-const (
-	uninstallKey = `Software\Microsoft\Windows\CurrentVersion\Uninstall\Toque`
-	runKey       = `Software\Microsoft\Windows\CurrentVersion\Run`
-)
+const uninstallKey = `Software\Microsoft\Windows\CurrentVersion\Uninstall\Toque`
 
 type State struct {
 	Installed        bool   `json:"installed"`
@@ -99,11 +96,9 @@ func compare(a, b string) int {
 }
 
 func stopRunning(except uint32) {
-	for _, name := range []string{"ToqueAgent.exe", "Toque.exe"} {
-		for _, p := range winx.FindByName(name) {
-			if p.PID != except {
-				winx.Terminate(p.PID)
-			}
+	for _, p := range winx.FindByName("Toque.exe") {
+		if p.PID != except {
+			winx.Terminate(p.PID)
 		}
 	}
 	time.Sleep(600 * time.Millisecond)
@@ -247,10 +242,6 @@ func Uninstall(removeData bool) error {
 		return errors.New("se necesitan permisos de administrador")
 	}
 	stopRunning(uint32(os.Getpid()))
-	if k, err := registry.OpenKey(registry.CURRENT_USER, runKey, registry.SET_VALUE); err == nil {
-		k.DeleteValue("Toque")
-		k.Close()
-	}
 	os.Remove(startMenuShortcut())
 	if d := desktopShortcut(); d != "" {
 		os.Remove(d)

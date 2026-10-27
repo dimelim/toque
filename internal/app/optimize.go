@@ -132,8 +132,7 @@ func (s *Service) RevertAll() error {
 }
 
 func (s *Service) Verify(id string) (ExperimentRecord, error) {
-	_, t, err := s.find(id)
-	if err != nil {
+	if _, _, err := s.find(id); err != nil {
 		return ExperimentRecord{}, err
 	}
 	ctx, done, err := s.begin("verify")
@@ -146,9 +145,6 @@ func (s *Service) Verify(id string) (ExperimentRecord, error) {
 		return ExperimentRecord{}, err
 	}
 	cycles := 6
-	if t.Kind() == tweaks.Live {
-		defer s.pauseLive()()
-	}
 	cfg := bench.ABConfig{
 		Tweak: id, Cycles: cycles, Window: 25 * time.Second, Warmup: 15 * time.Second, Settle: 3 * time.Second,
 		PlaceID: roblox.RealisticStreetSoccer, Primary: []string{"low1", "low01", "stutterMin", "latMs"},

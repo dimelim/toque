@@ -30,7 +30,8 @@ var Catalog = []Entry{
 		Metric:   "Tirones por minuto, 0,1 % low y latencia de lectura de la paginación.",
 		Risk:     "Ocupa entre 4 y 12 GB del SSD. Si quedan menos de 14 GB libres, Toque no lo aplica.",
 		Revert:   "Restaura la configuración anterior del archivo de paginación. Necesita reiniciar.",
-		Verdict:  VerdictPending,
+		Verdict:  VerdictSituational,
+		Lab:      "Solo si el archivo está en un disco mecánico. En las pruebas cada lectura de paginación pasó de 9-21 ms a 0,3-1,1 ms, y la mediana del 1 % low subió de 104 a 122 FPS con menos RAM libre que antes.",
 	},
 	{
 		ID:       "ifeo-priority-high",
@@ -41,7 +42,8 @@ var Catalog = []Entry{
 		Metric:   "1 % low y tirones con carga de fondo.",
 		Risk:     "Los programas de fondo pueden ir más lentos mientras juegas.",
 		Revert:   "Borra la entrada de registro. Se aplica al siguiente arranque de Roblox.",
-		Verdict:  VerdictPending,
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada tras tres pruebas con 10 hilos de carga de fondo (25 ventanas por lado). Las dos primeras apuntaban a mejor 1 % low sin llegar a ser concluyentes, y la réplica final salió al revés. Juntando todo, +3,9 % con p = 0,52.",
 	},
 	{
 		ID:       "power-plan:8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
@@ -64,8 +66,8 @@ var Catalog = []Entry{
 		Metric:   "Estabilidad del frametime y 1 % low.",
 		Risk:     "Algo más de consumo de energía.",
 		Revert:   "Se libera al cerrar Roblox o al desactivarla.",
-		Verdict:  VerdictPending,
-		Lab:      "Sin demostrar. La primera prueba dio +18 % en el 1 % low, pero la réplica con más ventanas no lo confirmó. Juntando las 26 ventanas, +15 % con p = 0,051, justo por encima del umbral.",
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada tras tres pruebas con 25 ventanas por lado. La primera dio +18 % en el 1 % low, pero las dos réplicas no lo confirmaron, y la última incluso salió al revés. Juntando todo, +1,3 % con p = 0,47. Fue un falso positivo.",
 	},
 	{
 		ID:       "flag:FFlagDebugGraphicsPreferD3D11=True",
@@ -100,8 +102,8 @@ var Catalog = []Entry{
 		Metric:   "Latencia de render y tiempo de GPU por frame.",
 		Risk:     "La iluminación del mapa deja de recalcularse, y algunos efectos de luz dinámicos pueden verse menos realistas.",
 		Revert:   "Quita la opción del archivo de configuración de Roblox.",
-		Verdict:  VerdictPending,
-		Lab:      "En réplica. La primera prueba, con 4 reaperturas por lado, bajó la latencia de render un 3,6 % y la GPU por frame un 5,3 % en todas las ventanas, pero con tan pocas muestras no llega al umbral estricto.",
+		Verdict:  VerdictProven,
+		Lab:      "Probada y replicada. En la réplica, con 6 reaperturas por lado, la latencia de render bajó un 4,4 % (7,08 a 6,77 ms, p = 0,008) y la GPU por frame un 6 % (p = 0,020). La primera prueba ya había dado −3,6 % y −5,3 %. Es una mejora pequeña pero constante.",
 	},
 	{
 		ID:       "flag:FIntFRMMinGrassDistance=0,FIntFRMMaxGrassDistance=0",

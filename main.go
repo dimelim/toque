@@ -43,8 +43,6 @@ func main() {
 		}
 	})
 	svc.Recover()
-	svc.StartSession()
-	defer svc.StopSession()
 	err := wails.Run(&options.App{
 		Title:            "Toque",
 		Width:            1200,
@@ -55,8 +53,7 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 15, G: 18, B: 13, A: 255},
 		AssetServer:      &assetserver.Options{Assets: assets},
 		OnStartup:        func(ctx context.Context) { wctx = ctx },
-		OnShutdown: func(ctx context.Context) { svc.StopSession() },
-		Bind: []interface{}{svc},
+		Bind:             []interface{}{svc},
 		Windows: &windows.Options{
 			Theme:                windows.Dark,
 			WebviewUserDataPath:  filepath.Join(winx.LocalAppData(), "Toque", "WebView2"),

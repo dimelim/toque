@@ -52,6 +52,9 @@ func ReadFlags(versionDir string) (map[string]any, error) {
 
 func WriteFlags(versionDir string, flags map[string]any) error {
 	path := FlagsPath(versionDir)
+	if err := SafeTarget(filepath.Dir(filepath.Dir(versionDir)), path); err != nil {
+		return err
+	}
 	if len(flags) == 0 {
 		err := os.Remove(path)
 		if errors.Is(err, os.ErrNotExist) {

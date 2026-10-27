@@ -57,7 +57,7 @@ func cmdReport(args []string) error {
 				valid++
 			}
 		}
-		fmt.Fprintf(&b, "## %s\n\n", r.Config.Tweak)
+		fmt.Fprintf(&b, "## %s\n\n", title(r.Config.Tweak))
 		fmt.Fprintf(&b, "%s · %d ciclos · ventanas de %s · %d válidas de %d", r.Started.Format("2006-01-02 15:04"), r.Config.Cycles, r.Config.Window, valid, len(r.Samples))
 		if r.Config.Stress != "" {
 			fmt.Fprintf(&b, " · carga de fondo %s", r.Config.Stress)
@@ -73,11 +73,12 @@ func cmdReport(args []string) error {
 			if c.Conclusive {
 				mark = "**sí**"
 			}
-			fmt.Fprintf(&b, "| %s | %.*f %s | %.*f %s | %+.1f %% | %+.1f %% a %+.1f %% | %.3f | %s |\n",
-				m.label, m.digits, c.MedianA, m.unit, m.digits, c.MedianB, m.unit, c.DeltaPct, c.CILowPct, c.CIHighPct, c.PValue, mark)
+			fmt.Fprintf(&b, "| %s | %s %s | %s %s | %s %% | %s %% a %s %% | %s | %s |\n",
+				m.label, es(c.MedianA, m.digits), m.unit, es(c.MedianB, m.digits), m.unit, esSigned(c.DeltaPct, 1), esSigned(c.CILowPct, 1), esSigned(c.CIHighPct, 1), es(c.PValue, 3), mark)
 		}
 		b.WriteString("\n")
 	}
+	b.WriteString(pooled(files))
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err
 	}

@@ -46,6 +46,10 @@ func main() {
 		err = cmdReport(os.Args[2:])
 	case "bloat":
 		err = cmdBloat(os.Args[2:])
+	case "finder":
+		err = cmdFinder(os.Args[2:])
+	case "diagnose":
+		err = cmdDiagnose(os.Args[2:])
 	case "analyze-pcap":
 		err = cmdAnalyzePcap(os.Args[2:])
 	case "analyze-csv":

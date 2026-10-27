@@ -3,21 +3,13 @@ $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $payload = Join-Path $PSScriptRoot 'internal\install\payload'
 New-Item -ItemType Directory -Force $payload | Out-Null
-$ldflags = '-s -w -H windowsgui -buildid='
 $env:CGO_ENABLED = '0'
-
-Write-Host '== agent'
-if ($Obfuscate) {
-    garble -literals -tiny -seed=random build -trimpath -ldflags $ldflags -o "$payload\ToqueAgent.exe" ./cmd/toque-agent
-} else {
-    go build -trimpath -ldflags $ldflags -o "$payload\ToqueAgent.exe" ./cmd/toque-agent
-}
-if ($LASTEXITCODE -ne 0) { throw 'agent build failed' }
 
 Write-Host '== presentmon'
 $sig = Get-AuthenticodeSignature $PresentMon
 if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'Intel Corporation') { throw 'PresentMon signature check failed' }
 Copy-Item $PresentMon "$payload\PresentMon.exe" -Force
+Copy-Item "$PSScriptRoot\assets\THIRD-PARTY-NOTICES.txt" "$payload\THIRD-PARTY-NOTICES.txt" -Force
 
 Write-Host '== app'
 $wailsArgs = @('build', '-clean', '-trimpath', '-ldflags', '-s -w -buildid=', '-webview2', 'download')
