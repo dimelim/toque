@@ -123,7 +123,7 @@ func (s *Service) joinWatched(key string, matches []roblox.PublicServer) (Server
 		return ServerProbe{}, false
 	}
 	defer done()
-	inst, err := roblox.Find()
+	inst, err := s.launchInstall()
 	if err != nil {
 		return ServerProbe{}, false
 	}

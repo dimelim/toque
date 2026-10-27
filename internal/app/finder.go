@@ -91,7 +91,7 @@ func (s *Service) Play() (PlayResult, error) {
 		return PlayResult{}, err
 	}
 	defer done()
-	inst, err := roblox.Find()
+	inst, err := s.launchInstall()
 	if err != nil {
 		return PlayResult{}, err
 	}

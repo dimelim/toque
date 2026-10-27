@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.13.0"
+const Version = "1.13.1"
 
 type Emitter func(name string, data any)
 
@@ -96,6 +96,15 @@ func (s *Service) env() (bench.Env, error) {
 		return bench.Env{}, errors.New("no encuentro Roblox instalado en este usuario")
 	}
 	return bench.Env{PresentMon: s.presentMon, Install: inst, Dir: winx.DataDir("runs")}, nil
+}
+
+func (s *Service) launchInstall() (roblox.Install, error) {
+	inst, err := roblox.Find()
+	if err != nil {
+		return roblox.Install{}, err
+	}
+	tweaks.Resync(tweaks.Context{Install: inst})
+	return inst, nil
 }
 
 type RobloxState struct {

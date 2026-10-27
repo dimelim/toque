@@ -18,7 +18,7 @@ func (s *Service) PlayPrivate(link, region string) (PlayResult, error) {
 		return PlayResult{}, err
 	}
 	defer done()
-	inst, err := roblox.Find()
+	inst, err := s.launchInstall()
 	if err != nil {
 		return PlayResult{}, err
 	}
