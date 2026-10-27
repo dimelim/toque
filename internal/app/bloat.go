@@ -34,14 +34,14 @@ func (s *Service) Bufferbloat() (netq.BloatResult, error) {
 		return netq.BloatResult{}, errors.New("no encontré un salto público que responda al ping")
 	}
 	step := 0
-	res := netq.Bufferbloat(ctx, dst, 12*time.Second, func(kind string) func() {
+	res := netq.Bufferbloat(ctx, dst, 12*time.Second, func(kind string) func() int64 {
 		step++
 		msg := "Midiendo con la descarga saturada"
 		if kind == "up" {
 			msg = "Midiendo con la subida saturada"
 		}
 		s.progress("bloat", kind, 0.2+0.35*float64(step), msg)
-		return bench.StartStress(kind)
+		return bench.StartLoad(kind, 4)
 	})
 	return res, nil
 }

@@ -224,12 +224,14 @@ export interface LoadPhase {
   p95Ms: number;
   jitterMs: number;
   lossPct: number;
+  mbps: number;
 }
 
 export interface BloatResult {
   target: string;
   phases: LoadPhase[] | null;
   addedMs: number;
+  maxLossPct: number;
   grade: string;
 }
 

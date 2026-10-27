@@ -44,7 +44,7 @@ export function BigNumber({
       <p className="text-caption-1-medium text-ink-3">{label}</p>
       <p className={cx("num mt-1 leading-[0.95] font-semibold", sizes[size], tones[tone])}>
         {num(value, digits)}
-        {unit ? <span className="ml-1 font-sans text-[13px] font-medium tracking-normal text-ink-3">{unit}</span> : null}
+        {unit && value !== null && value !== undefined ? <span className="ml-1 font-sans text-[13px] font-medium tracking-normal text-ink-3">{unit}</span> : null}
       </p>
     </div>
   );

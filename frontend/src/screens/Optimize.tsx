@@ -216,7 +216,7 @@ export function Optimize() {
             refresh();
           }}
         >
-          {proven.length === 0 ? "Nada probado todavía" : ready > 0 ? `Aplicar ${ready} probadas` : "Todo aplicado"}
+          {proven.length === 0 ? "Nada probado todavía" : ready === 1 ? "Aplicar 1 probada" : ready > 1 ? `Aplicar ${ready} probadas` : "Todo aplicado"}
         </Button>
       </PageHeader>
       <Card className="mb-8 flex items-center gap-6 p-5">
@@ -226,19 +226,18 @@ export function Optimize() {
             Cada cambio se mide alternando con y sin él en orden ABBA dentro de Realistic Street Soccer, varias veces seguidas. Solo pasa a "Probada" si la mejora es estadísticamente clara y no empeora otra métrica. Lo que no mejora se queda en "Descartadas" con su medición, para que veas por qué.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-6 text-right">
-          <div>
-            <p className="num text-[34px] leading-none font-semibold text-volt">{num(proven.length + tradeoff.length)}</p>
-            <p className="mt-1 text-caption-1-medium text-ink-3">probadas</p>
-          </div>
-          <div>
-            <p className="num text-[34px] leading-none font-semibold text-ink-2">{num(pending.length + situational.length)}</p>
-            <p className="mt-1 text-caption-1-medium text-ink-3">en estudio</p>
-          </div>
-          <div>
-            <p className="num text-[34px] leading-none font-semibold text-ink-3">{num(rejected.length)}</p>
-            <p className="mt-1 text-caption-1-medium text-ink-3">descartadas</p>
-          </div>
+        <div className="flex gap-6 text-right">
+          {[
+            { n: proven.length + tradeoff.length, label: "probadas", tone: "text-volt" },
+            { n: situational.length, label: "según tu caso", tone: "text-ink-2" },
+            ...(pending.length > 0 ? [{ n: pending.length, label: "en estudio", tone: "text-ink-2" }] : []),
+            { n: rejected.length, label: "descartadas", tone: "text-ink-3" },
+          ].map((c) => (
+            <div key={c.label}>
+              <p className={cx("num text-[34px] leading-none font-semibold", c.tone)}>{num(c.n)}</p>
+              <p className="mt-1 text-caption-1-medium whitespace-nowrap text-ink-3">{c.label}</p>
+            </div>
+          ))}
         </div>
       </Card>
       <Section title="Probadas" hint="Mejoran de forma medible en pruebas reales" items={proven} onChange={update} />

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -56,7 +57,7 @@ func StartStress(spec string) func() {
 			wg.Add(1)
 			go func(k string) {
 				defer wg.Done()
-				saturate(ctx, k)
+				saturate(ctx, k, nil)
 			}(kind)
 		}
 	}
@@ -64,6 +65,37 @@ func StartStress(spec string) func() {
 		cancel()
 		wg.Wait()
 	}
+}
+
+func StartLoad(kind string, streams int) func() int64 {
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	var total atomic.Int64
+	for i := 0; i < streams; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			saturate(ctx, kind, &total)
+		}()
+	}
+	return func() int64 {
+		cancel()
+		wg.Wait()
+		return total.Load()
+	}
+}
+
+type countingReader struct {
+	r     io.Reader
+	total *atomic.Int64
+}
+
+func (c countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	if c.total != nil {
+		c.total.Add(int64(n))
+	}
+	return n, err
 }
 
 func holdRAM(ctx context.Context, wantMB int) {
@@ -96,14 +128,15 @@ func holdRAM(ctx context.Context, wantMB int) {
 	}
 }
 
-func saturate(ctx context.Context, dir string) {
+func saturate(ctx context.Context, dir string, total *atomic.Int64) {
 	client := &http.Client{Timeout: 0}
 	for ctx.Err() == nil {
 		var req *http.Request
 		if dir == "down" {
-			req, _ = http.NewRequestWithContext(ctx, http.MethodGet, "https://speed.cloudflare.com/__down?bytes=200000000", nil)
+			req, _ = http.NewRequestWithContext(ctx, http.MethodGet, "https://speed.cloudflare.com/__down?bytes=50000000", nil)
 		} else {
-			req, _ = http.NewRequestWithContext(ctx, http.MethodPost, "https://speed.cloudflare.com/__up", io.LimitReader(zeroReader{}, 50_000_000))
+			body := countingReader{r: io.LimitReader(zeroReader{}, 50_000_000), total: total}
+			req, _ = http.NewRequestWithContext(ctx, http.MethodPost, "https://speed.cloudflare.com/__up", body)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -113,7 +146,11 @@ func saturate(ctx context.Context, dir string) {
 			}
 			continue
 		}
-		io.Copy(io.Discard, resp.Body)
+		if dir == "down" {
+			io.Copy(io.Discard, countingReader{r: resp.Body, total: total})
+		} else {
+			io.Copy(io.Discard, resp.Body)
+		}
 		resp.Body.Close()
 	}
 }

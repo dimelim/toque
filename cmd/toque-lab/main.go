@@ -156,7 +156,13 @@ func cmdMeasure(args []string) error {
 	out := fs.String("out", "", "output dir")
 	label := fs.String("label", "measure", "label")
 	focus := fs.Bool("focus", true, "bring roblox to foreground first")
+	load := fs.String("load", "", "network load during the window: down or up")
 	fs.Parse(args)
+	if *load != "" {
+		stop := bench.StartLoad(*load, 4)
+		defer func() { fmt.Fprintf(os.Stderr, "load %s transferred %.0f MB\n", *load, float64(stop())/1e6) }()
+		time.Sleep(2 * time.Second)
+	}
 	e, err := env()
 	if err != nil {
 		return err
@@ -348,7 +354,7 @@ func cmdBloat(args []string) error {
 	if !dst.IsValid() {
 		return errors.New("no target to ping")
 	}
-	res := netq.Bufferbloat(context.Background(), dst, *phase, func(kind string) func() { return bench.StartStress(kind) })
+	res := netq.Bufferbloat(context.Background(), dst, *phase, func(kind string) func() int64 { return bench.StartLoad(kind, 4) })
 	printJSON(res)
 	return nil
 }

@@ -15,13 +15,15 @@ type LoadPhase struct {
 	P95    float64 `json:"p95Ms"`
 	Jitter float64 `json:"jitterMs"`
 	Loss   float64 `json:"lossPct"`
+	Mbps   float64 `json:"mbps"`
 }
 
 type BloatResult struct {
-	Target   string      `json:"target"`
-	Phases   []LoadPhase `json:"phases"`
-	AddedMs  float64     `json:"addedMs"`
-	Grade    string      `json:"grade"`
+	Target  string      `json:"target"`
+	Phases  []LoadPhase `json:"phases"`
+	AddedMs float64     `json:"addedMs"`
+	MaxLoss float64     `json:"maxLossPct"`
+	Grade   string      `json:"grade"`
 }
 
 func sample(ctx context.Context, dst netip.Addr, dur time.Duration) LoadPhase {
@@ -52,23 +54,39 @@ func sample(ctx context.Context, dst netip.Addr, dur time.Duration) LoadPhase {
 	return p
 }
 
-func grade(added float64) string {
+var grades = []string{"A+", "A", "B", "C", "D", "F"}
+
+func latencyGrade(added float64) int {
 	switch {
 	case added < 5:
-		return "A+"
+		return 0
 	case added < 30:
-		return "A"
+		return 1
 	case added < 60:
-		return "B"
+		return 2
 	case added < 200:
-		return "C"
+		return 3
 	case added < 400:
-		return "D"
+		return 4
 	}
-	return "F"
+	return 5
 }
 
-func Bufferbloat(ctx context.Context, dst netip.Addr, phase time.Duration, load func(kind string) func()) BloatResult {
+func lossGrade(loss float64) int {
+	switch {
+	case loss < 2:
+		return 0
+	case loss < 5:
+		return 2
+	case loss < 10:
+		return 3
+	case loss < 20:
+		return 4
+	}
+	return 5
+}
+
+func Bufferbloat(ctx context.Context, dst netip.Addr, phase time.Duration, load func(kind string) func() int64) BloatResult {
 	res := BloatResult{Target: dst.String()}
 	idle := sample(ctx, dst, phase)
 	idle.Phase = "reposo"
@@ -80,8 +98,12 @@ func Bufferbloat(ctx context.Context, dst netip.Addr, phase time.Duration, load 
 		}
 		stop := load(kind)
 		time.Sleep(2 * time.Second)
+		start := time.Now()
 		p := sample(ctx, dst, phase)
-		stop()
+		bytes := stop()
+		if secs := time.Since(start).Seconds() + 2; secs > 0 {
+			p.Mbps = float64(bytes) * 8 / 1e6 / secs
+		}
 		if kind == "down" {
 			p.Phase = "descarga"
 		} else {
@@ -91,12 +113,15 @@ func Bufferbloat(ctx context.Context, dst netip.Addr, phase time.Duration, load 
 		if p.P95 > worst {
 			worst = p.P95
 		}
+		if p.Loss > res.MaxLoss {
+			res.MaxLoss = p.Loss
+		}
 		time.Sleep(time.Second)
 	}
 	res.AddedMs = worst - idle.RTT
 	if res.AddedMs < 0 {
 		res.AddedMs = 0
 	}
-	res.Grade = grade(res.AddedMs)
+	res.Grade = grades[max(latencyGrade(res.AddedMs), lossGrade(res.MaxLoss))]
 	return res
 }

@@ -136,9 +136,22 @@ function BloatCard() {
                 {num(p.p95Ms, 0)}
                 <span className="ml-1 font-sans text-[12px] font-medium text-ink-3">ms</span>
               </p>
-              <p className="mt-1 text-caption-1-medium text-ink-3">mediana {num(p.rttMs, 0)} ms · pérdida {num(p.lossPct, 0)} %</p>
+              <p className="mt-1 text-caption-1-medium text-ink-3">
+                mediana {num(p.rttMs, 0)} ms · pérdida {num(p.lossPct, 0)} %{p.mbps > 0 ? ` · ${num(p.mbps, 0)} Mbps` : ""}
+              </p>
             </div>
           ))}
+        </div>
+      ) : null}
+      {res && (res.maxLossPct >= 2 || res.addedMs >= 30) ? (
+        <div className="mt-4 flex items-start gap-3 rounded-xl bg-warn-soft p-4">
+          <IconWarn className="mt-0.5 size-[18px] shrink-0 text-warn" />
+          <p className="text-body-regular text-ink-2">
+            {res.maxLossPct >= 2
+              ? `Con la conexión saturada se pierde hasta el ${num(res.maxLossPct, 0)} % de los paquetes. En Realistic Street Soccer eso se nota como saltos del balón y de los jugadores. `
+              : `Con la conexión saturada el ping sube ${num(res.addedMs, 0)} ms. `}
+            Evita descargas y subidas grandes mientras juegas, o activa QoS o SQM en tu router limitándolo a un 90 % de tu velocidad.
+          </p>
         </div>
       ) : null}
       <Button className="mt-5" size="small" variant="secondary" disabled={!!task} onClick={start}>
