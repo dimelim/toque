@@ -14,7 +14,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.2.0"
+const Version = "1.3.0"
 
 type Emitter func(name string, data any)
 
@@ -180,13 +180,4 @@ func (s *Service) Recover() {
 		return
 	}
 	tweaks.Resync(tweaks.Context{Install: inst})
-}
-
-func (s *Service) Play() error {
-	inst, err := roblox.Find()
-	if err != nil {
-		return err
-	}
-	_, err = winx.LaunchAsUser(inst.Player, roblox.JoinURL(roblox.RealisticStreetSoccer, ""), inst.VersionDir)
-	return err
 }

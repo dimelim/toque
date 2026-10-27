@@ -38,7 +38,7 @@ function ServerFinder() {
       </div>
       <h3 className="mt-3 text-[17px] font-semibold text-ink">El servidor con menos ping</h3>
       {probes.length === 0 ? (
-        <p className="mt-1.5 text-body-regular text-ink-2">Toque entra en varios servidores, mide el ping real de cada uno y te deja en el mejor.</p>
+        <p className="mt-1.5 text-body-regular text-ink-2">Al pulsar Jugar, Toque ya evita los servidores lejanos. Aquí entra en varios, mide el ping real de cada uno y te deja en el mejor.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {probes.slice(0, 4).map((p) => {

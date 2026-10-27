@@ -34,6 +34,16 @@ func cmdFinder(args []string) error {
 	return err
 }
 
+func cmdPlay([]string) error {
+	svc, err := newService()
+	if err != nil {
+		return err
+	}
+	res, err := svc.Play()
+	printJSON(res)
+	return err
+}
+
 func cmdLoad(args []string) error {
 	fs := flag.NewFlagSet("load", flag.ExitOnError)
 	kind := fs.String("kind", "up", "up or down")

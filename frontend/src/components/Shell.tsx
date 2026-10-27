@@ -4,6 +4,7 @@ import { cx } from "@/utils/cx";
 import { win, api } from "@/lib/api";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
+import type { PlayResult } from "@/lib/types";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
 import { Wordmark } from "./Logo";
@@ -50,8 +51,20 @@ function WindowControls() {
   );
 }
 
+function playMessage(r: PlayResult) {
+  const ms = (v: number) => `${Math.round(v)} ms`;
+  if (!r.final.rttMs) return { title: "Dentro de Realistic Street Soccer" };
+  if (r.final.jobId !== r.first.jobId) {
+    return { title: `Te moví a un servidor a ${ms(r.final.rttMs)}`, detail: `Roblox te había puesto en uno a ${ms(r.first.rttMs)}.` };
+  }
+  if (r.hops > 0) {
+    return { title: `Servidor a ${ms(r.final.rttMs)}`, detail: `Probé ${r.hops} más y ninguno estaba más cerca. Tu mejor centro de datos va a ${ms(r.bestMs)}.` };
+  }
+  return { title: `Servidor cercano, a ${ms(r.final.rttMs)}` };
+}
+
 function RobloxStatus() {
-  const { overview, run, task } = useApp();
+  const { overview, run, task, toast } = useApp();
   const r = overview?.roblox;
   if (!r) return null;
   const inGame = r.inGame;
@@ -69,9 +82,10 @@ function RobloxStatus() {
           className="mt-3 w-full"
           leadingIcon={IconPlay}
           disabled={!!task}
-          onClick={() => {
+          onClick={async () => {
             play("tap");
-            run("play", "Abriendo Roblox", () => api.play());
+            const r = await run("play", "Entrando en un servidor cercano", () => api.play());
+            if (r) toast({ tone: "ok", ...playMessage(r) });
           }}
         >
           Jugar

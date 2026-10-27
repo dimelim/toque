@@ -230,6 +230,13 @@ export interface ServerProbe {
   error?: string;
 }
 
+export interface PlayResult {
+  first: ServerProbe;
+  final: ServerProbe;
+  hops: number;
+  bestMs: number;
+}
+
 export interface ServerSearch {
   probes: ServerProbe[] | null;
   best: ServerProbe | null;

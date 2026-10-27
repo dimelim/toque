@@ -56,6 +56,92 @@ func measureServer(ctx context.Context, ip string, dur time.Duration) (netq.Summ
 	return sum, nil
 }
 
+const nearMarginMs = 8
+
+func serverRTT(ctx context.Context, ip string) (ServerProbe, error) {
+	p := ServerProbe{IP: ip}
+	if rtt, ok := knownDatacenter(ip); ok {
+		p.RTT, p.Cached = rtt, true
+		return p, nil
+	}
+	time.Sleep(4 * time.Second)
+	sum, err := measureServer(ctx, ip, 8*time.Second)
+	p.RTT, p.Jitter, p.Loss = sum.RTT, sum.Jitter, sum.LossDownPct
+	return p, err
+}
+
+type PlayResult struct {
+	First  ServerProbe `json:"first"`
+	Final  ServerProbe `json:"final"`
+	Hops   int         `json:"hops"`
+	BestMs float64     `json:"bestMs"`
+}
+
+func (s *Service) Play() (PlayResult, error) {
+	ctx, done, err := s.begin("play")
+	if err != nil {
+		return PlayResult{}, err
+	}
+	defer done()
+	inst, err := roblox.Find()
+	if err != nil {
+		return PlayResult{}, err
+	}
+	s.progress("play", "join", 0.08, "Entrando en Realistic Street Soccer")
+	sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, "", 90*time.Second)
+	if err != nil {
+		return PlayResult{}, fmt.Errorf("no pude entrar al juego: %w", err)
+	}
+	s.progress("play", "measure", 0.3, "Comprobando a qué distancia está el servidor")
+	first, err := serverRTT(ctx, sess.ServerIP)
+	first.JobID, first.Current = sess.JobID, true
+	res := PlayResult{First: first, Final: first}
+	best, known := bestDatacenter()
+	res.BestMs = best
+	if err != nil || !known || first.RTT <= best+nearMarginMs {
+		return res, nil
+	}
+	candidates := []roblox.PublicServer{{}}
+	if servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 2); err == nil {
+		candidates = append(candidates, roblox.SampleCandidates(servers, map[string]bool{sess.JobID: true}, 2, time.Now().UnixNano())...)
+	}
+	visited := map[string]bool{sess.JobID: true}
+	current := sess.JobID
+	for i, c := range candidates {
+		if ctx.Err() != nil {
+			break
+		}
+		s.progress("play", "hop", 0.4+0.18*float64(i), fmt.Sprintf("El servidor va a %.0f ms y tienes uno a %.0f ms. Probando otro (%d de %d)", first.RTT, best, i+1, len(candidates)))
+		ns, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, c.ID, 35*time.Second)
+		if err != nil || (c.ID != "" && ns.JobID != c.ID) {
+			current = ""
+			continue
+		}
+		current = ns.JobID
+		res.Hops++
+		if visited[ns.JobID] {
+			continue
+		}
+		visited[ns.JobID] = true
+		p, err := serverRTT(ctx, ns.ServerIP)
+		if err != nil {
+			continue
+		}
+		p.JobID, p.Playing, p.Max = ns.JobID, c.Playing, c.MaxPlayers
+		if p.RTT < res.Final.RTT {
+			res.Final = p
+		}
+		if p.RTT <= best+nearMarginMs {
+			return res, nil
+		}
+	}
+	if current != res.Final.JobID {
+		s.progress("play", "join", 0.95, fmt.Sprintf("Volviendo al servidor más cercano que encontré, a %.0f ms", res.Final.RTT))
+		roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, res.Final.JobID, 35*time.Second)
+	}
+	return res, nil
+}
+
 func (s *Service) QuickPing() (ServerProbe, error) {
 	ctx, done, err := s.begin("ping")
 	if err != nil {

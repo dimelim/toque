@@ -50,6 +50,18 @@ func rememberDatacenter(ip string, rtt float64) {
 	os.WriteFile(dcPath(), b, 0o644)
 }
 
+func bestDatacenter() (float64, bool) {
+	dcMu.Lock()
+	defer dcMu.Unlock()
+	best := 0.0
+	for _, e := range loadDatacenters() {
+		if time.Since(e.At) <= 7*24*time.Hour && (best == 0 || e.RTT < best) {
+			best = e.RTT
+		}
+	}
+	return best, best > 0
+}
+
 func knownDatacenter(ip string) (float64, bool) {
 	dcMu.Lock()
 	defer dcMu.Unlock()
