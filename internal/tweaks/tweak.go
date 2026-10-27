@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
+
+	"golang.org/x/sys/windows/registry"
 
 	"toque/internal/roblox"
 	"toque/internal/winx"
@@ -38,7 +41,8 @@ type Tweak interface {
 	ID() string
 	Kind() Kind
 	State(Context) State
-	Apply(Context) (Undo, error)
+	Snapshot(Context) (Undo, error)
+	Apply(Context) error
 	Revert(Context, Undo) error
 }
 
@@ -76,47 +80,75 @@ func IDs() []string {
 	return out
 }
 
-type Journal struct {
-	path    string
+func ignoreMissing(err error) error {
+	if errors.Is(err, registry.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
+var journalMu sync.Mutex
+
+type journal struct {
 	Applied map[string]Undo `json:"applied"`
 }
 
-func OpenJournal() *Journal {
-	j := &Journal{path: filepath.Join(winx.DataDir(), "journal.json"), Applied: map[string]Undo{}}
-	if b, err := os.ReadFile(j.path); err == nil {
-		json.Unmarshal(b, j)
-		if j.Applied == nil {
-			j.Applied = map[string]Undo{}
-		}
-	}
-	return j
+func journalPath() string {
+	return filepath.Join(winx.DataDir(), "journal.json")
 }
 
-func (j *Journal) save() error {
+func loadJournal() (journal, error) {
+	j := journal{Applied: map[string]Undo{}}
+	b, err := os.ReadFile(journalPath())
+	if errors.Is(err, fs.ErrNotExist) {
+		return j, nil
+	}
+	if err != nil {
+		return j, err
+	}
+	if err := json.Unmarshal(b, &j); err != nil {
+		return journal{Applied: map[string]Undo{}}, fmt.Errorf("el diario de cambios %s está dañado: %w", journalPath(), err)
+	}
+	if j.Applied == nil {
+		j.Applied = map[string]Undo{}
+	}
+	return j, nil
+}
+
+func (j journal) save() error {
 	b, err := json.MarshalIndent(j, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := j.path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, j.path)
-}
-
-func (j *Journal) Apply(ctx Context, t Tweak) error {
-	if _, ok := j.Applied[t.ID()]; ok {
-		return nil
-	}
-	undo, err := t.Apply(ctx)
+	tmp := journalPath() + ".tmp"
+	f, err := os.Create(tmp)
 	if err != nil {
 		return err
 	}
-	j.Applied[t.ID()] = undo
-	return j.save()
+	_, err = f.Write(b)
+	if err == nil {
+		err = f.Sync()
+	}
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return os.Rename(tmp, journalPath())
 }
 
-func (j *Journal) Revert(ctx Context, t Tweak) error {
+func (j journal) ids() []string {
+	ids := make([]string, 0, len(j.Applied))
+	for id := range j.Applied {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func (j journal) revert(ctx Context, t Tweak) error {
 	undo, ok := j.Applied[t.ID()]
 	if !ok {
 		return nil
@@ -128,22 +160,97 @@ func (j *Journal) Revert(ctx Context, t Tweak) error {
 	return j.save()
 }
 
-func (j *Journal) RevertAll(ctx Context) error {
+func Entries() (map[string]Undo, error) {
+	journalMu.Lock()
+	defer journalMu.Unlock()
+	j, err := loadJournal()
+	return j.Applied, err
+}
+
+func Apply(ctx Context, t Tweak) error {
+	journalMu.Lock()
+	defer journalMu.Unlock()
+	j, err := loadJournal()
+	if err != nil {
+		return err
+	}
+	if _, ok := j.Applied[t.ID()]; ok {
+		return nil
+	}
+	undo, err := t.Snapshot(ctx)
+	if err != nil {
+		return err
+	}
+	j.Applied[t.ID()] = undo
+	if err := j.save(); err != nil {
+		return err
+	}
+	if err := t.Apply(ctx); err != nil {
+		if j.revert(ctx, t) != nil {
+			return fmt.Errorf("%w (el cambio quedó a medias y sigue en el diario para deshacerlo)", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func Revert(ctx Context, t Tweak) error {
+	journalMu.Lock()
+	defer journalMu.Unlock()
+	j, err := loadJournal()
+	if err != nil {
+		return err
+	}
+	return j.revert(ctx, t)
+}
+
+func RevertAll(ctx Context) error {
+	journalMu.Lock()
+	defer journalMu.Unlock()
+	j, err := loadJournal()
+	if err != nil {
+		return err
+	}
 	var errs []error
-	for id := range j.Applied {
+	for _, id := range j.ids() {
 		t, err := Get(id)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err := j.Revert(ctx, t); err != nil {
+		if err := j.revert(ctx, t); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", id, err))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func (j *Journal) Has(id string) bool {
-	_, ok := j.Applied[id]
-	return ok
+func Resync(ctx Context) error {
+	journalMu.Lock()
+	defer journalMu.Unlock()
+	j, err := loadJournal()
+	if err != nil {
+		return err
+	}
+	var errs []error
+	forgot := false
+	for _, id := range j.ids() {
+		t, err := Get(id)
+		if err != nil || t.State(ctx).Applied {
+			continue
+		}
+		switch t.(type) {
+		case flagSet:
+			if err := t.Apply(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("%s: %w", id, err))
+			}
+		case basicSetting:
+			delete(j.Applied, id)
+			forgot = true
+		}
+	}
+	if forgot {
+		errs = append(errs, j.save())
+	}
+	return errors.Join(errs...)
 }

@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	iphlpapi          = windows.NewLazySystemDLL("iphlpapi.dll")
-	procIcmpCreate    = iphlpapi.NewProc("IcmpCreateFile")
-	procIcmpClose     = iphlpapi.NewProc("IcmpCloseHandle")
-	procIcmpSendEcho  = iphlpapi.NewProc("IcmpSendEcho")
+	iphlpapi         = windows.NewLazySystemDLL("iphlpapi.dll")
+	procIcmpCreate   = iphlpapi.NewProc("IcmpCreateFile")
+	procIcmpClose    = iphlpapi.NewProc("IcmpCloseHandle")
+	procIcmpSendEcho = iphlpapi.NewProc("IcmpSendEcho")
 )
 
 type ipOptionInfo struct {
@@ -38,9 +38,9 @@ type icmpEchoReply struct {
 }
 
 const (
-	ipSuccess         = 0
-	ipTTLExpired      = 11013
-	ipReqTimedOut     = 11010
+	ipSuccess     = 0
+	ipTTLExpired  = 11013
+	ipReqTimedOut = 11010
 )
 
 type Echo struct {

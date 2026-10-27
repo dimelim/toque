@@ -3,9 +3,10 @@ package roblox
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
+
+	"toque/internal/winx"
 )
 
 type BasicSettings struct {
@@ -78,12 +79,11 @@ func (s *BasicSettings) SetBool(name string, v bool) bool {
 }
 
 func (s *BasicSettings) Save() error {
-	if err := SafeTarget(filepath.Dir(filepath.Dir(s.path)), s.path); err != nil {
-		return err
-	}
-	tmp := s.path + ".toque-tmp"
-	if err := os.WriteFile(tmp, []byte(s.text), 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, s.path)
+	return winx.AsUser(func() error {
+		tmp := s.path + ".toque-tmp"
+		if err := os.WriteFile(tmp, []byte(s.text), 0o644); err != nil {
+			return err
+		}
+		return os.Rename(tmp, s.path)
+	})
 }

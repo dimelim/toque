@@ -17,8 +17,8 @@ type Packet struct {
 }
 
 const (
-	inboundAckLen  = 54
-	inboundAckLen2 = 57
+	inboundAckLen   = 54
+	inboundAckLen2  = 57
 	outboundAckLen  = 56
 	outboundAckLen2 = 59
 	seqOffset       = 36

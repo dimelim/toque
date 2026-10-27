@@ -19,22 +19,6 @@ type pool struct {
 	primary       map[string]bool
 }
 
-var extraTitles = map[string]string{
-	"power-plan:381b4222-f694-41f0-9685-ff5bb260df2e": "Plan Equilibrado frente al plan personalizado",
-	"power-plan:8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c": "Plan Alto rendimiento frente a Equilibrado",
-	"proc-priority-high":                              "Prioridad alta para Roblox",
-}
-
-func title(id string) string {
-	if t, ok := extraTitles[id]; ok {
-		return t
-	}
-	if e, ok := catalog.Find(id); ok {
-		return e.Title
-	}
-	return id
-}
-
 var verdictLabel = map[string]string{
 	catalog.VerdictProven:      "Probada",
 	catalog.VerdictTradeoff:    "Probada, con coste visual",
@@ -108,7 +92,7 @@ func pooled(files []string) string {
 	b.WriteString("| Cambio | Experimentos | Ventanas A/B | Métrica | A | B | Cambio | p | ¿Real? |\n|---|---|---|---|---|---|---|---|---|\n")
 	for _, key := range order {
 		g := groups[key]
-		name := title(g.tweak)
+		name := catalog.Title(g.tweak)
 		if g.stress != "" {
 			name += " (con CPU cargada)"
 		}

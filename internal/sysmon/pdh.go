@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	pdh                       = windows.NewLazySystemDLL("pdh.dll")
-	procPdhOpenQuery          = pdh.NewProc("PdhOpenQueryW")
-	procPdhAddEnglishCounter  = pdh.NewProc("PdhAddEnglishCounterW")
-	procPdhCollectQueryData   = pdh.NewProc("PdhCollectQueryData")
-	procPdhGetFormattedValue  = pdh.NewProc("PdhGetFormattedCounterValue")
-	procPdhGetFormattedArray  = pdh.NewProc("PdhGetFormattedCounterArrayW")
-	procPdhCloseQuery         = pdh.NewProc("PdhCloseQuery")
+	pdh                      = windows.NewLazySystemDLL("pdh.dll")
+	procPdhOpenQuery         = pdh.NewProc("PdhOpenQueryW")
+	procPdhAddEnglishCounter = pdh.NewProc("PdhAddEnglishCounterW")
+	procPdhCollectQueryData  = pdh.NewProc("PdhCollectQueryData")
+	procPdhGetFormattedValue = pdh.NewProc("PdhGetFormattedCounterValue")
+	procPdhGetFormattedArray = pdh.NewProc("PdhGetFormattedCounterArrayW")
+	procPdhCloseQuery        = pdh.NewProc("PdhCloseQuery")
 )
 
 const (

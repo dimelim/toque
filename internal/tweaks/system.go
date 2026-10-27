@@ -78,12 +78,16 @@ func (p powerPlan) State(Context) State {
 	return State{Applicable: true, Applied: cur == p.target, Detail: "active " + cur}
 }
 
-func (p powerPlan) Apply(Context) (Undo, error) {
+func (p powerPlan) Snapshot(Context) (Undo, error) {
 	cur, err := ActivePlan()
 	if err != nil {
 		return nil, err
 	}
-	return Undo{"prev": cur}, SetPlan(p.target)
+	return Undo{"prev": cur}, nil
+}
+
+func (p powerPlan) Apply(Context) error {
+	return SetPlan(p.target)
 }
 
 func (p powerPlan) Revert(_ Context, u Undo) error {
@@ -107,14 +111,18 @@ func (timerRes) State(Context) State {
 	return State{Applicable: true, Applied: cur <= 5000, Detail: "current " + strconv.FormatFloat(float64(cur)/10000, 'f', 3, 64) + " ms"}
 }
 
-func (timerRes) Apply(Context) (Undo, error) {
+func (timerRes) Snapshot(Context) (Undo, error) {
+	return Undo{}, nil
+}
+
+func (timerRes) Apply(Context) error {
 	timerMu.Lock()
 	defer timerMu.Unlock()
 	var actual uint32
 	if r, _, _ := procNtSetTimerResolution.Call(5000, 1, uintptr(unsafe.Pointer(&actual))); r != 0 {
-		return nil, errors.New("NtSetTimerResolution failed")
+		return errors.New("NtSetTimerResolution failed")
 	}
-	return Undo{"actual": strconv.FormatUint(uint64(actual), 10)}, nil
+	return nil
 }
 
 func (timerRes) Revert(Context, Undo) error {

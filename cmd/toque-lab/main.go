@@ -270,13 +270,16 @@ func cmdTweak(args []string) error {
 	if pids := roblox.Running(); len(pids) > 0 {
 		tctx.PID = pids[0]
 	}
-	j := tweaks.OpenJournal()
+	entries, err := tweaks.Entries()
+	if err != nil {
+		return err
+	}
 	switch args[0] {
 	case "list":
-		printJSON(map[string]any{"registered": tweaks.IDs(), "journal": j.Applied})
+		printJSON(map[string]any{"registered": tweaks.IDs(), "journal": entries})
 		return nil
 	case "revert-all":
-		return j.RevertAll(tctx)
+		return tweaks.RevertAll(tctx)
 	}
 	if len(args) < 2 {
 		return errors.New("missing tweak id")
@@ -287,12 +290,13 @@ func cmdTweak(args []string) error {
 	}
 	switch args[0] {
 	case "state":
-		printJSON(map[string]any{"id": t.ID(), "kind": t.Kind(), "state": t.State(tctx), "inJournal": j.Has(t.ID())})
+		_, managed := entries[t.ID()]
+		printJSON(map[string]any{"id": t.ID(), "kind": t.Kind(), "state": t.State(tctx), "inJournal": managed})
 	case "apply":
-		err = j.Apply(tctx, t)
+		err = tweaks.Apply(tctx, t)
 		printJSON(t.State(tctx))
 	case "revert":
-		err = j.Revert(tctx, t)
+		err = tweaks.Revert(tctx, t)
 		printJSON(t.State(tctx))
 	default:
 		err = errors.New("unknown tweak action")

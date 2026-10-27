@@ -143,6 +143,18 @@ var Catalog = []Entry{
 		Lab:      "Descartada para Realistic Street Soccer. Su campo no usa hierba de terreno y la GPU por frame quedó igual (2,57 frente a 2,58 ms).",
 	},
 	{
+		ID:       "flag:DFIntCSGLevelOfDetailSwitchingDistance=0,DFIntCSGLevelOfDetailSwitchingDistanceL12=0,DFIntCSGLevelOfDetailSwitchingDistanceL23=0,DFIntCSGLevelOfDetailSwitchingDistanceL34=0",
+		Title:    "Piezas compuestas simplificadas",
+		Category: "fps",
+		What:     "Hace que Roblox dibuje siempre la versión más simple de las piezas compuestas (uniones y cortes), a cualquier distancia, con opciones oficiales de la lista permitida.",
+		Why:      "Esas piezas tienen varias versiones con menos polígonos para verlas de lejos. Usar siempre la más simple ahorra trabajo de GPU en mapas que tienen muchas.",
+		Metric:   "Tiempo de GPU por frame y latencia de render.",
+		Risk:     "Las piezas compuestas se ven con menos detalle de cerca.",
+		Revert:   "Quita las opciones del archivo de configuración de Roblox.",
+		Verdict:  VerdictRejected,
+		Lab:      "Descartada para Realistic Street Soccer. En 12 reaperturas la GPU por frame bajó un 1,8 % (2,61 a 2,56 ms) sin llegar al umbral de la prueba, y la latencia de render quedó igual (7,02 frente a 6,96 ms).",
+	},
+	{
 		ID:       "flag:DFFlagTextureQualityOverrideEnabled=True,DFIntTextureQualityOverride=1",
 		Title:    "Texturas ligeras",
 		Category: "memoria",
@@ -156,6 +168,11 @@ var Catalog = []Entry{
 	},
 }
 
+var labTitles = map[string]string{
+	"power-plan:381b4222-f694-41f0-9685-ff5bb260df2e": "Plan Equilibrado frente al plan personalizado",
+	"proc-priority-high":                              "Prioridad alta para Roblox (en vivo)",
+}
+
 func Find(id string) (Entry, bool) {
 	for _, e := range Catalog {
 		if e.ID == id {
@@ -163,4 +180,14 @@ func Find(id string) (Entry, bool) {
 		}
 	}
 	return Entry{}, false
+}
+
+func Title(id string) string {
+	if e, ok := Find(id); ok {
+		return e.Title
+	}
+	if t, ok := labTitles[id]; ok {
+		return t
+	}
+	return id
 }

@@ -33,7 +33,7 @@ func (s *Service) Uninstall() error {
 	if err := s.RevertAll(); err != nil {
 		return err
 	}
-	if err := install.Uninstall(true); err != nil {
+	if err := install.Uninstall(); err != nil {
 		return err
 	}
 	go func() {

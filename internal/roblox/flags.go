@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"toque/internal/winx"
 )
 
 var AllowedFlags = map[string]bool{
@@ -51,28 +53,27 @@ func ReadFlags(versionDir string) (map[string]any, error) {
 }
 
 func WriteFlags(versionDir string, flags map[string]any) error {
-	path := FlagsPath(versionDir)
-	if err := SafeTarget(filepath.Dir(filepath.Dir(versionDir)), path); err != nil {
-		return err
-	}
-	if len(flags) == 0 {
-		err := os.Remove(path)
-		if errors.Is(err, os.ErrNotExist) {
-			return nil
-		}
-		return err
-	}
 	for k := range flags {
 		if !AllowedFlags[k] {
 			return errors.New("flag not in Roblox allowlist: " + k)
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
 	b, err := json.MarshalIndent(flags, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0o644)
+	path := FlagsPath(versionDir)
+	return winx.AsUser(func() error {
+		if len(flags) == 0 {
+			err := os.Remove(path)
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(path, b, 0o644)
+	})
 }

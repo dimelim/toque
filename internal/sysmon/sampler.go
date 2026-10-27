@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	kernel32               = windows.NewLazySystemDLL("kernel32.dll")
-	psapi                  = windows.NewLazySystemDLL("psapi.dll")
-	procGetSystemTimes     = kernel32.NewProc("GetSystemTimes")
-	procGetProcessMemInfo  = psapi.NewProc("GetProcessMemoryInfo")
+	kernel32              = windows.NewLazySystemDLL("kernel32.dll")
+	psapi                 = windows.NewLazySystemDLL("psapi.dll")
+	procGetSystemTimes    = kernel32.NewProc("GetSystemTimes")
+	procGetProcessMemInfo = psapi.NewProc("GetProcessMemoryInfo")
 )
 
 type Sample struct {
@@ -48,10 +48,10 @@ type Summary struct {
 }
 
 type Disk struct {
-	Name       string  `json:"name"`
-	ReadsSec   float64 `json:"readsPerSec"`
-	ReadMs     float64 `json:"readLatencyMs"`
-	ReadMsMax  float64 `json:"readLatencyMaxMs"`
+	Name      string  `json:"name"`
+	ReadsSec  float64 `json:"readsPerSec"`
+	ReadMs    float64 `json:"readLatencyMs"`
+	ReadMsMax float64 `json:"readLatencyMaxMs"`
 }
 
 type memCounters struct {

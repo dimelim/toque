@@ -25,16 +25,16 @@ type Env struct {
 }
 
 type Window struct {
-	Label      string          `json:"label"`
-	Start      time.Time       `json:"start"`
-	Seconds    float64         `json:"seconds"`
-	JobID      string          `json:"jobId"`
-	ServerIP   string          `json:"serverIp"`
-	Foreground bool            `json:"foreground"`
-	Frames     frames.Summary  `json:"frames"`
-	Net        netq.Summary    `json:"net"`
-	Sys        sysmon.Summary  `json:"sys"`
-	Errors     []string        `json:"errors,omitempty"`
+	Label      string         `json:"label"`
+	Start      time.Time      `json:"start"`
+	Seconds    float64        `json:"seconds"`
+	JobID      string         `json:"jobId"`
+	ServerIP   string         `json:"serverIp"`
+	Foreground bool           `json:"foreground"`
+	Frames     frames.Summary `json:"frames"`
+	Net        netq.Summary   `json:"net"`
+	Sys        sysmon.Summary `json:"sys"`
+	Errors     []string       `json:"errors,omitempty"`
 }
 
 func Measure(ctx context.Context, env Env, sess roblox.Session, dur time.Duration, dir string, label string) Window {

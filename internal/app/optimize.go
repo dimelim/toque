@@ -33,7 +33,7 @@ func (s *Service) context() tweaks.Context {
 	return ctx
 }
 
-func (s *Service) describe(e catalog.Entry, j *tweaks.Journal, exps []ExperimentRecord) Optimization {
+func (s *Service) describe(e catalog.Entry, managed map[string]tweaks.Undo, exps []ExperimentRecord) Optimization {
 	o := Optimization{Entry: e}
 	t, err := tweaks.Get(e.ID)
 	if err != nil {
@@ -43,7 +43,7 @@ func (s *Service) describe(e catalog.Entry, j *tweaks.Journal, exps []Experiment
 	st := t.State(s.context())
 	o.Kind = string(t.Kind())
 	o.Applicable, o.Applied, o.Detail = st.Applicable, st.Applied, st.Detail
-	o.Managed = j.Has(e.ID)
+	_, o.Managed = managed[e.ID]
 	for i := range exps {
 		if exps[i].Tweak == e.ID {
 			o.Mine = &exps[i]
@@ -54,11 +54,11 @@ func (s *Service) describe(e catalog.Entry, j *tweaks.Journal, exps []Experiment
 }
 
 func (s *Service) Optimizations() []Optimization {
-	j := tweaks.OpenJournal()
+	managed, _ := tweaks.Entries()
 	exps := LoadExperiments()
 	out := make([]Optimization, 0, len(catalog.Catalog))
 	for _, e := range catalog.Catalog {
-		out = append(out, s.describe(e, j, exps))
+		out = append(out, s.describe(e, managed, exps))
 	}
 	return out
 }
@@ -73,6 +73,9 @@ func (s *Service) find(id string) (catalog.Entry, tweaks.Tweak, error) {
 }
 
 func (s *Service) Apply(id string) (Optimization, error) {
+	if err := s.idle(); err != nil {
+		return Optimization{}, err
+	}
 	e, t, err := s.find(id)
 	if err != nil {
 		return Optimization{}, err
@@ -83,14 +86,17 @@ func (s *Service) Apply(id string) (Optimization, error) {
 	if t.Kind() == tweaks.Relaunch && len(roblox.Running()) > 0 {
 		return Optimization{}, errors.New("cierra Roblox para aplicar este cambio")
 	}
-	j := tweaks.OpenJournal()
-	if err := j.Apply(s.context(), t); err != nil {
+	if err := tweaks.Apply(s.context(), t); err != nil {
 		return Optimization{}, err
 	}
-	return s.describe(e, j, LoadExperiments()), nil
+	managed, _ := tweaks.Entries()
+	return s.describe(e, managed, LoadExperiments()), nil
 }
 
 func (s *Service) Revert(id string) (Optimization, error) {
+	if err := s.idle(); err != nil {
+		return Optimization{}, err
+	}
 	e, t, err := s.find(id)
 	if err != nil {
 		return Optimization{}, err
@@ -98,11 +104,11 @@ func (s *Service) Revert(id string) (Optimization, error) {
 	if t.Kind() == tweaks.Relaunch && len(roblox.Running()) > 0 {
 		return Optimization{}, errors.New("cierra Roblox para revertir este cambio")
 	}
-	j := tweaks.OpenJournal()
-	if err := j.Revert(s.context(), t); err != nil {
+	if err := tweaks.Revert(s.context(), t); err != nil {
 		return Optimization{}, err
 	}
-	return s.describe(e, j, LoadExperiments()), nil
+	managed, _ := tweaks.Entries()
+	return s.describe(e, managed, LoadExperiments()), nil
 }
 
 func (s *Service) ApplyProven() ([]string, error) {
@@ -125,10 +131,13 @@ func (s *Service) ApplyProven() ([]string, error) {
 }
 
 func (s *Service) RevertAll() error {
+	if err := s.idle(); err != nil {
+		return err
+	}
 	if len(roblox.Running()) > 0 {
 		return errors.New("cierra Roblox para revertir todo")
 	}
-	return tweaks.OpenJournal().RevertAll(s.context())
+	return tweaks.RevertAll(s.context())
 }
 
 func (s *Service) Verify(id string) (ExperimentRecord, error) {

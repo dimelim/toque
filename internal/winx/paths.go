@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -26,8 +27,32 @@ func ProgramData() string {
 	return os.Getenv("ProgramData")
 }
 
+func trustedOwner(path string) bool {
+	sd, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION)
+	if err != nil {
+		return false
+	}
+	owner, _, err := sd.Owner()
+	if err != nil {
+		return false
+	}
+	if owner.IsWellKnown(windows.WinBuiltinAdministratorsSid) || owner.IsWellKnown(windows.WinLocalSystemSid) {
+		return true
+	}
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	return err == nil && owner.Equals(user.User.Sid)
+}
+
 func secureRoot(root string) {
 	if !IsElevated() {
+		return
+	}
+	if !trustedOwner(root) {
+		os.Rename(root, root+".untrusted-"+time.Now().Format("20060102-150405"))
+		os.MkdirAll(root, 0o755)
+	}
+	admins, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
 		return
 	}
 	sd, err := windows.SecurityDescriptorFromString(dataDirSDDL)
@@ -39,7 +64,7 @@ func secureRoot(root string) {
 		return
 	}
 	windows.SetNamedSecurityInfo(root, windows.SE_FILE_OBJECT,
-		windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, dacl, nil)
+		windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, admins, nil, dacl, nil)
 }
 
 func DataDir(parts ...string) string {

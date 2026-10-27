@@ -43,8 +43,9 @@ func (s *Service) Benchmark(label string) (RunRecord, error) {
 	if w.Net.Confident {
 		rememberDatacenter(sess.ServerIP, w.Net.RTT)
 	}
+	entries, _ := tweaks.Entries()
 	var applied []string
-	for k := range tweaks.OpenJournal().Applied {
+	for k := range entries {
 		applied = append(applied, k)
 	}
 	rec := RunRecord{ID: id, Label: label, At: time.Now(), ServerIP: sess.ServerIP, JobID: sess.JobID, JoinMs: sess.TimeToJoin().Milliseconds(), Applied: applied, Window: w}

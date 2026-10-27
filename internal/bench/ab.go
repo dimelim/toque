@@ -3,6 +3,7 @@ package bench
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -81,29 +82,35 @@ func armSequence(cycles int) []string {
 	return seq
 }
 
-func setArm(ctx tweaks.Context, t tweaks.Tweak, j *tweaks.Journal, arm string) error {
+func setArm(ctx tweaks.Context, t tweaks.Tweak, arm string) error {
 	if arm == "B" {
-		return j.Apply(ctx, t)
+		return tweaks.Apply(ctx, t)
 	}
-	return j.Revert(ctx, t)
+	return tweaks.Revert(ctx, t)
 }
 
-func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)) (ABResult, error) {
+func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)) (res ABResult, err error) {
 	t, err := tweaks.Get(cfg.Tweak)
 	if err != nil {
 		return ABResult{}, err
 	}
-	res := ABResult{Config: cfg, Kind: t.Kind(), Started: time.Now()}
+	entries, err := tweaks.Entries()
+	if err != nil {
+		return ABResult{}, err
+	}
+	_, wasApplied := entries[t.ID()]
+	tctx := tweaks.Context{Install: env.Install}
+	if !wasApplied && t.State(tctx).Applied {
+		return ABResult{}, errors.New("este cambio ya estaba así antes de Toque, así que no hay un estado sin él con el que comparar")
+	}
+	res = ABResult{Config: cfg, Kind: t.Kind(), Started: time.Now()}
 	safe := strings.NewReplacer(":", "_", "=", "-", ",", "+", "/", "_").Replace(cfg.Tweak)
 	res.Dir = filepath.Join(winx.DataDir("experiments"), time.Now().Format("20060102-150405")+"-"+safe)
 	os.MkdirAll(res.Dir, 0o755)
 	stop := StartStress(cfg.Stress)
 	defer stop()
-	j := tweaks.OpenJournal()
-	tctx := tweaks.Context{Install: env.Install}
 	seq := armSequence(cfg.Cycles)
 	var sess roblox.Session
-	wasApplied := j.Has(t.ID())
 	writeMarker(t.ID(), wasApplied)
 	defer func() {
 		tctx.PID = sess.PID
@@ -115,7 +122,12 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 		if wasApplied {
 			arm = "B"
 		}
-		setArm(tctx, t, j, arm)
+		if rerr := setArm(tctx, t, arm); rerr != nil {
+			if err == nil {
+				err = fmt.Errorf("no pude dejar el cambio como estaba y se deshará al volver a abrir Toque (%w)", rerr)
+			}
+			return
+		}
 		clearMarker()
 	}()
 	joinFresh := func() error {
@@ -132,7 +144,7 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 	}
 	if t.Kind() == tweaks.Live {
 		tctx.PID = 0
-		if err := setArm(tctx, t, j, "A"); err != nil {
+		if err := setArm(tctx, t, "A"); err != nil {
 			return res, err
 		}
 		if err := joinFresh(); err != nil {
@@ -145,14 +157,14 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 		}
 		if t.Kind() == tweaks.Live {
 			tctx.PID = sess.PID
-			if err := setArm(tctx, t, j, arm); err != nil {
+			if err := setArm(tctx, t, arm); err != nil {
 				return res, fmt.Errorf("set arm %s: %w", arm, err)
 			}
 			time.Sleep(cfg.Settle)
 		} else {
 			roblox.CloseAll(10 * time.Second)
 			tctx.PID = 0
-			if err := setArm(tctx, t, j, arm); err != nil {
+			if err := setArm(tctx, t, arm); err != nil {
 				return res, fmt.Errorf("set arm %s: %w", arm, err)
 			}
 			if err := joinFresh(); err != nil {

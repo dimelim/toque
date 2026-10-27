@@ -37,11 +37,10 @@ Los resultados completos están en [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Compilar
 
-Hace falta Go 1.27, Node 24, Wails CLI 2.17 y, para la versión ofuscada, garble 0.18.
+Hace falta Go 1.27, Node 24 y Wails CLI 2.17.
 
 ```powershell
-.\build.ps1             # binario normal
-.\build.ps1 -Obfuscate  # con garble (-literals -tiny)
+.\build.ps1
 ```
 
-El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo.
+El resultado es un único `build\bin\Toque.exe` que se instala solo al abrirlo. Se compila sin símbolos ni rutas del equipo de desarrollo. La ofuscación con garble se probó y se descartó porque Microsoft Defender marca el binario ofuscado como troyano (Trojan:Win32/Gracing.I), mientras que el binario normal sale limpio.

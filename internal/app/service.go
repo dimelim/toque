@@ -38,6 +38,15 @@ func New(presentMon string, emit Emitter) *Service {
 
 var ErrBusy = errors.New("toque ya está ejecutando otra tarea")
 
+func (s *Service) idle() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.busy != "" {
+		return ErrBusy
+	}
+	return nil
+}
+
 func (s *Service) begin(task string) (context.Context, func(), error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -121,7 +130,8 @@ func (s *Service) Overview() Overview {
 			o.Roblox.Running = len(roblox.Running()) > 0
 		}
 	}
-	o.Applied = len(tweaks.OpenJournal().Applied)
+	entries, _ := tweaks.Entries()
+	o.Applied = len(entries)
 	o.Tested = len(catalog.Catalog)
 	for _, e := range catalog.Catalog {
 		if e.Verdict == catalog.VerdictProven || e.Verdict == catalog.VerdictTradeoff {
@@ -165,19 +175,7 @@ func (s *Service) Recover() {
 	if len(roblox.Running()) > 0 {
 		return
 	}
-	ctx := tweaks.Context{Install: inst}
-	j := tweaks.OpenJournal()
-	for id := range j.Applied {
-		t, err := tweaks.Get(id)
-		if err != nil || t.Kind() != tweaks.Relaunch || t.State(ctx).Applied {
-			continue
-		}
-		undo := j.Applied[id]
-		delete(j.Applied, id)
-		if err := j.Apply(ctx, t); err != nil {
-			j.Applied[id] = undo
-		}
-	}
+	tweaks.Resync(tweaks.Context{Install: inst})
 }
 
 func (s *Service) Play() error {

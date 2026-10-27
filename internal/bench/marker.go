@@ -46,12 +46,11 @@ func RecoverInterrupted(inst roblox.Install) (string, error) {
 	if t.Kind() != tweaks.Live && len(roblox.Running()) > 0 {
 		return "", nil
 	}
-	j := tweaks.OpenJournal()
 	ctx := tweaks.Context{Install: inst}
 	if m.WasApplied {
-		err = j.Apply(ctx, t)
+		err = tweaks.Apply(ctx, t)
 	} else {
-		err = j.Revert(ctx, t)
+		err = tweaks.Revert(ctx, t)
 	}
 	if err == nil {
 		clearMarker()

@@ -12,8 +12,8 @@ type procPriority struct {
 	class uint32
 }
 
-func (procPriority) ID() string   { return "proc-priority-high" }
-func (procPriority) Kind() Kind   { return Live }
+func (procPriority) ID() string { return "proc-priority-high" }
+func (procPriority) Kind() Kind { return Live }
 
 func priorityOf(pid uint32) (uint32, error) {
 	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
@@ -44,7 +44,7 @@ func (p procPriority) State(c Context) State {
 	return State{Applicable: true, Applied: cur == p.class, Detail: "class 0x" + strconv.FormatUint(uint64(cur), 16)}
 }
 
-func (p procPriority) Apply(c Context) (Undo, error) {
+func (p procPriority) Snapshot(c Context) (Undo, error) {
 	if c.PID == 0 {
 		return nil, errors.New("roblox not running")
 	}
@@ -52,10 +52,14 @@ func (p procPriority) Apply(c Context) (Undo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := setPriority(c.PID, p.class); err != nil {
-		return nil, err
-	}
 	return Undo{"class": strconv.FormatUint(uint64(prev), 10)}, nil
+}
+
+func (p procPriority) Apply(c Context) error {
+	if c.PID == 0 {
+		return errors.New("roblox not running")
+	}
+	return setPriority(c.PID, p.class)
 }
 
 func (p procPriority) Revert(c Context, u Undo) error {
@@ -69,7 +73,35 @@ func (p procPriority) Revert(c Context, u Undo) error {
 	return setPriority(c.PID, uint32(prev))
 }
 
-const ifeoKey = `SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\RobloxPlayerBeta.exe\PerfOptions`
+const (
+	ifeoImageKey = `SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\RobloxPlayerBeta.exe`
+	ifeoKey      = ifeoImageKey + `\PerfOptions`
+)
+
+func keyExists(path string) bool {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, path, registry.QUERY_VALUE)
+	if err != nil {
+		return false
+	}
+	k.Close()
+	return true
+}
+
+func deleteIfEmpty(path string) error {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, path, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
+	if err != nil {
+		return ignoreMissing(err)
+	}
+	info, err := k.Stat()
+	k.Close()
+	if err != nil {
+		return err
+	}
+	if info.SubKeyCount > 0 || info.ValueCount > 0 {
+		return nil
+	}
+	return ignoreMissing(registry.DeleteKey(registry.LOCAL_MACHINE, path))
+}
 
 type ifeoPriority struct{}
 
@@ -86,38 +118,56 @@ func (ifeoPriority) State(Context) State {
 	return State{Applicable: true, Applied: err == nil && v == 3, Detail: "CpuPriorityClass=" + strconv.FormatUint(v, 10)}
 }
 
-func (ifeoPriority) Apply(Context) (Undo, error) {
-	k, existed, err := registry.CreateKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE|registry.QUERY_VALUE)
+func (ifeoPriority) Snapshot(Context) (Undo, error) {
+	u := Undo{"image": strconv.FormatBool(keyExists(ifeoImageKey)), "existed": strconv.FormatBool(keyExists(ifeoKey))}
+	if k, err := registry.OpenKey(registry.LOCAL_MACHINE, ifeoKey, registry.QUERY_VALUE); err == nil {
+		if v, _, err := k.GetIntegerValue("CpuPriorityClass"); err == nil {
+			u["prev"] = strconv.FormatUint(v, 10)
+		}
+		k.Close()
+	}
+	return u, nil
+}
+
+func (ifeoPriority) Apply(Context) error {
+	k, _, err := registry.CreateKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer k.Close()
-	u := Undo{"existed": strconv.FormatBool(existed)}
-	if v, _, err := k.GetIntegerValue("CpuPriorityClass"); err == nil {
-		u["prev"] = strconv.FormatUint(v, 10)
-	}
-	return u, k.SetDWordValue("CpuPriorityClass", 3)
+	return k.SetDWordValue("CpuPriorityClass", 3)
 }
 
 func (ifeoPriority) Revert(_ Context, u Undo) error {
 	if prev, ok := u["prev"]; ok {
-		k, err := registry.OpenKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE)
+		v, err := strconv.ParseUint(prev, 10, 32)
+		if err != nil {
+			return err
+		}
+		k, _, err := registry.CreateKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE)
 		if err != nil {
 			return err
 		}
 		defer k.Close()
-		v, _ := strconv.ParseUint(prev, 10, 32)
 		return k.SetDWordValue("CpuPriorityClass", uint32(v))
 	}
-	if u["existed"] == "true" {
-		k, err := registry.OpenKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE)
-		if err != nil {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, ifeoKey, registry.SET_VALUE)
+	if err == nil {
+		err = k.DeleteValue("CpuPriorityClass")
+		k.Close()
+	}
+	if err := ignoreMissing(err); err != nil {
+		return err
+	}
+	if u["existed"] != "true" {
+		if err := deleteIfEmpty(ifeoKey); err != nil {
 			return err
 		}
-		defer k.Close()
-		return k.DeleteValue("CpuPriorityClass")
 	}
-	return registry.DeleteKey(registry.LOCAL_MACHINE, ifeoKey)
+	if u["image"] != "true" {
+		return deleteIfEmpty(ifeoImageKey)
+	}
+	return nil
 }
 
 func init() {

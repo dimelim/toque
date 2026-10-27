@@ -1,4 +1,4 @@
-param([switch]$Obfuscate, [string]$PresentMon = "$PSScriptRoot\.dev\bin\PresentMon.exe")
+param([string]$PresentMon = "$PSScriptRoot\.dev\bin\PresentMon.exe")
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $payload = Join-Path $PSScriptRoot 'internal\install\payload'
@@ -12,9 +12,7 @@ Copy-Item $PresentMon "$payload\PresentMon.exe" -Force
 Copy-Item "$PSScriptRoot\assets\THIRD-PARTY-NOTICES.txt" "$payload\THIRD-PARTY-NOTICES.txt" -Force
 
 Write-Host '== app'
-$wailsArgs = @('build', '-clean', '-trimpath', '-ldflags', '-s -w -buildid=', '-webview2', 'download')
-if ($Obfuscate) { $wailsArgs += @('-obfuscated', '-garbleargs', '-literals -tiny -seed=random') }
-& wails @wailsArgs
+& wails build -clean -trimpath -ldflags '-s -w -buildid=' -webview2 download
 if ($LASTEXITCODE -ne 0) { throw 'wails build failed' }
 
 $exe = Join-Path $PSScriptRoot 'build\bin\Toque.exe'

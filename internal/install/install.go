@@ -238,7 +238,7 @@ func dirSizeKB(dir string) int64 {
 	return total / 1024
 }
 
-func Uninstall(removeData bool) error {
+func Uninstall() error {
 	if !winx.IsElevated() {
 		return errors.New("se necesitan permisos de administrador")
 	}
@@ -248,10 +248,8 @@ func Uninstall(removeData bool) error {
 		os.Remove(d)
 	}
 	registry.DeleteKey(registry.LOCAL_MACHINE, uninstallKey)
-	if removeData {
-		os.RemoveAll(filepath.Join(winx.ProgramData(), "Toque"))
-		os.RemoveAll(filepath.Join(winx.LocalAppData(), "Toque"))
-	}
+	data := filepath.Join(winx.ProgramData(), "Toque")
+	os.RemoveAll(data)
 	dir := Dir()
 	exe, _ := os.Executable()
 	entries, _ := os.ReadDir(dir)
@@ -265,7 +263,7 @@ func Uninstall(removeData bool) error {
 	deleteOnReboot(exe)
 	deleteOnReboot(dir)
 	cmdExe := filepath.Join(os.Getenv("SystemRoot"), "System32", "cmd.exe")
-	line := fmt.Sprintf(`"%s" /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "%s"`, cmdExe, dir)
+	line := fmt.Sprintf(`"%s" /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "%s" & rmdir /s /q "%s"`, cmdExe, dir, data)
 	const noWindow, detached, breakaway = 0x08000000, 0x00000008, 0x01000000
 	for _, flags := range []uint32{noWindow | detached | breakaway, noWindow | detached} {
 		cmd := exec.Command(cmdExe)

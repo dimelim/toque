@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"toque/internal/bench"
+	"toque/internal/catalog"
 	"toque/internal/winx"
 )
 
@@ -61,7 +62,7 @@ func cmdReport(args []string) error {
 				valid++
 			}
 		}
-		fmt.Fprintf(&b, "## %s\n\n", title(r.Config.Tweak))
+		fmt.Fprintf(&b, "## %s\n\n", catalog.Title(r.Config.Tweak))
 		fmt.Fprintf(&b, "%s · %d ciclos · ventanas de %s · %d válidas de %d", r.Started.Format("2006-01-02 15:04"), r.Config.Cycles, r.Config.Window, valid, len(r.Samples))
 		if r.Config.Stress != "" {
 			fmt.Fprintf(&b, " · carga de fondo %s", r.Config.Stress)

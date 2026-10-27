@@ -31,30 +31,44 @@ func (f flagSet) State(c Context) State {
 	return State{Applicable: true, Applied: true}
 }
 
-func (f flagSet) Apply(c Context) (Undo, error) {
+var errRobloxOpen = errors.New("close roblox first")
+
+func (f flagSet) Snapshot(c Context) (Undo, error) {
 	if len(roblox.Running()) > 0 {
-		return nil, errors.New("close roblox first")
+		return nil, errRobloxOpen
 	}
 	cur, err := roblox.ReadFlags(c.Install.VersionDir)
 	if err != nil {
 		return nil, err
 	}
 	u := Undo{}
-	for k, v := range f.flags {
+	for k := range f.flags {
+		u[k] = ""
 		if old, ok := cur[k]; ok {
 			b, _ := json.Marshal(old)
 			u[k] = string(b)
-		} else {
-			u[k] = ""
 		}
+	}
+	return u, nil
+}
+
+func (f flagSet) Apply(c Context) error {
+	if len(roblox.Running()) > 0 {
+		return errRobloxOpen
+	}
+	cur, err := roblox.ReadFlags(c.Install.VersionDir)
+	if err != nil {
+		return err
+	}
+	for k, v := range f.flags {
 		cur[k] = v
 	}
-	return u, roblox.WriteFlags(c.Install.VersionDir, cur)
+	return roblox.WriteFlags(c.Install.VersionDir, cur)
 }
 
 func (f flagSet) Revert(c Context, u Undo) error {
 	if len(roblox.Running()) > 0 {
-		return errors.New("close roblox first")
+		return errRobloxOpen
 	}
 	cur, err := roblox.ReadFlags(c.Install.VersionDir)
 	if err != nil {
@@ -125,20 +139,31 @@ func (b basicSetting) State(c Context) State {
 	return State{Applicable: true, Applied: cur == b.value, Detail: b.name + "=" + cur}
 }
 
-func (b basicSetting) Apply(c Context) (Undo, error) {
+func (b basicSetting) Snapshot(c Context) (Undo, error) {
 	if len(roblox.Running()) > 0 {
-		return nil, errors.New("close roblox first")
+		return nil, errRobloxOpen
 	}
-	cur, ok, st, err := b.read(c)
+	cur, ok, _, err := b.read(c)
 	if err != nil || !ok {
 		return nil, errors.New("setting unavailable: " + b.name)
 	}
-	return Undo{"prev": cur}, b.write(st, b.value)
+	return Undo{"prev": cur}, nil
+}
+
+func (b basicSetting) Apply(c Context) error {
+	if len(roblox.Running()) > 0 {
+		return errRobloxOpen
+	}
+	_, ok, st, err := b.read(c)
+	if err != nil || !ok {
+		return errors.New("setting unavailable: " + b.name)
+	}
+	return b.write(st, b.value)
 }
 
 func (b basicSetting) Revert(c Context, u Undo) error {
 	if len(roblox.Running()) > 0 {
-		return errors.New("close roblox first")
+		return errRobloxOpen
 	}
 	_, _, st, err := b.read(c)
 	if err != nil {

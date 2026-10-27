@@ -135,38 +135,55 @@ func (pagefileSSD) State(Context) State {
 	return State{Applicable: true, Applied: false, Detail: "archivo de paginación en disco mecánico " + strings.Join(pf.Drives, ", ")}
 }
 
-func (pagefileSSD) Apply(Context) (Undo, error) {
+func (pagefileSSD) Snapshot(Context) (Undo, error) {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, memMgmtKey, registry.QUERY_VALUE)
+	if err != nil {
+		return nil, err
+	}
+	defer k.Close()
+	v, _, err := k.GetStringsValue("PagingFiles")
+	if errors.Is(err, registry.ErrNotExist) {
+		return Undo{"missing": "true"}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return Undo{"prev": strings.Join(v, "\n")}, nil
+}
+
+func (pagefileSSD) Apply(Context) error {
 	pf := Pagefile()
 	if !pf.SystemIsSSD {
-		return nil, errors.New("system drive is not an SSD")
+		return errors.New("system drive is not an SSD")
 	}
 	maxMB := 12288
 	if room := int((pf.SystemFreeGB - 10) * 1024); room < maxMB {
 		maxMB = room
 	}
 	if maxMB < 4096 {
-		return nil, errors.New("not enough free space on the system drive")
-	}
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, memMgmtKey, registry.SET_VALUE)
-	if err != nil {
-		return nil, err
-	}
-	defer k.Close()
-	entry := fmt.Sprintf(`%s:\pagefile.sys 4096 %d`, pf.SystemDrive, maxMB)
-	u := Undo{"prev": strings.Join(pf.Configured, "\n")}
-	return u, k.SetStringsValue("PagingFiles", []string{entry})
-}
-
-func (pagefileSSD) Revert(_ Context, u Undo) error {
-	prev := strings.Split(u["prev"], "\n")
-	if len(prev) == 1 && prev[0] == "" {
-		prev = []string{`?:\pagefile.sys`}
+		return errors.New("not enough free space on the system drive")
 	}
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, memMgmtKey, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}
 	defer k.Close()
+	return k.SetStringsValue("PagingFiles", []string{fmt.Sprintf(`%s:\pagefile.sys 4096 %d`, pf.SystemDrive, maxMB)})
+}
+
+func (pagefileSSD) Revert(_ Context, u Undo) error {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, memMgmtKey, registry.SET_VALUE)
+	if err != nil {
+		return err
+	}
+	defer k.Close()
+	if u["missing"] == "true" {
+		return ignoreMissing(k.DeleteValue("PagingFiles"))
+	}
+	var prev []string
+	if u["prev"] != "" {
+		prev = strings.Split(u["prev"], "\n")
+	}
 	return k.SetStringsValue("PagingFiles", prev)
 }
 

@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	mbYesNo       = 0x00000004
+	mbYesNo        = 0x00000004
 	mbIconQuestion = 0x00000020
-	mbIconInfo    = 0x00000040
-	mbIconWarning = 0x00000030
-	idYes         = 6
+	mbIconInfo     = 0x00000040
+	mbIconWarning  = 0x00000030
+	idYes          = 6
 )
 
 func message(text string, flags uint32) int32 {
@@ -41,7 +41,7 @@ func revertAll() error {
 	if inst, err := roblox.Find(); err == nil {
 		ctx.Install = inst
 	}
-	return tweaks.OpenJournal().RevertAll(ctx)
+	return tweaks.RevertAll(ctx)
 }
 
 func runCLI() bool {
@@ -54,7 +54,7 @@ func runCLI() bool {
 		if err := revertAll(); err != nil && !quiet {
 			message("Algunos cambios no se pudieron revertir:\n"+err.Error(), mbIconWarning)
 		}
-		if err := install.Uninstall(true); err != nil {
+		if err := install.Uninstall(); err != nil {
 			if !quiet {
 				message("No se pudo desinstalar: "+err.Error(), mbIconWarning)
 			}

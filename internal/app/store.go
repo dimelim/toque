@@ -15,14 +15,14 @@ import (
 )
 
 type RunRecord struct {
-	ID        string       `json:"id"`
-	Label     string       `json:"label"`
-	At        time.Time    `json:"at"`
-	ServerIP  string       `json:"serverIp"`
-	JobID     string       `json:"jobId"`
-	JoinMs    int64        `json:"joinMs"`
-	Applied   []string     `json:"applied"`
-	Window    bench.Window `json:"window"`
+	ID       string       `json:"id"`
+	Label    string       `json:"label"`
+	At       time.Time    `json:"at"`
+	ServerIP string       `json:"serverIp"`
+	JobID    string       `json:"jobId"`
+	JoinMs   int64        `json:"joinMs"`
+	Applied  []string     `json:"applied"`
+	Window   bench.Window `json:"window"`
 }
 
 func runsDir() string {
@@ -71,23 +71,6 @@ type ExperimentRecord struct {
 	Compare map[string]Delta `json:"compare"`
 }
 
-var planTitles = map[string]string{
-	"power-plan:381b4222-f694-41f0-9685-ff5bb260df2e": "Plan de energía Equilibrado",
-	"power-plan:8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c": "Plan de energía Alto rendimiento",
-	"power-plan:e9a42b02-d5df-448d-aa00-03f14749eb61": "Plan de energía Máximo rendimiento",
-	"proc-priority-high":                              "Prioridad alta para Roblox (en vivo)",
-}
-
-func experimentTitle(id string) string {
-	if e, ok := catalog.Find(id); ok {
-		return e.Title
-	}
-	if t, ok := planTitles[id]; ok {
-		return t
-	}
-	return id
-}
-
 type Delta struct {
 	A          float64 `json:"a"`
 	B          float64 `json:"b"`
@@ -100,7 +83,7 @@ type Delta struct {
 
 func toRecord(res bench.ABResult) ExperimentRecord {
 	rec := ExperimentRecord{
-		ID: filepath.Base(res.Dir), Tweak: res.Config.Tweak, Title: experimentTitle(res.Config.Tweak), At: res.Started,
+		ID: filepath.Base(res.Dir), Tweak: res.Config.Tweak, Title: catalog.Title(res.Config.Tweak), At: res.Started,
 		Verdict: res.Verdict, Summary: res.Summary, Stress: res.Config.Stress, Primary: res.Config.Primary, Compare: map[string]Delta{},
 	}
 	for _, smp := range res.Samples {
