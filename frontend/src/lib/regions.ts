@@ -1,12 +1,15 @@
+import { locale } from "./i18n";
 import type { Region } from "./types";
 
 export const PRIVATE = "private";
 
-const countries = new Intl.DisplayNames(["es"], { type: "region" });
+let countries: { tag: string; names: Intl.DisplayNames } | null = null;
 
 export function countryName(code: string) {
   try {
-    return countries.of(code) ?? code;
+    const tag = locale();
+    if (countries?.tag !== tag) countries = { tag, names: new Intl.DisplayNames([tag], { type: "region" }) };
+    return countries.names.of(code) ?? code;
   } catch {
     return code;
   }

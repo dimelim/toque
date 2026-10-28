@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"toque/internal/geo"
+	"toque/internal/i18n"
 	"toque/internal/winx"
 )
 
@@ -20,28 +21,28 @@ var (
 
 var cityNames = map[string]string{
 	"Barueri":               "São Paulo",
-	"Saint-Denis":           "París",
-	"Paris":                 "París",
+	"Saint-Denis":           i18n.Mark("París"),
+	"Paris":                 i18n.Mark("París"),
 	"Leesburg":              "Ashburn",
-	"Frankfurt am Main":     "Fráncfort",
-	"New York City":         "Nueva York",
-	"New York":              "Nueva York",
-	"Los Angeles":           "Los Ángeles",
-	"Santiago de Querétaro": "Querétaro",
-	"Tokyo":                 "Tokio",
-	"Singapore":             "Singapur",
-	"Amsterdam":             "Ámsterdam",
-	"London":                "Londres",
-	"Zürich":                "Zúrich",
-	"Warsaw":                "Varsovia",
-	"Istanbul":              "Estambul",
-	"Cape Town":             "Ciudad del Cabo",
-	"Athens":                "Atenas",
-	"Milan":                 "Milán",
-	"Dublin":                "Dublín",
-	"Jakarta":               "Yakarta",
-	"Mumbai":                "Bombay",
-	"Sydney":                "Sídney",
+	"Frankfurt am Main":     i18n.Mark("Fráncfort"),
+	"New York City":         i18n.Mark("Nueva York"),
+	"New York":              i18n.Mark("Nueva York"),
+	"Los Angeles":           i18n.Mark("Los Ángeles"),
+	"Santiago de Querétaro": i18n.Mark("Querétaro"),
+	"Tokyo":                 i18n.Mark("Tokio"),
+	"Singapore":             i18n.Mark("Singapur"),
+	"Amsterdam":             i18n.Mark("Ámsterdam"),
+	"London":                i18n.Mark("Londres"),
+	"Zürich":                i18n.Mark("Zúrich"),
+	"Warsaw":                i18n.Mark("Varsovia"),
+	"Istanbul":              i18n.Mark("Estambul"),
+	"Cape Town":             i18n.Mark("Ciudad del Cabo"),
+	"Athens":                i18n.Mark("Atenas"),
+	"Milan":                 i18n.Mark("Milán"),
+	"Dublin":                i18n.Mark("Dublín"),
+	"Jakarta":               i18n.Mark("Yakarta"),
+	"Mumbai":                i18n.Mark("Bombay"),
+	"Sydney":                i18n.Mark("Sídney"),
 }
 
 func displayCity(city string) string {
@@ -49,6 +50,10 @@ func displayCity(city string) string {
 		return name
 	}
 	return city
+}
+
+func localCity(city string) string {
+	return i18n.T(displayCity(city))
 }
 
 func regionKey(p geo.Place) string {
@@ -118,7 +123,7 @@ func serverPlace(ctx context.Context, ip string, datacenter int) (geo.Place, boo
 
 func withPlace(ctx context.Context, p *ServerProbe, datacenter int) {
 	if pl, ok := serverPlace(ctx, p.IP, datacenter); ok {
-		p.City, p.Country = displayCity(pl.City), pl.Country
+		p.City, p.Country = localCity(pl.City), pl.Country
 		noteDatacenter(p.JobID, datacenter)
 	}
 }

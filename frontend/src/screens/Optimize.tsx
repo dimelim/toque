@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
 import { improvement, metricMeta, num, when } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import type { Optimization } from "@/lib/types";
 import { useApp } from "@/state";
@@ -13,25 +14,40 @@ import { EvidenceStrip } from "@/components/Evidence";
 import type { StripPoint } from "@/components/Evidence";
 import { IconChevronDown, IconFlask, IconOptimize, IconRevert } from "@/components/icons";
 
-const kindLabel: Record<string, string> = {
-  live: "Al instante",
-  relaunch: "Al reabrir Roblox",
-  reboot: "Tras reiniciar el PC",
-};
+function kindLabel(kind: string) {
+  switch (kind) {
+    case "live":
+      return t("Al instante");
+    case "relaunch":
+      return t("Al reabrir Roblox");
+    case "reboot":
+      return t("Tras reiniciar el PC");
+    default:
+      return kind;
+  }
+}
 
-const categoryLabel: Record<string, string> = {
-  memoria: "Memoria",
-  sistema: "Sistema",
-  fps: "Gráficos",
-  red: "Red",
-};
+function categoryLabel(category: string) {
+  switch (category) {
+    case "memoria":
+      return t("Memoria");
+    case "sistema":
+      return t("Sistema");
+    case "fps":
+      return t("Gráficos");
+    case "red":
+      return t("Red");
+    default:
+      return category;
+  }
+}
 
 function evidenceKeys(o: Optimization) {
   const mine = o.mine;
   if (!mine) return [];
   const primary = mine.primary ?? [];
   return Object.keys(mine.compare)
-    .filter((k) => metricMeta[k] && mine.compare[k].conclusive && Math.abs(mine.compare[k].pct) >= 1)
+    .filter((k) => metricMeta(k) && mine.compare[k].conclusive && Math.abs(mine.compare[k].pct) >= 1)
     .filter((k) => primary.includes(k) || improvement(k, mine.compare[k].pct) < 0)
     .sort((a, b) => {
       const pa = primary.includes(a) ? 0 : 1;
@@ -47,7 +63,7 @@ function Evidence({ o }: { o: Optimization }) {
   if (mine && keys.length > 0) {
     return (
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-caption-1-medium text-ink-3">En tu PC</span>
+        <span className="text-caption-1-medium text-ink-3">{t("En tu PC")}</span>
         {keys.slice(0, 3).map((k) => (
           <DeltaChip key={k} metric={k} deltaPct={mine.compare[k].pct} />
         ))}
@@ -77,8 +93,8 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
       const next = on ? await api.apply(o.id) : await api.revert(o.id);
       play(on ? "on" : "off");
       onChange(next);
-      if (on && o.kind === "reboot") toast({ tone: "info", title: "Se aplicará al reiniciar el PC" });
-      if (on && o.kind === "relaunch") toast({ tone: "info", title: "Se aplicará la próxima vez que abras Roblox" });
+      if (on && o.kind === "reboot") toast({ tone: "info", title: t("Se aplicará al reiniciar el PC") });
+      if (on && o.kind === "relaunch") toast({ tone: "info", title: t("Se aplicará la próxima vez que abras Roblox") });
     } catch (e) {
       play("error");
       toast({ tone: "error", title: o.title, detail: errorText(e) });
@@ -87,13 +103,13 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
     }
   };
   const verify = async () => {
-    const rec = await run("verify", `Probando "${o.title}" · no toques el PC`, () => api.verify(o.id));
+    const rec = await run("verify", t('Probando "{title}" · no toques el PC', { title: o.title }), () => api.verify(o.id));
     if (rec) {
-      toast({ tone: rec.verdict === "improves" ? "ok" : "info", title: rec.verdict === "improves" ? "Mejora confirmada en tu PC" : "Sin mejora clara en tu PC", detail: rec.summary });
+      toast({ tone: rec.verdict === "improves" ? "ok" : "info", title: rec.verdict === "improves" ? t("Mejora confirmada en tu PC") : t("Sin mejora clara en tu PC"), detail: rec.summary });
       onChange({ ...o, mine: rec });
     }
   };
-  const metric = (o.mine?.primary ?? []).find((k) => metricMeta[k]) ?? "";
+  const metric = (o.mine?.primary ?? []).find((k) => metricMeta(k)) ?? "";
   const points: StripPoint[] = [];
   let ia = 0;
   let ib = 0;
@@ -107,11 +123,11 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] gap-6">
         <div className="flex min-w-0 flex-col">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Pill>{categoryLabel[o.category] ?? o.category}</Pill>
-            {o.kind ? <Pill>{kindLabel[o.kind] ?? o.kind}</Pill> : null}
-            {o.applied && o.managed && !rejected ? <Pill tone="volt">Activa</Pill> : null}
-            {o.applied && !o.managed ? <Pill>Ya estaba así</Pill> : null}
-            {!o.applicable && o.detail ? <Pill tone="warn">No aplica aquí</Pill> : null}
+            <Pill>{categoryLabel(o.category)}</Pill>
+            {o.kind ? <Pill>{kindLabel(o.kind)}</Pill> : null}
+            {o.applied && o.managed && !rejected ? <Pill tone="volt">{t("Activa")}</Pill> : null}
+            {o.applied && !o.managed ? <Pill>{t("Ya estaba así")}</Pill> : null}
+            {!o.applicable && o.detail ? <Pill tone="warn">{t("No aplica aquí")}</Pill> : null}
           </div>
           <h3 className="mt-3 text-[17px] leading-snug font-semibold text-ink">{o.title}</h3>
           <p className="mt-1 text-body-regular text-ink-2">{o.what}</p>
@@ -120,23 +136,23 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
           </div>
           <div className="mt-auto flex items-center gap-2 pt-4">
             <Button variant="ghost" size="small" trailingIcon={IconChevronDown} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-              {open ? "Ocultar detalles" : "Ver detalles"}
+              {open ? t("Ocultar detalles") : t("Ver detalles")}
             </Button>
             <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
-              {rejected ? "Probar en mi PC de todos modos" : "Probar en mi PC"}
+              {rejected ? t("Probar en mi PC de todos modos") : t("Probar en mi PC")}
             </Button>
           </div>
         </div>
         <div className="flex min-w-0 flex-col rounded-xl bg-background-inner-default p-4 shadow-card">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-caption-1-medium text-ink-3">{o.mine ? `${metricMeta[metric]?.label ?? "Resultado"} en tu PC · ${when(o.mine.at)}` : "En las pruebas de Toque"}</p>
+            <p className="text-caption-1-medium text-ink-3">{o.mine ? t("{metric} en tu PC · {when}", { metric: metricMeta(metric)?.label ?? t("Resultado"), when: when(o.mine.at) }) : t("En las pruebas de Toque")}</p>
             {!rejected ? (
               <Switch
                 size="md"
                 isSelected={o.applied}
                 isDisabled={busy || !!task || (!o.applicable && !o.applied) || (o.applied && !o.managed)}
                 onChange={toggle}
-                aria-label={`Activar ${o.title}`}
+                aria-label={t("Activar {title}", { title: o.title })}
               />
             ) : null}
           </div>
@@ -159,12 +175,12 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
             className="overflow-hidden"
           >
             <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-4 rounded-xl bg-surface-2 p-4">
-              <Detail label="Por qué debería ayudar">{o.why}</Detail>
-              <Detail label="Qué métrica afecta">{o.metric}</Detail>
-              <Detail label="Puede empeorar">{o.risk}</Detail>
-              <Detail label="Cómo se revierte">{o.revert}</Detail>
-              {o.mine ? <Detail label="Resultado en tu PC">{`${o.mine.summary}. ${o.mine.valid} ventanas válidas de medición.`}</Detail> : null}
-              {o.detail ? <Detail label="Estado en este equipo">{o.detail}</Detail> : null}
+              <Detail label={t("Por qué debería ayudar")}>{o.why}</Detail>
+              <Detail label={t("Qué métrica afecta")}>{o.metric}</Detail>
+              <Detail label={t("Puede empeorar")}>{o.risk}</Detail>
+              <Detail label={t("Cómo se revierte")}>{o.revert}</Detail>
+              {o.mine ? <Detail label={t("Resultado en tu PC")}>{t("{summary}. {n} ventanas válidas de medición.", { summary: o.mine.summary, n: o.mine.valid })}</Detail> : null}
+              {o.detail ? <Detail label={t("Estado en este equipo")}>{o.detail}</Detail> : null}
             </div>
           </motion.div>
         ) : null}
@@ -197,7 +213,7 @@ export function Optimize() {
     try {
       setItems(await api.optimizations());
     } catch (e) {
-      toast({ tone: "error", title: "No pude leer las optimizaciones", detail: errorText(e) });
+      toast({ tone: "error", title: t("No pude leer las optimizaciones"), detail: errorText(e) });
     }
   }, [toast]);
   useEffect(() => {
@@ -212,46 +228,46 @@ export function Optimize() {
   const ready = proven.filter((o) => o.applicable && !o.applied).length;
   return (
     <div>
-      <PageHeader eyebrow="Optimizar" title="Cambios con pruebas detrás">
+      <PageHeader eyebrow={t("Optimizar")} title={t("Cambios con pruebas detrás")}>
         <Button
           variant="secondary"
           leadingIcon={IconRevert}
           disabled={!!task}
           onClick={async () => {
-            await run("revert", "Revirtiendo todos los cambios", () => api.revertAll());
-            toast({ tone: "ok", title: "Todo vuelve a como estaba" });
+            await run("revert", t("Revirtiendo todos los cambios"), () => api.revertAll());
+            toast({ tone: "ok", title: t("Todo vuelve a como estaba") });
             load();
             refresh();
           }}
         >
-          Revertir todo
+          {t("Revertir todo")}
         </Button>
         <Button
           leadingIcon={IconOptimize}
           disabled={!!task || ready === 0}
           onClick={async () => {
-            const applied = await run("apply", "Aplicando las optimizaciones probadas", () => api.applyProven());
-            if (applied) toast({ tone: "ok", title: applied.length ? `${applied.length} optimizaciones aplicadas` : "Ya estaban aplicadas" });
+            const applied = await run("apply", t("Aplicando las optimizaciones probadas"), () => api.applyProven());
+            if (applied) toast({ tone: "ok", title: applied.length ? t("{n} optimizaciones aplicadas", { n: applied.length }) : t("Ya estaban aplicadas") });
             load();
             refresh();
           }}
         >
-          {proven.length === 0 ? "Nada probado todavía" : ready === 1 ? "Aplicar 1 probada" : ready > 1 ? `Aplicar ${ready} probadas` : "Todo aplicado"}
+          {proven.length === 0 ? t("Nada probado todavía") : ready === 1 ? t("Aplicar 1 probada") : ready > 1 ? t("Aplicar {n} probadas", { n: ready }) : t("Todo aplicado")}
         </Button>
       </PageHeader>
       <Card className="mb-8 flex items-center gap-6 p-5">
         <div className="flex-1">
-          <Eyebrow>Cómo decide Toque</Eyebrow>
+          <Eyebrow>{t("Cómo decide Toque")}</Eyebrow>
           <p className="mt-2 max-w-[78ch] text-body-regular text-ink-2">
-            Cada cambio se mide alternando con y sin él en orden ABBA dentro de Realistic Street Soccer, varias veces seguidas. Solo pasa a "Probada" si la mejora es estadísticamente clara y no empeora otra métrica. Lo que no mejora se queda en "Descartadas" con su medición, para que veas por qué.
+            {t('Cada cambio se mide alternando con y sin él en orden ABBA dentro de Realistic Street Soccer, varias veces seguidas. Solo pasa a "Probada" si la mejora es estadísticamente clara y no empeora otra métrica. Lo que no mejora se queda en "Descartadas" con su medición, para que veas por qué.')}
           </p>
         </div>
         <div className="flex gap-6 text-right">
           {[
-            { n: proven.length + tradeoff.length, label: "probadas", tone: "text-volt" },
-            { n: situational.length, label: "según tu caso", tone: "text-ink-2" },
-            ...(pending.length > 0 ? [{ n: pending.length, label: "en estudio", tone: "text-ink-2" }] : []),
-            { n: rejected.length, label: "descartadas", tone: "text-ink-3" },
+            { n: proven.length + tradeoff.length, label: t("probadas"), tone: "text-volt" },
+            { n: situational.length, label: t("según tu caso"), tone: "text-ink-2" },
+            ...(pending.length > 0 ? [{ n: pending.length, label: t("en estudio"), tone: "text-ink-2" }] : []),
+            { n: rejected.length, label: t("descartadas"), tone: "text-ink-3" },
           ].map((c) => (
             <div key={c.label}>
               <p className={cx("num text-[34px] leading-none font-semibold", c.tone)}>{num(c.n)}</p>
@@ -260,11 +276,11 @@ export function Optimize() {
           ))}
         </div>
       </Card>
-      <Section title="Probadas" hint="Mejoran de forma medible en pruebas reales" items={proven} onChange={update} />
-      <Section title="Mejoran, con un coste" hint="Probadas, pero cambian cómo se ve el juego. Actívalas tú" items={tradeoff} onChange={update} />
-      <Section title="Según tu caso" hint="Ayudan solo en ciertas condiciones" items={situational} onChange={update} />
-      <Section title="En estudio" hint="Aún sin una mejora demostrada" items={pending} onChange={update} />
-      <Section title="Descartadas" hint="Las probamos y no cambian nada" items={rejected} onChange={update} />
+      <Section title={t("Probadas")} hint={t("Mejoran de forma medible en pruebas reales")} items={proven} onChange={update} />
+      <Section title={t("Mejoran, con un coste")} hint={t("Probadas, pero cambian cómo se ve el juego. Actívalas tú")} items={tradeoff} onChange={update} />
+      <Section title={t("Según tu caso")} hint={t("Ayudan solo en ciertas condiciones")} items={situational} onChange={update} />
+      <Section title={t("En estudio")} hint={t("Aún sin una mejora demostrada")} items={pending} onChange={update} />
+      <Section title={t("Descartadas")} hint={t("Las probamos y no cambian nada")} items={rejected} onChange={update} />
     </div>
   );
 }

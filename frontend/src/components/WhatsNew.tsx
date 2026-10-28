@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { api } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import { useApp } from "@/state";
 import { AppIcon } from "./Logo";
@@ -29,7 +30,7 @@ export function WhatsNew() {
     if (update?.state !== "ready" || announced.current === update.latest) return;
     announced.current = update.latest;
     play("success");
-    toast({ tone: "info", title: `Toque ${update.latest} está lista`, detail: "Se instala sola al volver a abrir Toque, o ahora desde la barra lateral." });
+    toast({ tone: "info", title: t("Toque {version} está lista", { version: update.latest }), detail: t("Se instala sola al volver a abrir Toque, o ahora desde la barra lateral.") });
   }, [update, toast]);
 
   const open = !!version && update?.latest === version && !!update.notes;
@@ -51,7 +52,7 @@ export function WhatsNew() {
           transition={{ duration: 0.2 }}
           role="dialog"
           aria-modal="true"
-          aria-label={`Novedades de Toque ${version}`}
+          aria-label={t("Novedades de Toque {version}", { version: version ?? "" })}
         >
           <motion.div
             className="w-[480px] rounded-2xl bg-surface-2 p-6 shadow-dropdown"
@@ -63,7 +64,7 @@ export function WhatsNew() {
             <div className="flex items-center gap-3">
               <AppIcon className="size-10" />
               <div>
-                <p className="label-caps text-ink-3">Novedades</p>
+                <p className="label-caps text-ink-3">{t("Novedades")}</p>
                 <p className="text-[19px] font-semibold text-ink">Toque {version}</p>
               </div>
             </div>
@@ -82,7 +83,7 @@ export function WhatsNew() {
               ))}
             </ul>
             <div className="mt-6 flex justify-end">
-              <Button onClick={close}>Entendido</Button>
+              <Button onClick={close}>{t("Entendido")}</Button>
             </div>
           </motion.div>
         </motion.div>

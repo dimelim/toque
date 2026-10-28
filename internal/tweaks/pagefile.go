@@ -9,6 +9,8 @@ import (
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
+
+	"toque/internal/i18n"
 )
 
 const memMgmtKey = `SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management`
@@ -118,7 +120,7 @@ func (pagefileSSD) Kind() Kind { return Reboot }
 func (pagefileSSD) State(Context) State {
 	pf := Pagefile()
 	if !pf.SystemIsSSD {
-		return State{Applicable: false, Detail: "el disco del sistema no es SSD"}
+		return State{Applicable: false, Detail: i18n.T("el disco del sistema no es SSD")}
 	}
 	onSystem := false
 	for _, c := range pf.Configured {
@@ -127,12 +129,12 @@ func (pagefileSSD) State(Context) State {
 		}
 	}
 	if !pf.OnHDD && (onSystem || len(pf.Drives) > 0) {
-		return State{Applicable: true, Applied: true, Detail: "archivo de paginación en " + strings.Join(pf.Drives, ", ")}
+		return State{Applicable: true, Applied: true, Detail: i18n.Tf("archivo de paginación en %s", strings.Join(pf.Drives, ", "))}
 	}
 	if pf.SystemFreeGB < 14 {
-		return State{Applicable: false, Detail: fmt.Sprintf("solo %.0f GB libres en %s:", pf.SystemFreeGB, pf.SystemDrive)}
+		return State{Applicable: false, Detail: i18n.Tf("solo %.0f GB libres en %s:", pf.SystemFreeGB, pf.SystemDrive)}
 	}
-	return State{Applicable: true, Applied: false, Detail: "archivo de paginación en disco mecánico " + strings.Join(pf.Drives, ", ")}
+	return State{Applicable: true, Applied: false, Detail: i18n.Tf("archivo de paginación en disco mecánico %s", strings.Join(pf.Drives, ", "))}
 }
 
 func (pagefileSSD) Snapshot(Context) (Undo, error) {

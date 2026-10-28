@@ -1,5 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$Notes,
+    [Parameter(Mandatory)][string]$NotesPt,
+    [Parameter(Mandatory)][string]$NotesEn,
     [string]$Key = (Join-Path ([Environment]::GetFolderPath('UserProfile')) '.toque\update-signing.key')
 )
 $ErrorActionPreference = 'Stop'
@@ -22,6 +24,8 @@ $manifest = [ordered]@{
     url       = "https://github.com/dimelim/toque/releases/download/$tag/Toque.exe"
     sha256    = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
     notes     = $Notes
+    notesPt   = $NotesPt
+    notesEn   = $NotesEn
     published = (Get-Date).ToUniversalTime().ToString('o')
 }
 [IO.File]::WriteAllText($manifestPath, ($manifest | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
@@ -32,7 +36,8 @@ git tag $tag
 git push origin $tag
 if ($LASTEXITCODE -ne 0) { throw 'No se pudo subir la etiqueta' }
 $notesPath = Join-Path $env:TEMP "toque-notes-$version.txt"
-[IO.File]::WriteAllText($notesPath, $Notes, (New-Object Text.UTF8Encoding $false))
+$body = "$Notes`n`n**PT-BR**`n`n$NotesPt`n`n**EN**`n`n$NotesEn"
+[IO.File]::WriteAllText($notesPath, $body, (New-Object Text.UTF8Encoding $false))
 gh release create $tag --repo dimelim/toque --title "Toque $version" --notes-file $notesPath $exe $manifestPath "$manifestPath.sig"
 $published = $LASTEXITCODE
 Remove-Item $notesPath -ErrorAction SilentlyContinue

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
-import { num } from "@/lib/format";
+import { num, share } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import { useApp } from "@/state";
 import type { SessionInfo, SessionNote, SessionProc } from "@/lib/types";
@@ -14,7 +15,7 @@ function amount(note: SessionNote, p: SessionProc) {
 }
 
 function amountText(note: SessionNote, value: number) {
-  if (note.id !== "ram") return `${num(value, value >= 10 ? 0 : 1)} %`;
+  if (note.id !== "ram") return share(value, value >= 10 ? 0 : 1);
   return value >= 1024 ? `${num(value / 1024, 1)} GB` : `${num(value)} MB`;
 }
 
@@ -24,8 +25,8 @@ function CloseButton({ name }: { name: string }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!armed) return;
-    const t = setTimeout(() => setArmed(false), 3000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(timer);
   }, [armed]);
   const press = async () => {
     if (!armed) {
@@ -38,10 +39,10 @@ function CloseButton({ name }: { name: string }) {
     try {
       const n = await api.closeApp(name);
       play("off");
-      toast({ tone: "ok", title: `Cerrando ${name}`, detail: n === 1 ? "Le pedí que cerrara su ventana, como si pulsaras la X." : `Le pedí que cerrara sus ${n} ventanas, como si pulsaras la X.` });
+      toast({ tone: "ok", title: t("Cerrando {name}", { name }), detail: n === 1 ? t("Le pedí que cerrara su ventana, como si pulsaras la X.") : t("Le pedí que cerrara sus {n} ventanas, como si pulsaras la X.", { n }) });
     } catch (e) {
       play("error");
-      toast({ tone: "error", title: `No pude cerrar ${name}`, detail: errorText(e) });
+      toast({ tone: "error", title: t("No pude cerrar {name}", { name }), detail: errorText(e) });
     } finally {
       setBusy(false);
     }
@@ -54,9 +55,9 @@ function CloseButton({ name }: { name: string }) {
       )}
       disabled={busy}
       onClick={press}
-      aria-label={armed ? `Confirmar cerrar ${name}` : `Cerrar ${name}`}
+      aria-label={armed ? t("Confirmar cerrar {name}", { name }) : t("Cerrar {name}", { name })}
     >
-      {armed ? "¿Cerrar?" : "Cerrar"}
+      {armed ? t("¿Cerrar?") : t("Cerrar")}
     </button>
   );
 }
@@ -116,9 +117,9 @@ export function Notes({ info }: { info: SessionInfo }) {
         <div className="flex items-center gap-4 rounded-2xl px-6 py-8 shadow-[inset_0_0_0_1px_var(--color-line)]">
           <IconOk className={cx("size-6 shrink-0", active ? "text-volt" : "text-ink-4")} />
           <div>
-            <p className="text-body-medium text-ink">{active ? "Nada te está frenando ahora mismo" : "Todavía no hay nada que mostrar"}</p>
+            <p className="text-body-medium text-ink">{active ? t("Nada te está frenando ahora mismo") : t("Todavía no hay nada que mostrar")}</p>
             <p className="mt-1 text-body-regular text-ink-2">
-              {active ? "Toque sigue mirando y te avisa aquí si algo empieza a gastar de más." : "Los datos aparecen durante tu partida. Cuando juegues, Toque te dice aquí qué consume CPU, gráfica o memoria."}
+              {active ? t("Toque sigue mirando y te avisa aquí si algo empieza a gastar de más.") : t("Los datos aparecen durante tu partida. Cuando juegues, Toque te dice aquí qué consume CPU, gráfica o memoria.")}
             </p>
           </div>
         </div>

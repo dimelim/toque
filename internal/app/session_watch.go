@@ -1,13 +1,14 @@
 package app
 
 import (
-	"fmt"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
 	"toque/internal/eco"
+	"toque/internal/i18n"
+	"toque/internal/numfmt"
 	"toque/internal/sysmon"
 )
 
@@ -79,27 +80,27 @@ func (w watchLog) notes() []SessionNote {
 	}
 	notes := []SessionNote{}
 	if top := w.topCPU(); len(top) > 0 {
-		n := SessionNote{ID: "cpu", Tone: "info", Title: "Lo que más CPU gastó mientras jugabas", Detail: "Media de toda la partida, en porcentaje del procesador entero.", Procs: top}
+		n := SessionNote{ID: "cpu", Tone: "info", Title: i18n.T("Lo que más CPU gastó mientras jugabas"), Detail: i18n.T("Media de toda la partida, en porcentaje del procesador entero."), Procs: top}
 		if top[0].CPU >= 5 {
 			n.Tone = "warn"
 		}
 		notes = append(notes, n)
 	}
 	if top := w.topGPU(); len(top) > 0 {
-		n := SessionNote{ID: "gpu", Tone: "info", Title: "Lo que más gráfica gastó mientras jugabas", Detail: "Media de toda la partida, en porcentaje de la gráfica. Lo que la usa de fondo se la quita a Roblox.", Procs: top}
+		n := SessionNote{ID: "gpu", Tone: "info", Title: i18n.T("Lo que más gráfica gastó mientras jugabas"), Detail: i18n.T("Media de toda la partida, en porcentaje de la gráfica. Lo que la usa de fondo se la quita a Roblox."), Procs: top}
 		if top[0].GPU >= 10 {
 			n.Tone = "warn"
 		}
 		notes = append(notes, n)
 	}
 	if w.ramFree > 0 && w.ramFree < lowRAMMB {
-		notes = append(notes, SessionNote{ID: "ram", Tone: "warn", Title: "Te queda poca memoria libre", Detail: fmt.Sprintf("Quedan %.0f MB libres. Cerrar alguno de estos programas antes de jugar libera memoria para Roblox.", w.ramFree), Procs: w.topRAM()})
+		notes = append(notes, SessionNote{ID: "ram", Tone: "warn", Title: i18n.T("Te queda poca memoria libre"), Detail: i18n.Tf("Quedan %.0f MB libres. Cerrar alguno de estos programas antes de jugar libera memoria para Roblox.", w.ramFree), Procs: w.topRAM()})
 	}
 	if d := share(w.core["msmpeng.exe"], w.samples); d >= defenderBusy {
-		notes = append(notes, SessionNote{ID: "defender", Tone: "info", Title: "Microsoft Defender estuvo analizando", Detail: "Gastó un " + decimal(d) + " % del procesador durante tu partida. Suele pasar después de descargas o actualizaciones de Windows.", Procs: []SessionProc{}})
+		notes = append(notes, SessionNote{ID: "defender", Tone: "info", Title: i18n.T("Microsoft Defender estuvo analizando"), Detail: i18n.Tf("Gastó un %s %% del procesador durante tu partida. Suele pasar después de descargas o actualizaciones de Windows.", decimal(d)), Procs: []SessionProc{}})
 	}
 	if w.seen["exitlag.exe"] {
-		notes = append(notes, SessionNote{ID: "exitlag", Tone: "info", Title: "ExitLag está abierto", Detail: "Cambia la ruta de tu conexión, así que el ping que ve Toque es el del túnel. Si Roblox te saca de la partida, prueba a jugar sin él.", Procs: []SessionProc{}})
+		notes = append(notes, SessionNote{ID: "exitlag", Tone: "info", Title: i18n.T("ExitLag está abierto"), Detail: i18n.T("Cambia la ruta de tu conexión, así que el ping que ve Toque es el del túnel. Si Roblox te saca de la partida, prueba a jugar sin él."), Procs: []SessionProc{}})
 	}
 	return notes
 }
@@ -152,7 +153,7 @@ func (w watchLog) topRAM() []SessionProc {
 }
 
 func decimal(v float64) string {
-	return strings.Replace(strconv.FormatFloat(v, 'f', 1, 64), ".", ",", 1)
+	return numfmt.Localize(strconv.FormatFloat(v, 'f', 1, 64))
 }
 
 func round1(v float64) float64 {

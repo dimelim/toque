@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { num } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import { useApp } from "@/state";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ function Row({ icon: Icon, label, value }: { icon: ComponentType<{ className?: s
 function uptime(min: number) {
   if (min < 60) return `${num(min)} min`;
   const h = Math.floor(min / 60);
-  return h < 48 ? `${h} h ${min % 60} min` : `${Math.floor(h / 24)} días`;
+  return h < 48 ? `${h} h ${min % 60} min` : t("{n} días", { n: Math.floor(h / 24) });
 }
 
 export function SystemCard() {
@@ -28,17 +29,17 @@ export function SystemCard() {
     <section className="flex min-w-0 flex-col rounded-2xl bg-background-secondary-default p-5 shadow-card">
       <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
         <IconPc className="size-4 text-ink-3" />
-        Tu PC
+        {t("Tu PC")}
       </p>
       <div className="mt-3 flex flex-col">
         <Row icon={IconCpu} label="CPU" value={s ? s.cpu.replace(/\s+CPU.*$/i, "").replace(/^Intel\(R\) Core\(TM\)\s*/i, "").replace(/^AMD\s+/i, "") : "—"} />
-        <Row icon={IconThreads} label="Hilos" value={s ? `${num(s.threads)} hilos` : "—"} />
-        <Row icon={IconGpu} label="Gráfica" value={s?.gpu.replace(/^NVIDIA GeForce\s*/i, "") ?? "—"} />
-        <Row icon={IconRam} label="Memoria" value={s ? `${num(s.ramGb, 0)} GB` : "—"} />
-        <Row icon={IconPc} label="Monitor" value={s ? `${num(s.refreshHz)} Hz` : "—"} />
-        <Row icon={IconWindows} label="Sistema" value={s?.os.replace(/^Microsoft\s+/i, "") ?? "—"} />
-        <Row icon={IconClock} label="Encendido" value={overview ? uptime(overview.uptimeMin) : "—"} />
-        <Row icon={IconShield} label="Permisos" value={overview ? (overview.elevated ? "Administrador" : "Limitados") : "—"} />
+        <Row icon={IconThreads} label={t("Hilos")} value={s ? t("{n} hilos", { n: num(s.threads) }) : "—"} />
+        <Row icon={IconGpu} label={t("Gráfica")} value={s?.gpu.replace(/^NVIDIA GeForce\s*/i, "") ?? "—"} />
+        <Row icon={IconRam} label={t("Memoria")} value={s ? `${num(s.ramGb, 0)} GB` : "—"} />
+        <Row icon={IconPc} label={t("Monitor")} value={s ? `${num(s.refreshHz)} Hz` : "—"} />
+        <Row icon={IconWindows} label={t("Sistema")} value={s?.os.replace(/^Microsoft\s+/i, "") ?? "—"} />
+        <Row icon={IconClock} label={t("Encendido")} value={overview ? uptime(overview.uptimeMin) : "—"} />
+        <Row icon={IconShield} label={t("Permisos")} value={overview ? (overview.elevated ? t("Administrador") : t("Limitados")) : "—"} />
       </div>
       <div className="mt-auto pt-4">
         <Button
@@ -51,7 +52,7 @@ export function SystemCard() {
             go("diagnose");
           }}
         >
-          Diagnosticar qué te frena
+          {t("Diagnosticar qué te frena")}
         </Button>
       </div>
     </section>

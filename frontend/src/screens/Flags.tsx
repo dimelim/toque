@@ -3,6 +3,7 @@ import { Dialog, Heading, Input, Modal, ModalOverlay, Slider, SliderThumb, Slide
 import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
 import { num } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import { FLAG_NAME, flagSections, flagType, flagTypeLabel, groupState, parseFlagsJSON, validValue } from "@/lib/flags";
 import type { FlagGroup, FlagType, FlagValues } from "@/lib/flags";
@@ -38,8 +39,8 @@ function LevelSlider({ group, value, disabled, onCommit }: { group: FlagGroup & 
       aria-label={group.title}
     >
       <div className="flex items-baseline justify-between">
-        <span className="text-caption-1-medium text-ink-3">{local === 0 ? "La decide Roblox" : `Nivel ${local} de ${group.max}`}</span>
-        <span className={cx("num text-[22px] leading-none font-semibold", local === 0 ? "text-ink-2" : "text-volt")}>{local === 0 ? "Auto" : local}</span>
+        <span className="text-caption-1-medium text-ink-3">{local === 0 ? t("La decide Roblox") : t("Nivel {n} de {max}", { n: local, max: group.max })}</span>
+        <span className={cx("num text-[22px] leading-none font-semibold", local === 0 ? "text-ink-2" : "text-volt")}>{local === 0 ? t("Auto") : local}</span>
       </div>
       <SliderTrack className="relative mt-2 h-6 w-full cursor-pointer data-[disabled]:cursor-not-allowed">
         {({ state }) => (
@@ -66,7 +67,7 @@ function GroupCard({ group, values, disabled, update }: { group: FlagGroup; valu
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-[16px] leading-snug font-semibold text-ink">{group.title}</h3>
-            {state.custom ? <Pill>Valor propio</Pill> : state.active ? <Pill tone="volt">Activa</Pill> : null}
+            {state.custom ? <Pill>{t("Valor propio")}</Pill> : state.active ? <Pill tone="volt">{t("Activa")}</Pill> : null}
           </div>
           <p className="mt-1 text-body-regular text-ink-2">{group.text}</p>
         </div>
@@ -94,7 +95,7 @@ function GroupCard({ group, values, disabled, update }: { group: FlagGroup; valu
       ) : null}
       {group.control === "level" ? <LevelSlider group={group} value={Number(state.selected ?? 0)} disabled={disabled} onCommit={(v) => choose(String(v))} /> : null}
       <div className="mt-auto pt-4">
-        {state.custom ? <p className="mb-1.5 text-caption-1-medium text-ink-3">Valor actual: {state.custom}.</p> : null}
+        {state.custom ? <p className="mb-1.5 text-caption-1-medium text-ink-3">{t("Valor actual: {value}.", { value: state.custom })}</p> : null}
         {group.note ? <p className="text-caption-1-medium text-ink-3">{group.note}</p> : null}
         <p className="mt-2 truncate font-mono text-[11px] text-ink-4" title={group.keys.join("\n")}>
           {group.keys.join(" · ")}
@@ -104,13 +105,19 @@ function GroupCard({ group, values, disabled, update }: { group: FlagGroup; valu
   );
 }
 
-const valueHint: Record<FlagType, string> = {
-  bool: "True o False",
-  int: "Un número entero",
-  log: "Un número entero",
-  string: "Texto",
-  unknown: "Valor",
-};
+function valueHint(type: FlagType) {
+  switch (type) {
+    case "bool":
+      return t("True o False");
+    case "int":
+    case "log":
+      return t("Un número entero");
+    case "string":
+      return t("Texto");
+    default:
+      return t("Valor");
+  }
+}
 
 function ValueCell({ flag, disabled, update }: { flag: FlagEntry; disabled: boolean; update: Update }) {
   const type = flagType(flag.name);
@@ -120,7 +127,7 @@ function ValueCell({ flag, disabled, update }: { flag: FlagEntry; disabled: bool
     return (
       <div className="flex h-8 w-[30%] shrink-0 items-center justify-end gap-2">
         <span className="font-mono text-[13px] text-ink-2">{/^true$/i.test(flag.value) ? "True" : "False"}</span>
-        <Switch size="sm" isSelected={/^true$/i.test(flag.value)} isDisabled={disabled} onChange={(on) => update({ [flag.name]: on ? "True" : "False" }, [])} aria-label={`Valor de ${flag.name}`} />
+        <Switch size="sm" isSelected={/^true$/i.test(flag.value)} isDisabled={disabled} onChange={(on) => update({ [flag.name]: on ? "True" : "False" }, [])} aria-label={t("Valor de {name}", { name: flag.name })} />
       </div>
     );
   }
@@ -133,14 +140,14 @@ function ValueCell({ flag, disabled, update }: { flag: FlagEntry; disabled: bool
     if (draft.trim() !== flag.value) update({ [flag.name]: draft.trim() }, []);
   };
   return (
-    <TextField aria-label={`Valor de ${flag.name}`} value={draft} onChange={setDraft} isDisabled={disabled} className="w-[30%] shrink-0">
+    <TextField aria-label={t("Valor de {name}", { name: flag.name })} value={draft} onChange={setDraft} isDisabled={disabled} className="w-[30%] shrink-0">
       <Input
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
           if (e.key === "Escape") setDraft(flag.value);
         }}
-        title={valid ? flag.value : valueHint[type]}
+        title={valid ? flag.value : valueHint(type)}
         className={cx(
           "h-8 w-full rounded-md bg-transparent px-2 text-right font-mono text-[13px] text-ink-2 outline-none transition-colors duration-150 hover:bg-background-inner-default focus:bg-background-inner-default focus:text-ink focus:ring-2",
           valid ? "focus:ring-border-focus-ring" : "text-bad ring-2 ring-bad",
@@ -165,7 +172,7 @@ function FlagEditor({ flags, disabled, update }: { flags: FlagEntry[]; disabled:
   const add = async () => {
     if (!valid) return;
     const v = type === "bool" ? (/^true$/i.test(value.trim()) ? "True" : "False") : value.trim();
-    if (await update({ [name.trim()]: v }, [], `${name.trim()} guardada`)) {
+    if (await update({ [name.trim()]: v }, [], t("{name} guardada", { name: name.trim() }))) {
       setName("");
       setValue("");
     }
@@ -178,14 +185,14 @@ function FlagEditor({ flags, disabled, update }: { flags: FlagEntry[]; disabled:
     }
     clearTimeout(timer.current);
     setConfirm(false);
-    update({}, flags.map((f) => f.name), "Quitadas todas las flags");
+    update({}, flags.map((f) => f.name), t("Quitadas todas las flags"));
   };
   const field = "h-10 w-full rounded-lg bg-background-inner-default px-3 font-mono text-[13px] text-ink shadow-card outline-none placeholder:font-sans placeholder:text-ink-4 focus:ring-2 focus:ring-border-focus-ring";
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-baseline justify-between gap-4">
-        <h2 className="text-[15px] font-semibold text-ink">Editor de flags</h2>
-        <p className="text-caption-1-medium text-ink-3">Cualquier flag de cualquier tipo, como en Bloxstrap o Fishstrap</p>
+        <h2 className="text-[15px] font-semibold text-ink">{t("Editor de flags")}</h2>
+        <p className="text-caption-1-medium text-ink-3">{t("Cualquier flag de cualquier tipo, como en Bloxstrap o Fishstrap")}</p>
       </div>
       <Card className="p-3">
         <form
@@ -195,46 +202,46 @@ function FlagEditor({ flags, disabled, update }: { flags: FlagEntry[]; disabled:
             add();
           }}
         >
-          <TextField aria-label="Nombre de la flag" value={name} onChange={setName} isDisabled={disabled}>
-            <Input placeholder="Nombre, por ejemplo FFlagDebugDisplayFPS" className={field} />
+          <TextField aria-label={t("Nombre de la flag")} value={name} onChange={setName} isDisabled={disabled}>
+            <Input placeholder={t("Nombre, por ejemplo FFlagDebugDisplayFPS")} className={field} />
           </TextField>
-          <TextField aria-label="Valor" value={value} onChange={setValue} isDisabled={disabled}>
-            <Input placeholder={name.trim() ? valueHint[type] : "Valor, por ejemplo True"} className={cx(field, value.trim() && !validVal && "ring-2 ring-bad")} />
+          <TextField aria-label={t("Valor")} value={value} onChange={setValue} isDisabled={disabled}>
+            <Input placeholder={name.trim() ? valueHint(type) : t("Valor, por ejemplo True")} className={cx(field, value.trim() && !validVal && "ring-2 ring-bad")} />
           </TextField>
           <Button type="submit" leadingIcon={IconPlus} disabled={disabled || !valid}>
-            Añadir
+            {t("Añadir")}
           </Button>
         </form>
         {validName && type === "unknown" ? (
-          <p className="mt-2 px-1 text-caption-1-medium text-ink-3">Las flags de Roblox empiezan por FFlag, FInt, FString o FLog, con D o S delante o sin ella.</p>
+          <p className="mt-2 px-1 text-caption-1-medium text-ink-3">{t("Las flags de Roblox empiezan por FFlag, FInt, FString o FLog, con D o S delante o sin ella.")}</p>
         ) : null}
-        {validName && value.trim() && !validVal ? <p className="mt-2 px-1 text-caption-1-medium text-bad">Esta flag espera {valueHint[type].toLowerCase()}.</p> : null}
+        {validName && value.trim() && !validVal ? <p className="mt-2 px-1 text-caption-1-medium text-bad">{t("Esta flag espera {kind}.", { kind: valueHint(type).toLowerCase() })}</p> : null}
         {flags.length > 8 ? (
           <div className="mt-3 flex items-center gap-2">
-            <TextField aria-label="Buscar flags" value={filter} onChange={setFilter} className="relative min-w-0 flex-1">
+            <TextField aria-label={t("Buscar flags")} value={filter} onChange={setFilter} className="relative min-w-0 flex-1">
               <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
-              <Input placeholder={`Buscar entre ${num(flags.length)} flags`} className={cx(field, "pl-9 font-sans")} />
+              <Input placeholder={t("Buscar entre {n} flags", { n: num(flags.length) })} className={cx(field, "pl-9 font-sans")} />
             </TextField>
             <Button variant={confirm ? "danger" : "ghost"} leadingIcon={IconTrash} disabled={disabled} onClick={clearAll}>
-              {confirm ? "Pulsa otra vez para quitarlas" : "Quitar todas"}
+              {confirm ? t("Pulsa otra vez para quitarlas") : t("Quitar todas")}
             </Button>
           </div>
         ) : null}
         {flags.length === 0 ? (
-          <p className="px-1 pt-3 text-body-regular text-ink-3">Todavía no tienes flags. Añade una arriba o importa una lista en JSON.</p>
+          <p className="px-1 pt-3 text-body-regular text-ink-3">{t("Todavía no tienes flags. Añade una arriba o importa una lista en JSON.")}</p>
         ) : (
           <ul className="mt-2 max-h-[420px] overflow-y-auto">
             {shown.map((f) => (
               <li key={f.name} className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-surface-2">
-                <span className="w-[76px] shrink-0 text-caption-1-medium text-ink-3">{flagTypeLabel[flagType(f.name)]}</span>
+                <span className="w-[76px] shrink-0 text-caption-1-medium text-ink-3">{flagTypeLabel(flagType(f.name))}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink" title={f.name}>
                   {f.name}
                 </span>
                 <ValueCell flag={f} disabled={disabled} update={update} />
-                <Button variant="ghost" size="xs" iconOnly leadingIcon={IconTrash} aria-label={`Quitar ${f.name}`} disabled={disabled} onClick={() => update({}, [f.name])} />
+                <Button variant="ghost" size="xs" iconOnly leadingIcon={IconTrash} aria-label={t("Quitar {name}", { name: f.name })} disabled={disabled} onClick={() => update({}, [f.name])} />
               </li>
             ))}
-            {shown.length === 0 ? <li className="px-2 py-3 text-body-regular text-ink-3">Ninguna contiene «{filter}».</li> : null}
+            {shown.length === 0 ? <li className="px-2 py-3 text-body-regular text-ink-3">{t("Ninguna contiene «{filter}».", { filter })}</li> : null}
           </ul>
         )}
       </Card>
@@ -256,7 +263,7 @@ function ImportDialog({ open, disabled, onClose, update }: { open: boolean; disa
   };
   const submit = async () => {
     if (parsed.state !== "ok" || parsed.count === 0) return;
-    if (await update(parsed.values, [], `Importadas ${num(parsed.count)} flags`)) close();
+    if (await update(parsed.values, [], t("Importadas {n} flags", { n: num(parsed.count) }))) close();
   };
   return (
     <ModalOverlay
@@ -269,11 +276,11 @@ function ImportDialog({ open, disabled, onClose, update }: { open: boolean; disa
         <Dialog className="flex flex-col gap-4 p-6 outline-none">
           <div>
             <Heading slot="title" className="text-[19px] font-semibold text-ink">
-              Importar flags
+              {t("Importar flags")}
             </Heading>
-            <p className="mt-1 text-body-regular text-ink-2">Pega un JSON como los de Bloxstrap o Fishstrap, o abre el archivo. Se suman a las flags que ya tienes.</p>
+            <p className="mt-1 text-body-regular text-ink-2">{t("Pega un JSON como los de Bloxstrap o Fishstrap, o abre el archivo. Se suman a las flags que ya tienes.")}</p>
           </div>
-          <TextField aria-label="JSON de flags" value={text} onChange={setText} autoFocus>
+          <TextField aria-label={t("JSON de flags")} value={text} onChange={setText} autoFocus>
             <TextArea
               rows={12}
               spellCheck={false}
@@ -282,26 +289,26 @@ function ImportDialog({ open, disabled, onClose, update }: { open: boolean; disa
             />
           </TextField>
           <div className="min-h-6">
-            {parsed.state === "invalid" ? <p className="text-body-medium text-bad">Eso no es un JSON de flags. Tiene que ser un objeto con nombre y valor.</p> : null}
+            {parsed.state === "invalid" ? <p className="text-body-medium text-bad">{t("Eso no es un JSON de flags. Tiene que ser un objeto con nombre y valor.")}</p> : null}
             {parsed.state === "ok" ? (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Pill tone="volt">{num(parsed.count)} flags</Pill>
-                {parsed.mistyped > 0 ? <Pill>{num(parsed.mistyped)} con un valor de otro tipo</Pill> : null}
-                {parsed.skipped > 0 ? <Pill>{num(parsed.skipped)} no son flags y se saltan</Pill> : null}
+                <Pill tone="volt">{t("{n} flags", { n: num(parsed.count) })}</Pill>
+                {parsed.mistyped > 0 ? <Pill>{t("{n} con un valor de otro tipo", { n: num(parsed.mistyped) })}</Pill> : null}
+                {parsed.skipped > 0 ? <Pill>{t("{n} no son flags y se saltan", { n: num(parsed.skipped) })}</Pill> : null}
               </div>
             ) : null}
           </div>
           <div className="flex items-center gap-2">
             <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="hidden" onChange={(e) => readFile(e.target.files?.[0])} />
             <Button variant="ghost" leadingIcon={IconImport} onClick={() => file.current?.click()}>
-              Abrir archivo
+              {t("Abrir archivo")}
             </Button>
             <span className="flex-1" />
             <Button variant="ghost" onClick={close}>
-              Cancelar
+              {t("Cancelar")}
             </Button>
             <Button leadingIcon={IconImport} disabled={disabled || parsed.state !== "ok" || parsed.count === 0} onClick={submit}>
-              {parsed.state === "ok" && parsed.count > 0 ? `Importar ${num(parsed.count)}` : "Importar"}
+              {parsed.state === "ok" && parsed.count > 0 ? t("Importar {n}", { n: num(parsed.count) }) : t("Importar")}
             </Button>
           </div>
         </Dialog>
@@ -338,7 +345,7 @@ export function Flags() {
       return true;
     } catch (e) {
       play("error");
-      toast({ tone: "error", title: "No pude cambiar las flags", detail: errorText(e) });
+      toast({ tone: "error", title: t("No pude cambiar las flags"), detail: errorText(e) });
       return false;
     } finally {
       setBusy(false);
@@ -346,15 +353,16 @@ export function Flags() {
   };
   const copy = async () => {
     const json = JSON.stringify(values, null, 2);
-    if (await api.copyText(json)) toast({ tone: "ok", title: `Copiadas ${num(flags?.length ?? 0)} flags en JSON` });
+    if (await api.copyText(json)) toast({ tone: "ok", title: t("Copiadas {n} flags en JSON", { n: num(flags?.length ?? 0) }) });
   };
-  const active = flagSections.flatMap((s) => s.groups).filter((g) => groupState(g, values).active).length;
+  const sections = flagSections();
+  const active = sections.flatMap((s) => s.groups).filter((g) => groupState(g, values).active).length;
 
   if (error && !flags) {
     return (
       <div>
-        <PageHeader eyebrow="Optimizar" title="Flags de Roblox" />
-        <Empty title="No puedo leer las flags" action={<Button onClick={load}>Reintentar</Button>}>
+        <PageHeader eyebrow={t("Optimizar")} title={t("Flags de Roblox")} />
+        <Empty title={t("No puedo leer las flags")} action={<Button onClick={load}>{t("Reintentar")}</Button>}>
           {error}
         </Empty>
       </div>
@@ -363,28 +371,28 @@ export function Flags() {
 
   return (
     <div>
-      <PageHeader eyebrow="Optimizar" title="Flags de Roblox">
+      <PageHeader eyebrow={t("Optimizar")} title={t("Flags de Roblox")}>
         <Button variant="secondary" leadingIcon={IconCopy} disabled={!flags?.length} onClick={copy}>
-          Copiar JSON
+          {t("Copiar JSON")}
         </Button>
         <Button leadingIcon={IconImport} disabled={disabled} onClick={() => setImporting(true)}>
-          Importar JSON
+          {t("Importar JSON")}
         </Button>
       </PageHeader>
       <Card className="mb-8 flex items-center gap-6 p-5">
         <div className="flex-1">
-          <Eyebrow>Cómo funciona</Eyebrow>
+          <Eyebrow>{t("Cómo funciona")}</Eyebrow>
           <p className="mt-2 max-w-[78ch] text-body-regular text-ink-2">
-            Arriba tienes los ajustes más usados con controles fáciles. Abajo está el editor con todas tus flags, donde puedes añadir cualquiera o importar una lista en JSON, como en Bloxstrap o Fishstrap.
+            {t("Arriba tienes los ajustes más usados con controles fáciles. Abajo está el editor con todas tus flags, donde puedes añadir cualquiera o importar una lista en JSON, como en Bloxstrap o Fishstrap.")}
           </p>
           <p className="mt-2 text-caption-1-medium text-ink-3">
-            {overview?.roblox.running ? "Roblox está abierto. Los cambios se verán cuando lo vuelvas a abrir." : "Los cambios se aplican la próxima vez que abras Roblox."}
+            {overview?.roblox.running ? t("Roblox está abierto. Los cambios se verán cuando lo vuelvas a abrir.") : t("Los cambios se aplican la próxima vez que abras Roblox.")}
           </p>
         </div>
         <div className="flex gap-6 text-right">
           {[
-            { n: active, label: "ajustes activos", tone: "text-volt" },
-            { n: flags?.length ?? 0, label: "flags en total", tone: "text-ink-2" },
+            { n: active, label: t("ajustes activos"), tone: "text-volt" },
+            { n: flags?.length ?? 0, label: t("flags en total"), tone: "text-ink-2" },
           ].map((c) => (
             <div key={c.label}>
               <p className={cx("num text-[34px] leading-none font-semibold", c.tone)}>{num(c.n)}</p>
@@ -393,7 +401,7 @@ export function Flags() {
           ))}
         </div>
       </Card>
-      {flagSections.map((s) => (
+      {sections.map((s) => (
         <div key={s.id} className="mt-8 first-of-type:mt-0">
           <div className="mb-3 flex items-baseline justify-between gap-4">
             <h2 className="text-[15px] font-semibold text-ink">{s.title}</h2>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import * as Service from "@wails/go/app/Service";
+import { api } from "./lib/api";
+import { setLang, useLang } from "./lib/i18n";
 import { AppProvider, useApp } from "./state";
 import { Shell } from "./components/Shell";
 import { Home } from "./screens/Home";
@@ -33,19 +35,26 @@ function Current() {
 }
 
 export default function App() {
+  const lang = useLang();
   const [install, setInstall] = useState<InstallState | null>(null);
   const [skip, setSkip] = useState(false);
+  const [langReady, setLangReady] = useState(false);
   useEffect(() => {
+    api
+      .language()
+      .then((l) => setLang(l.active))
+      .catch(() => undefined)
+      .finally(() => setLangReady(true));
     Service.InstallState()
       .then((s) => setInstall(s as InstallState))
       .catch(() => setSkip(true));
   }, []);
-  if (!install && !skip) return <div className="h-full bg-canvas" />;
+  if (!langReady || (!install && !skip)) return <div className="h-full bg-canvas" />;
   const needsInstall = install && !install.runningInstalled && (!install.installed || install.newer);
   if (needsInstall && !skip) return <Install state={install!} onSkip={() => setSkip(true)} />;
   return (
     <AppProvider>
-      <Shell>
+      <Shell key={lang}>
         <Current />
       </Shell>
     </AppProvider>

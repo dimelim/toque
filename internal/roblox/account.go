@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"toque/internal/i18n"
 )
 
 type Account struct {
@@ -34,7 +36,7 @@ func ReadAccount(inst Install) (Account, error) {
 	}
 	id, err := parseUserID(raw.UserID)
 	if err != nil || raw.Username == "" {
-		return Account{}, errors.New("Roblox no tiene una sesión iniciada")
+		return Account{}, errors.New(i18n.T("Roblox no tiene una sesión iniciada"))
 	}
 	return Account{UserID: id, Username: raw.Username, DisplayName: raw.DisplayName}, nil
 }
@@ -61,7 +63,7 @@ func AvatarHeadshot(ctx context.Context, userID int64) (string, error) {
 		return "", err
 	}
 	if len(meta.Data) == 0 || meta.Data[0].State != "Completed" || meta.Data[0].ImageURL == "" {
-		return "", errors.New("Roblox no tiene lista la foto del avatar")
+		return "", errors.New(i18n.T("Roblox no tiene lista la foto del avatar"))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, meta.Data[0].ImageURL, nil)
 	if err != nil {
@@ -73,7 +75,7 @@ func AvatarHeadshot(ctx context.Context, userID int64) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("la foto del avatar respondió %s", resp.Status)
+		return "", fmt.Errorf(i18n.T("la foto del avatar respondió %s"), resp.Status)
 	}
 	img, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {

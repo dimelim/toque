@@ -1,5 +1,6 @@
 import * as Service from "@wails/go/app/Service";
 import { ClipboardSetText, EventsOn, WindowMinimise, WindowToggleMaximise, Quit, BrowserOpenURL } from "@wails/runtime/runtime";
+import { t } from "./i18n";
 import type {
   Account,
   BloatResult,
@@ -9,6 +10,8 @@ import type {
   FlagEntry,
   HudConfig,
   HudLayout,
+  LanguageChoice,
+  LanguageInfo,
   Optimization,
   Overview,
   PingPoint,
@@ -66,6 +69,8 @@ export const api = {
   seenWhatsNew: () => Service.SeenWhatsNew() as Promise<void>,
   closeApp: (name: string) => Service.CloseApp(name) as Promise<number>,
   activeChanges: () => Service.ActiveChanges() as Promise<{ id: string; title: string }[]>,
+  language: () => Service.Language() as Promise<LanguageInfo>,
+  setLanguage: (choice: LanguageChoice) => Service.SetLanguage(choice) as Promise<LanguageInfo>,
   cancel: () => Service.Cancel() as Promise<void>,
   noteError: (text: string) => Service.NoteError(text) as Promise<void>,
   exportReport: () => Service.ExportReport() as Promise<string>,
@@ -120,7 +125,7 @@ export const win = {
 };
 
 export function errorText(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return "Algo salió mal";
+  if (typeof e === "string") return t(e);
+  if (e instanceof Error) return t(e.message);
+  return t("Algo salió mal");
 }

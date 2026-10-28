@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 
+	"toque/internal/i18n"
 	"toque/internal/winx"
 )
 
@@ -166,12 +167,12 @@ func (p privacy) State(Context) State {
 	st := State{Applicable: !p.admin() || winx.IsElevated(), Applied: true}
 	for _, v := range p.values {
 		if _, err := v.base(); err != nil {
-			st.Applicable, st.Applied, st.Detail = false, false, "No encuentro tu sesión de Windows. Vuelve a abrir Toque desde tu escritorio"
+			st.Applicable, st.Applied, st.Detail = false, false, i18n.T("No encuentro tu sesión de Windows. Vuelve a abrir Toque desde tu escritorio")
 			return st
 		}
 		cur, rs := v.read()
 		if rs == regOther {
-			st.Applicable, st.Detail = false, "Windows tiene este ajuste en un formato que Toque no toca"
+			st.Applicable, st.Detail = false, i18n.T("Windows tiene este ajuste en un formato que Toque no toca")
 		}
 		if !v.satisfied(cur, rs) {
 			st.Applied = false
@@ -189,7 +190,7 @@ func (p privacy) Snapshot(Context) (Undo, error) {
 		case regAbsent:
 			u[v.key()] = absent
 		default:
-			return nil, fmt.Errorf("no puedo leer %s", v.key())
+			return nil, fmt.Errorf(i18n.T("no puedo leer %s"), v.key())
 		}
 		if !v.keyExists() {
 			u[keyPrefix+v.parent()] = absent
@@ -242,7 +243,7 @@ func restoreService(name, prev string) error {
 	startText, delayedText, ok := strings.Cut(prev, ":")
 	start, err := strconv.ParseUint(startText, 10, 32)
 	if !ok || err != nil {
-		return fmt.Errorf("estado guardado del servicio %s dañado", name)
+		return fmt.Errorf(i18n.T("estado guardado del servicio %s dañado"), name)
 	}
 	m, err := mgr.Connect()
 	if err != nil {

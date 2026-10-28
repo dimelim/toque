@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"toque/internal/geo"
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 )
 
@@ -53,7 +54,7 @@ func (s *Service) Regions() []Region {
 		if r, ok := byKey[key]; ok {
 			return r
 		}
-		r := &Region{Key: key, City: displayCity(p.City), Area: displayCity(p.Region), Country: p.Country}
+		r := &Region{Key: key, City: localCity(p.City), Area: localCity(p.Region), Country: p.Country}
 		if r.Area == r.City {
 			r.Area = ""
 		}
@@ -119,7 +120,7 @@ func (s *Service) Regions() []Region {
 
 func regionCity(key string) string {
 	_, city, _ := strings.Cut(key, "/")
-	return city
+	return i18n.T(city)
 }
 
 func (s *Service) PlayIn(key string) (PlayResult, error) {
@@ -136,7 +137,7 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 		return PlayResult{}, err
 	}
 	res := PlayResult{Region: key}
-	s.progress("play", "list", 0.05, fmt.Sprintf("Buscando partidas de %s", regionCity(key)))
+	s.progress("play", "list", 0.05, i18n.Tf("Buscando partidas de %s", regionCity(key)))
 	var servers []roblox.PublicServer
 	var listErr error
 	for _, order := range []roblox.SortOrder{roblox.FullestFirst, roblox.EmptiestFirst} {
@@ -151,12 +152,12 @@ func (s *Service) PlayIn(key string) (PlayResult, error) {
 		servers = append(servers, page...)
 	}
 	if len(servers) == 0 && listErr != nil {
-		return res, fmt.Errorf("no pude leer la lista de servidores: %w", listErr)
+		return res, fmt.Errorf(i18n.T("no pude leer la lista de servidores (%w)"), listErr)
 	}
 	matches, lookupErr := serversIn(ctx, key, servers)
 	if len(matches) == 0 {
 		if lookupErr != nil {
-			return res, fmt.Errorf("no pude consultar RoValra: %w", lookupErr)
+			return res, fmt.Errorf(i18n.T("no pude consultar RoValra (%w)"), lookupErr)
 		}
 		return res, nil
 	}

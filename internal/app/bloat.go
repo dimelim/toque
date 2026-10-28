@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"toque/internal/bench"
+	"toque/internal/i18n"
 	"toque/internal/netq"
 	"toque/internal/roblox"
 )
@@ -22,7 +23,7 @@ func (s *Service) Bufferbloat() (netq.BloatResult, error) {
 			target = ip
 		}
 	}
-	s.progress("bloat", "path", 0.05, "Buscando el primer salto de tu proveedor")
+	s.progress("bloat", "path", 0.05, i18n.T("Buscando el primer salto de tu proveedor"))
 	var dst netip.Addr
 	for _, h := range netq.Trace(netip.MustParseAddr(target), 8, 2) {
 		if !h.Private {
@@ -31,14 +32,14 @@ func (s *Service) Bufferbloat() (netq.BloatResult, error) {
 		}
 	}
 	if !dst.IsValid() {
-		return netq.BloatResult{}, errors.New("no encontré un salto público que responda al ping")
+		return netq.BloatResult{}, errors.New(i18n.T("no encontré un salto público que responda al ping"))
 	}
 	step := 0
 	res := netq.Bufferbloat(ctx, dst, 12*time.Second, func(kind string) func() int64 {
 		step++
-		msg := "Midiendo con la descarga saturada"
+		msg := i18n.T("Midiendo con la descarga saturada")
 		if kind == "up" {
-			msg = "Midiendo con la subida saturada"
+			msg = i18n.T("Midiendo con la subida saturada")
 		}
 		s.progress("bloat", kind, 0.2+0.35*float64(step), msg)
 		return bench.StartLoad(kind, 4)

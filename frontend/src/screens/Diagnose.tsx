@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { cx } from "@/utils/cx";
 import { api } from "@/lib/api";
-import { num, when } from "@/lib/format";
+import { num, share, when } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import type { BloatResult, Diagnosis, Finding, PathStep, Region } from "@/lib/types";
 import { remember, useApp } from "@/state";
@@ -14,12 +15,20 @@ import type { TileTone } from "@/components/IconTile";
 import { DatacentersCard } from "./home/DatacentersCard";
 import { IconBad, IconDiagnose, IconGlobe, IconInfo, IconOk, IconPc, IconRam, IconRouter, IconServer, IconSpeed, IconWarn, IconWindows } from "@/components/icons";
 
-const planNames: Record<string, string> = {
-  "381b4222-f694-41f0-9685-ff5bb260df2e": "Equilibrado",
-  "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c": "Alto rendimiento",
-  "a1841308-3541-4fab-bc81-f71556f20b4a": "Economizador",
-  "e9a42b02-d5df-448d-aa00-03f14749eb61": "Máximo rendimiento",
-};
+function planName(guid: string) {
+  switch (guid) {
+    case "381b4222-f694-41f0-9685-ff5bb260df2e":
+      return t("Equilibrado");
+    case "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c":
+      return t("Alto rendimiento");
+    case "a1841308-3541-4fab-bc81-f71556f20b4a":
+      return t("Economizador");
+    case "e9a42b02-d5df-448d-aa00-03f14749eb61":
+      return t("Máximo rendimiento");
+    default:
+      return "";
+  }
+}
 
 function Node({ icon: Icon, label, sub, value, tone }: { icon: ComponentType<{ className?: string }>; label: string; sub?: string; value?: number; tone?: "volt" | "ink" | "warn" }) {
   return (
@@ -56,10 +65,10 @@ function PathView({ path }: { path: PathStep[] }) {
   const isp = [...path].reverse().find((p) => p.kind === "isp");
   const game = path.find((p) => p.kind === "game");
   const steps: { icon: ComponentType<{ className?: string }>; label: string; sub?: string; value?: number; tone?: "volt" | "ink" | "warn" }[] = [
-    { icon: IconPc, label: "Tu PC" },
+    { icon: IconPc, label: t("Tu PC") },
   ];
   if (router) steps.push({ icon: IconRouter, label: "Router", sub: router.addr, value: router.rttMs });
-  if (isp) steps.push({ icon: IconGlobe, label: "Tu proveedor", sub: isp.addr, value: isp.rttMs });
+  if (isp) steps.push({ icon: IconGlobe, label: t("Tu proveedor"), sub: isp.addr, value: isp.rttMs });
   if (game) steps.push({ icon: IconServer, label: "Roblox", sub: game.addr, value: game.rttMs, tone: game.rttMs <= 80 ? "volt" : "warn" });
   return (
     <div className="flex items-start">
@@ -101,7 +110,7 @@ function FindingRow({ f }: { f: Finding }) {
             go(f.fix === "server" ? "home" : "optimize");
           }}
         >
-          {f.fix === "server" ? "Buscar servidor" : f.fix === "windows" ? "Ver ajustes" : "Arreglar"}
+          {f.fix === "server" ? t("Buscar servidor") : f.fix === "windows" ? t("Ver ajustes") : t("Arreglar")}
         </Button>
       ) : null}
     </div>
@@ -117,7 +126,7 @@ function BloatCard({ initial }: { initial: BloatResult | null }) {
     if (initial) setRes((cur) => cur ?? initial);
   }, [initial]);
   const start = async () => {
-    const r = await run("bloat", "Probando tu red bajo carga", () => api.bufferbloat());
+    const r = await run("bloat", t("Probando tu red bajo carga"), () => api.bufferbloat());
     if (r) setRes(r);
   };
   const phases = res?.phases ?? [];
@@ -127,15 +136,15 @@ function BloatCard({ initial }: { initial: BloatResult | null }) {
       <div className="flex items-center gap-6">
         <IconTile icon={IconRouter} tone="cyan" className="size-12" />
         <div className="min-w-0 flex-1">
-          <p className="text-body-medium text-ink">¿Se dispara el ping cuando alguien descarga?</p>
+          <p className="text-body-medium text-ink">{t("¿Se dispara el ping cuando alguien descarga?")}</p>
           <p className="mt-1 text-body-regular text-ink-2">
-            Satura tu conexión unos 40 segundos y mide el ping hasta tu proveedor en reposo, descargando y subiendo. Si sube mucho, los tirones de red vienen del router o del proveedor, no de tu PC.
+            {t("Satura tu conexión unos 40 segundos y mide el ping hasta tu proveedor en reposo, descargando y subiendo. Si sube mucho, los tirones de red vienen del router o del proveedor, no de tu PC.")}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
-          {res ? <Pill tone={gradeTone[res.grade] ?? "neutral"} className="h-8 px-3 text-[15px]">Nota {res.grade}</Pill> : null}
+          {res ? <Pill tone={gradeTone[res.grade] ?? "neutral"} className="h-8 px-3 text-[15px]">{t("Nota {grade}", { grade: res.grade })}</Pill> : null}
           <Button size="small" variant="secondary" disabled={!!task} onClick={start}>
-            {res ? "Repetir prueba" : "Probar mi red bajo carga"}
+            {res ? t("Repetir prueba") : t("Probar mi red bajo carga")}
           </Button>
         </div>
       </div>
@@ -149,7 +158,7 @@ function BloatCard({ initial }: { initial: BloatResult | null }) {
                 <span className="ml-1 font-sans text-[12px] font-medium text-ink-3">ms</span>
               </p>
               <p className="mt-1 text-caption-1-medium text-ink-3">
-                mediana {num(p.rttMs, 0)} ms · pérdida {num(p.lossPct, 0)} %{p.mbps > 0 ? ` · ${num(p.mbps, 0)} Mbps` : ""}
+                {t("mediana {median} ms · pérdida {loss} %{speed}", { median: num(p.rttMs, 0), loss: num(p.lossPct, 0), speed: p.mbps > 0 ? ` · ${num(p.mbps, 0)} Mbps` : "" })}
               </p>
             </div>
           ))}
@@ -160,9 +169,9 @@ function BloatCard({ initial }: { initial: BloatResult | null }) {
           <IconWarn className="mt-0.5 size-[18px] shrink-0 text-warn" />
           <p className="text-body-regular text-ink-2">
             {res.maxLossPct >= 2
-              ? `Con la conexión saturada se pierde hasta el ${num(res.maxLossPct, 0)} % de los paquetes. En Realistic Street Soccer eso se nota como saltos del balón y de los jugadores. `
-              : `Con la conexión saturada el ping sube ${num(res.addedMs, 0)} ms. `}
-            Evita descargas y subidas grandes mientras juegas, o activa QoS o SQM en tu router limitándolo a un 90 % de tu velocidad.
+              ? t("Con la conexión saturada se pierde hasta el {pct} de los paquetes. En Realistic Street Soccer eso se nota como saltos del balón y de los jugadores.", { pct: share(res.maxLossPct, 0) })
+              : t("Con la conexión saturada el ping sube {ms} ms.", { ms: num(res.addedMs, 0) })}{" "}
+            {t("Evita descargas y subidas grandes mientras juegas, o activa QoS o SQM en tu router limitándolo a un {limit} de tu velocidad.", { limit: share(90) })}
           </p>
         </div>
       ) : null}
@@ -170,11 +179,11 @@ function BloatCard({ initial }: { initial: BloatResult | null }) {
   );
 }
 
-const checks: { icon: ComponentType<{ className?: string }>; tone: TileTone; title: string; text: string }[] = [
-  { icon: IconRouter, tone: "cyan", title: "Tu red, tramo a tramo", text: "El ping hasta tu router, tu proveedor y el servidor de Roblox, para saber dónde se pierde el tiempo." },
-  { icon: IconRam, tone: "lime", title: "Memoria y disco", text: "La RAM libre, qué programas la ocupan y si el archivo de paginación está en un disco mecánico." },
-  { icon: IconSpeed, tone: "amber", title: "Cómo dibuja Roblox", text: "FPS, tirones, latencia de render y si cada frame va directo a la pantalla o pasa por el compositor." },
-  { icon: IconWindows, tone: "rose", title: "Windows y energía", text: "El plan de energía, el límite de FPS de Roblox y si el PC acaba de arrancar con la caché fría." },
+const checks = (): { icon: ComponentType<{ className?: string }>; tone: TileTone; title: string; text: string }[] => [
+  { icon: IconRouter, tone: "cyan", title: t("Tu red, tramo a tramo"), text: t("El ping hasta tu router, tu proveedor y el servidor de Roblox, para saber dónde se pierde el tiempo.") },
+  { icon: IconRam, tone: "lime", title: t("Memoria y disco"), text: t("La RAM libre, qué programas la ocupan y si el archivo de paginación está en un disco mecánico.") },
+  { icon: IconSpeed, tone: "amber", title: t("Cómo dibuja Roblox"), text: t("FPS, tirones, latencia de render y si cada frame va directo a la pantalla o pasa por el compositor.") },
+  { icon: IconWindows, tone: "rose", title: t("Windows y energía"), text: t("El plan de energía, el límite de FPS de Roblox y si el PC acaba de arrancar con la caché fría.") },
 ];
 
 function Prep({ withGame, setWithGame, start, regions }: { withGame: boolean; setWithGame: (v: boolean) => void; start: () => void; regions: Region[] }) {
@@ -185,26 +194,26 @@ function Prep({ withGame, setWithGame, start, regions }: { withGame: boolean; se
         <section className="flex flex-col rounded-2xl bg-background-secondary-default p-6 shadow-card">
           <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
             <IconDiagnose className="size-4 text-ink-3" />
-            Diagnóstico completo
+            {t("Diagnóstico completo")}
           </p>
-          <h2 className="mt-3 text-title-1-medium text-ink">Descubre qué te frena en un minuto</h2>
+          <h2 className="mt-3 text-title-1-medium text-ink">{t("Descubre qué te frena en un minuto")}</h2>
           <p className="mt-2 max-w-[56ch] text-body-regular text-text-secondary">
-            Toque mide la ruta de red hasta Roblox, revisa la memoria, el disco y Windows y, si quieres, entra en Realistic Street Soccer para medir tus FPS y tu ping real. Al terminar te dice qué arreglar primero.
+            {t("Toque mide la ruta de red hasta Roblox, revisa la memoria, el disco y Windows y, si quieres, entra en Realistic Street Soccer para medir tus FPS y tu ping real. Al terminar te dice qué arreglar primero.")}
           </p>
           <div className="mt-5 flex items-center justify-between gap-4 rounded-2lg bg-background-inner-default p-3 shadow-card">
             <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>
-              <span className="text-body-medium text-ink">Medir también dentro del juego</span>
+              <span className="text-body-medium text-ink">{t("Medir también dentro del juego")}</span>
             </Switch>
-            <span className="text-caption-1-medium text-ink-3">{withGame ? "unos 90 segundos" : "unos 40 segundos"}</span>
+            <span className="text-caption-1-medium text-ink-3">{withGame ? t("unos 90 segundos") : t("unos 40 segundos")}</span>
           </div>
           <Button className="mt-auto h-11 w-full text-[15px]" leadingIcon={IconDiagnose} disabled={!!task} onClick={start}>
-            Diagnosticar ahora
+            {t("Diagnosticar ahora")}
           </Button>
         </section>
         <DatacentersCard regions={regions} max={5} />
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {checks.map((c) => (
+        {checks().map((c) => (
           <section key={c.title} className="flex flex-col gap-3 rounded-2xl bg-background-secondary-default p-4 shadow-card">
             <IconTile icon={c.icon} tone={c.tone} />
             <p className="text-body-medium text-ink">{c.title}</p>
@@ -228,21 +237,21 @@ export function Diagnose() {
     api.regions().then((v) => setRegions(v ?? [])).catch(() => undefined);
   }, []);
   const start = async () => {
-    const res = await run("diagnose", "Diagnosticando", () => api.diagnose(withGame));
+    const res = await run("diagnose", t("Diagnosticando"), () => api.diagnose(withGame));
     if (res) setD(res);
   };
   const findings = [...(d?.findings ?? [])].sort((a, b) => levelUI[a.level].rank - levelUI[b.level].rank);
   const problems = findings.filter((f) => f.level === "bad" || f.level === "warn").length;
   return (
     <div>
-      <PageHeader eyebrow="Diagnóstico" title="Qué te está frenando">
+      <PageHeader eyebrow={t("Diagnóstico")} title={t("Qué te está frenando")}>
         {d ? (
           <>
             <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>
-              <span className="text-body-regular text-ink-2">Medir dentro del juego</span>
+              <span className="text-body-regular text-ink-2">{t("Medir dentro del juego")}</span>
             </Switch>
             <Button leadingIcon={IconDiagnose} disabled={!!task} onClick={start}>
-              Diagnosticar otra vez
+              {t("Diagnosticar otra vez")}
             </Button>
           </>
         ) : null}
@@ -254,21 +263,21 @@ export function Diagnose() {
         <div className="flex flex-col gap-4">
           <Card className="p-6">
             <div className="flex items-baseline justify-between">
-              <Eyebrow>Tu conexión, tramo a tramo</Eyebrow>
+              <Eyebrow>{t("Tu conexión, tramo a tramo")}</Eyebrow>
               <span className="text-caption-1-medium text-ink-3">{when(d.at)}</span>
             </div>
             <div className="mt-6">
-              {d.path && d.path.length > 0 ? <PathView path={d.path} /> : <p className="text-body-regular text-ink-2">No pude medir la ruta de red.</p>}
+              {d.path && d.path.length > 0 ? <PathView path={d.path} /> : <p className="text-body-regular text-ink-2">{t("No pude medir la ruta de red.")}</p>}
             </div>
             {!d.path?.some((p) => p.kind === "game") ? (
-              <p className="mt-5 text-caption-1-medium text-ink-3">Activa "Medir dentro del juego" para añadir el ping real hasta el servidor de Roblox.</p>
+              <p className="mt-5 text-caption-1-medium text-ink-3">{t('Activa "Medir dentro del juego" para añadir el ping real hasta el servidor de Roblox.')}</p>
             ) : null}
           </Card>
 
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-5 pb-2">
-              <Eyebrow>Hallazgos</Eyebrow>
-              <Pill tone={problems > 0 ? "warn" : "volt"}>{problems > 0 ? `${problems} por revisar` : "Todo bien"}</Pill>
+              <Eyebrow>{t("Hallazgos")}</Eyebrow>
+              <Pill tone={problems > 0 ? "warn" : "volt"}>{problems > 0 ? t("{n} por revisar", { n: problems }) : t("Todo bien")}</Pill>
             </div>
             <div className="divide-y divide-line">
               {findings.map((f) => (
@@ -279,35 +288,35 @@ export function Diagnose() {
 
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-5">
-              <Eyebrow>Tu equipo</Eyebrow>
+              <Eyebrow>{t("Tu equipo")}</Eyebrow>
               <div className="mt-3">
-                <StatRow label="Procesador" value={d.system.cpu || "—"} />
-                <StatRow label="Gráfica" value={d.system.gpu || "—"} />
-                <StatRow label="Memoria" value={`${num(d.system.ramGb, 0)} GB`} hint={`${num(d.ramAvailMb, 0)} MB libres ahora`} />
-                <StatRow label="Monitor" value={`${d.system.refreshHz} Hz`} hint={d.framerateCap > 0 ? `Roblox limitado a ${d.framerateCap} FPS` : undefined} />
-                <StatRow label="Paginación" value={d.pagefile.drives?.length ? `${d.pagefile.drives.join(", ")}: ${d.pagefile.onHdd ? "disco mecánico" : "SSD"}` : "—"} />
-                <StatRow label="Plan de energía" value={d.powerName || planNames[d.powerPlan] || "Personalizado"} />
+                <StatRow label={t("Procesador")} value={d.system.cpu || "—"} />
+                <StatRow label={t("Gráfica")} value={d.system.gpu || "—"} />
+                <StatRow label={t("Memoria")} value={`${num(d.system.ramGb, 0)} GB`} hint={t("{mb} MB libres ahora", { mb: num(d.ramAvailMb, 0) })} />
+                <StatRow label={t("Monitor")} value={`${d.system.refreshHz} Hz`} hint={d.framerateCap > 0 ? t("Roblox limitado a {fps} FPS", { fps: d.framerateCap }) : undefined} />
+                <StatRow label={t("Paginación")} value={d.pagefile.drives?.length ? `${d.pagefile.drives.join(", ")}: ${d.pagefile.onHdd ? t("disco mecánico") : "SSD"}` : "—"} />
+                <StatRow label={t("Plan de energía")} value={d.powerName || planName(d.powerPlan) || t("Personalizado")} />
               </div>
             </Card>
             <Card className="p-5">
-              <Eyebrow>Lo que más memoria usa</Eyebrow>
+              <Eyebrow>{t("Lo que más memoria usa")}</Eyebrow>
               <div className="mt-3">
                 {(d.hogs ?? []).map((h) => (
-                  <StatRow key={h.name} label={h.name} value={`${num(h.mb, 0)} MB`} hint={h.count > 1 ? `${h.count} procesos` : undefined} />
+                  <StatRow key={h.name} label={h.name} value={`${num(h.mb, 0)} MB`} hint={h.count > 1 ? t("{n} procesos", { n: h.count }) : undefined} />
                 ))}
               </div>
               {d.game ? (
                 <div className="mt-4 grid grid-cols-3 gap-4 rounded-xl bg-surface-2 p-4">
                   <div>
-                    <p className="text-caption-1-medium text-ink-3">FPS medio</p>
+                    <p className="text-caption-1-medium text-ink-3">{t("FPS medio")}</p>
                     <p className="num text-[26px] font-semibold">{num(d.game.frames.avgFps)}</p>
                   </div>
                   <div>
-                    <p className="text-caption-1-medium text-ink-3">1 % low</p>
+                    <p className="text-caption-1-medium text-ink-3">{t("1 % low")}</p>
                     <p className="num text-[26px] font-semibold">{num(d.game.frames.low1Fps)}</p>
                   </div>
                   <div>
-                    <p className="text-caption-1-medium text-ink-3">Tirones/min</p>
+                    <p className="text-caption-1-medium text-ink-3">{t("Tirones/min")}</p>
                     <p className="num text-[26px] font-semibold">{num(d.game.frames.stutterPerMin)}</p>
                   </div>
                 </div>

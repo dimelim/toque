@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/rovalra"
 )
@@ -94,7 +94,7 @@ func (s *Service) listPage(ctx context.Context, task string, order roblox.SortOr
 	if !errors.As(err, &limited) {
 		return page, next, err
 	}
-	s.progress(task, "list", 0.05, fmt.Sprintf("Roblox limita las consultas a la lista de servidores. Espero %.0f segundos", limited.Wait.Seconds()))
+	s.progress(task, "list", 0.05, i18n.Tf("Roblox limita las consultas a la lista de servidores. Espero %.0f segundos", limited.Wait.Seconds()))
 	select {
 	case <-ctx.Done():
 		return nil, "", ctx.Err()
@@ -119,7 +119,7 @@ func (s *Service) joinIn(ctx context.Context, inst roblox.Install, key string, m
 			break
 		}
 		tried++
-		s.progress(task, "join", 0.2+0.15*float64(tried), fmt.Sprintf("Entrando en una partida de %s con %d jugadores", regionCity(key), sv.Playing))
+		s.progress(task, "join", 0.2+0.15*float64(tried), i18n.Tf("Entrando en una partida de %s con %d jugadores", regionCity(key), sv.Playing))
 		sess, err := roblox.JoinIf(ctx, inst, roblox.Target{PlaceID: roblox.RealisticStreetSoccer, JobID: sv.ID}, 30*time.Second, accept)
 		if err == nil {
 			return sess, tried, nil
@@ -128,5 +128,5 @@ func (s *Service) joinIn(ctx context.Context, inst roblox.Install, key string, m
 	if ctx.Err() != nil {
 		return roblox.Session{}, tried, ctx.Err()
 	}
-	return roblox.Session{}, tried, errors.New("No hay partidas en esa ciudad ahora mismo")
+	return roblox.Session{}, tried, errors.New(i18n.T("No hay partidas en esa ciudad ahora mismo"))
 }

@@ -1,5 +1,6 @@
 import { Button as AriaButton, ListBox, ListBoxItem, Popover, Select } from "react-aria-components";
 import { num } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { PRIVATE, bestRegion, regionCity, regionPlace } from "@/lib/regions";
 import type { Region } from "@/lib/types";
 import { cx } from "@/utils/cx";
@@ -9,7 +10,7 @@ const AUTO = "auto";
 
 function Ping({ ms, size }: { ms: number | null | undefined; size: "lg" | "sm" }) {
   if (ms === null) return null;
-  if (!ms) return <span className="shrink-0 text-caption-1-medium text-ink-4">sin medir</span>;
+  if (!ms) return <span className="shrink-0 text-caption-1-medium text-ink-4">{t("sin medir")}</span>;
   return (
     <span className={cx("num shrink-0 leading-none font-semibold", size === "lg" ? "text-[26px] text-volt" : "text-[15px] text-ink")}>
       {num(ms, 0)}
@@ -39,18 +40,22 @@ function Option({ id, title, place, ms }: { id: string; title: string; place: st
   );
 }
 
-const variants = {
-  play: {
-    label: "Región",
-    auto: "Automática",
-    note: "Centros de datos según RoValra. Los nuevos, como Lima o Santiago, todavía tienen pocas partidas públicas de Realistic Street Soccer.",
-  },
-  private: {
-    label: "Abrir en",
-    auto: "Donde lo decida Roblox",
-    note: "Roblox suele abrir un servidor privado vacío en el centro de datos más cercano a quien entra primero.",
-  },
-};
+type Variant = "play" | "private";
+
+function copy(variant: Variant) {
+  if (variant === "play") {
+    return {
+      label: t("Región"),
+      auto: t("Automática"),
+      note: t("Centros de datos según RoValra. Los nuevos, como Lima o Santiago, todavía tienen pocas partidas públicas de Realistic Street Soccer."),
+    };
+  }
+  return {
+    label: t("Abrir en"),
+    auto: t("Donde lo decida Roblox"),
+    note: t("Roblox suele abrir un servidor privado vacío en el centro de datos más cercano a quien entra primero."),
+  };
+}
 
 export function RegionSelect({
   regions,
@@ -63,12 +68,12 @@ export function RegionSelect({
   value: string;
   onChange: (key: string) => void;
   isDisabled?: boolean;
-  variant?: keyof typeof variants;
+  variant?: Variant;
 }) {
   const best = bestRegion(regions);
   const current = regions.find((r) => r.key === value);
   const isPrivate = value === PRIVATE;
-  const v = variants[variant];
+  const v = copy(variant);
   const Icon = isPrivate ? IconLock : IconPin;
   const autoPing = variant === "play" ? best?.rttMs : null;
   return (
@@ -79,7 +84,7 @@ export function RegionSelect({
             <Icon className="size-3.5" />
             {v.label}
           </span>
-          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? "Servidor privado" : value ? (current?.city ?? regionCity(value)) : v.auto}</span>
+          <span className="mt-0.5 block truncate text-body-medium text-ink">{isPrivate ? t("Servidor privado") : value ? (current?.city ?? regionCity(value)) : v.auto}</span>
         </span>
         <Ping ms={isPrivate ? null : value ? current?.rttMs : autoPing} size="lg" />
         <IconChevronDown className="size-4 shrink-0 text-ink-3" />
@@ -91,11 +96,11 @@ export function RegionSelect({
         <ListBox className="max-h-80 overflow-y-auto p-1.5 outline-none">
           {variant === "play" ? (
             <>
-              <Option id={AUTO} title={v.auto} place={best ? `Va al más cercano, ${best.city}` : "Va al servidor más cercano"} ms={best?.rttMs} />
-              <Option id={PRIVATE} title="Servidor privado" place="Con su enlace de invitación" ms={null} />
+              <Option id={AUTO} title={v.auto} place={best ? t("Va al más cercano, {city}", { city: best.city }) : t("Va al servidor más cercano")} ms={best?.rttMs} />
+              <Option id={PRIVATE} title={t("Servidor privado")} place={t("Con su enlace de invitación")} ms={null} />
             </>
           ) : (
-            <Option id={AUTO} title={v.auto} place="Toque te dice en qué ciudad se abrió" ms={null} />
+            <Option id={AUTO} title={v.auto} place={t("Toque te dice en qué ciudad se abrió")} ms={null} />
           )}
           {regions.map((r) => (
             <Option key={r.key} id={r.key} title={r.city} place={regionPlace(r)} ms={r.rttMs} />

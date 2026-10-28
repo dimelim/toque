@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 
+	"toque/internal/i18n"
 	"toque/internal/winx"
 )
 
@@ -189,7 +190,7 @@ func shortcut(lnk, target string) error {
 
 func Install(version string, desktop bool) (string, error) {
 	if !winx.IsElevated() {
-		return "", errors.New("se necesitan permisos de administrador")
+		return "", errors.New(i18n.T("se necesitan permisos de administrador"))
 	}
 	src, err := os.Executable()
 	if err != nil {
@@ -203,14 +204,14 @@ func Install(version string, desktop bool) (string, error) {
 	target := filepath.Join(dir, "Toque.exe")
 	if !strings.EqualFold(filepath.Clean(src), filepath.Clean(target)) {
 		if err := copyFile(src, target); err != nil {
-			return "", fmt.Errorf("copiar Toque.exe: %w", err)
+			return "", fmt.Errorf(i18n.T("copiar Toque.exe (%w)"), err)
 		}
 	}
 	if err := writePayload(dir); err != nil {
-		return "", fmt.Errorf("copiar componentes: %w", err)
+		return "", fmt.Errorf(i18n.T("copiar componentes (%w)"), err)
 	}
 	if sha(target) == "" {
-		return "", errors.New("la copia de Toque.exe está vacía")
+		return "", errors.New(i18n.T("la copia de Toque.exe está vacía"))
 	}
 	shortcut(startMenuShortcut(), target)
 	if desktop {
@@ -249,7 +250,7 @@ func dirSizeKB(dir string) int64 {
 
 func Uninstall() error {
 	if !winx.IsElevated() {
-		return errors.New("se necesitan permisos de administrador")
+		return errors.New(i18n.T("se necesitan permisos de administrador"))
 	}
 	stopRunning(uint32(os.Getpid()))
 	os.Remove(startMenuShortcut())

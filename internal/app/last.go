@@ -28,7 +28,12 @@ func loadLast[T any](name string) *T {
 }
 
 func (s *Service) LastDiagnosis() *Diagnosis {
-	return loadLast[Diagnosis]("diagnosis.json")
+	d := loadLast[Diagnosis]("diagnosis.json")
+	if d == nil {
+		return nil
+	}
+	local := localDiagnosis(*d)
+	return &local
 }
 
 func (s *Service) LastBloat() *netq.BloatResult {

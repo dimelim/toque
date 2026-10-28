@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"toque/internal/i18n"
 	"toque/internal/netq"
 	"toque/internal/roblox"
 	"toque/internal/winx"
@@ -52,7 +53,7 @@ func measureServer(ctx context.Context, ip string, dur time.Duration) (netq.Summ
 	}
 	sum := netq.Analyze(pk)
 	if !sum.Confident {
-		return sum, errors.New("muy poco tráfico para medir")
+		return sum, errors.New(i18n.T("muy poco tráfico para medir"))
 	}
 	rememberDatacenter(ip, sum.RTT)
 	return sum, nil
@@ -99,15 +100,15 @@ func (s *Service) Play() (PlayResult, error) {
 }
 
 func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult, error) {
-	s.progress("play", "join", 0.08, "Entrando en Realistic Street Soccer")
+	s.progress("play", "join", 0.08, i18n.T("Entrando en Realistic Street Soccer"))
 	sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, "", 90*time.Second)
 	if err != nil {
 		if ctx.Err() != nil {
 			return PlayResult{}, ctx.Err()
 		}
-		return PlayResult{}, fmt.Errorf("no pude entrar al juego: %w", err)
+		return PlayResult{}, fmt.Errorf(i18n.T("no pude entrar al juego (%w)"), err)
 	}
-	s.progress("play", "measure", 0.3, "Comprobando a qué distancia está el servidor")
+	s.progress("play", "measure", 0.3, i18n.T("Comprobando a qué distancia está el servidor"))
 	first, err := serverRTT(ctx, sess.ServerIP)
 	first.JobID, first.Current = sess.JobID, true
 	withPlace(ctx, &first, sess.DatacenterID)
@@ -126,7 +127,7 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 		if ctx.Err() != nil {
 			break
 		}
-		s.progress("play", "hop", 0.4+0.18*float64(i), fmt.Sprintf("El servidor va a %.0f ms y tienes uno a %.0f ms. Probando otro (%d de %d)", first.RTT, best, i+1, len(candidates)))
+		s.progress("play", "hop", 0.4+0.18*float64(i), i18n.Tf("El servidor va a %.0f ms y tienes uno a %.0f ms. Probando otro (%d de %d)", first.RTT, best, i+1, len(candidates)))
 		ns, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, c.ID, 35*time.Second)
 		if err != nil || (c.ID != "" && ns.JobID != c.ID) {
 			current = ""
@@ -152,7 +153,7 @@ func (s *Service) playNear(ctx context.Context, inst roblox.Install) (PlayResult
 		}
 	}
 	if current != res.Final.JobID {
-		s.progress("play", "join", 0.95, fmt.Sprintf("Volviendo al servidor más cercano que encontré, a %.0f ms", res.Final.RTT))
+		s.progress("play", "join", 0.95, i18n.Tf("Volviendo al servidor más cercano que encontré, a %.0f ms", res.Final.RTT))
 		roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, res.Final.JobID, 35*time.Second)
 	}
 	return res, nil
@@ -170,9 +171,9 @@ func (s *Service) QuickPing() (ServerProbe, error) {
 	}
 	sess, err := currentSession(inst)
 	if err != nil {
-		return ServerProbe{}, errors.New("entra en una partida para medir tu ping")
+		return ServerProbe{}, errors.New(i18n.T("entra en una partida para medir tu ping"))
 	}
-	s.progress("ping", "measure", 0.3, "Escuchando el tráfico del servidor durante 8 segundos")
+	s.progress("ping", "measure", 0.3, i18n.T("Escuchando el tráfico del servidor durante 8 segundos"))
 	p := ServerProbe{JobID: sess.JobID, IP: sess.ServerIP, Current: true}
 	sum, err := measureServer(ctx, sess.ServerIP, 8*time.Second)
 	if err != nil {
@@ -204,7 +205,7 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 		s.progress("finder", "probe", step/steps, msg)
 	}
 	if sess, err := currentSession(inst); err == nil {
-		tick("Midiendo el ping del servidor actual")
+		tick(i18n.T("Midiendo el ping del servidor actual"))
 		exclude[sess.JobID] = true
 		p := ServerProbe{JobID: sess.JobID, IP: sess.ServerIP, Current: true}
 		if sum, err := measureServer(ctx, sess.ServerIP, 8*time.Second); err == nil {
@@ -214,20 +215,20 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 		}
 		res.Probes = append(res.Probes, p)
 	}
-	tick("Consultando la lista pública de servidores")
+	tick(i18n.T("Consultando la lista pública de servidores"))
 	servers, err := roblox.PublicServers(ctx, roblox.RealisticStreetSoccer, 2)
 	if err != nil && len(servers) == 0 {
-		return res, fmt.Errorf("no pude leer la lista de servidores: %w", err)
+		return res, fmt.Errorf(i18n.T("no pude leer la lista de servidores (%w)"), err)
 	}
 	for _, c := range roblox.SampleCandidates(servers, exclude, tries, time.Now().UnixNano()) {
 		if ctx.Err() != nil {
 			break
 		}
-		tick(fmt.Sprintf("Probando un servidor con %d/%d jugadores", c.Playing, c.MaxPlayers))
+		tick(i18n.Tf("Probando un servidor con %d/%d jugadores", c.Playing, c.MaxPlayers))
 		p := ServerProbe{JobID: c.ID, Playing: c.Playing, Max: c.MaxPlayers}
 		sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, c.ID, 35*time.Second)
 		if err != nil || sess.JobID != c.ID {
-			p.Error = "no se pudo entrar (servidor lleno o cerrado)"
+			p.Error = i18n.T("no se pudo entrar (servidor lleno o cerrado)")
 			res.Probes = append(res.Probes, p)
 			continue
 		}
@@ -253,7 +254,7 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 		}
 	}
 	if best == nil {
-		return res, errors.New("no pude medir ningún servidor")
+		return res, errors.New(i18n.T("no pude medir ningún servidor"))
 	}
 	res.Best = best
 	last := res.Probes[len(res.Probes)-1]
@@ -261,7 +262,7 @@ func (s *Service) FindServer(tries int) (ServerSearch, error) {
 		res.Joined = true
 		return res, nil
 	}
-	tick("Entrando al servidor con menos ping")
+	tick(i18n.T("Entrando al servidor con menos ping"))
 	if sess, err := roblox.Join(ctx, inst, roblox.RealisticStreetSoccer, best.JobID, 35*time.Second); err == nil && sess.JobID == best.JobID {
 		res.Joined = true
 	}

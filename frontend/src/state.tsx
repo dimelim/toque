@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { t } from "@/lib/i18n";
 import { api, errorText, onOverview, onProgress, onUpdate, onWatch, onWindow } from "@/lib/api";
 import { play } from "@/lib/sound";
 import type { Overview, Progress, UpdateInfo, WatchInfo, WindowState } from "@/lib/types";
@@ -23,7 +24,7 @@ interface AppState {
   task: string | null;
   run: <T>(task: string, label: string, fn: () => Promise<T>) => Promise<T | undefined>;
   toasts: Toast[];
-  toast: (t: Omit<Toast, "id">) => void;
+  toast: (next: Omit<Toast, "id">) => void;
   dismiss: (id: number) => void;
   taskLabel: string;
   update: UpdateInfo | null;
@@ -109,12 +110,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
-  const toast = useCallback((t: Omit<Toast, "id">) => {
+  const toast = useCallback((next: Omit<Toast, "id">) => {
     const id = ++seq.current;
-    if (t.tone === "error") api.noteError([t.title, t.detail].filter(Boolean).join(": ")).catch(() => {});
-    setToasts((all) => [...all.slice(-2), { ...t, id }]);
-    if (t.sticky) return;
-    setTimeout(() => setToasts((all) => all.filter((x) => x.id !== id)), t.tone === "error" ? 9000 : 6000);
+    if (next.tone === "error") api.noteError([next.title, next.detail].filter(Boolean).join(": ")).catch(() => {});
+    setToasts((all) => [...all.slice(-2), { ...next, id }]);
+    if (next.sticky) return;
+    setTimeout(() => setToasts((all) => all.filter((x) => x.id !== id)), next.tone === "error" ? 9000 : 6000);
   }, []);
 
   const dismiss = useCallback((id: number) => setToasts((all) => all.filter((x) => x.id !== id)), []);
@@ -123,7 +124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async <T,>(name: string, label: string, fn: () => Promise<T>) => {
       setTask(name);
       setTaskLabel(label);
-      setProgress({ task: name, step: "start", pct: 0, message: "Preparando" });
+      setProgress({ task: name, step: "start", pct: 0, message: t("Preparando") });
       play("start");
       try {
         const out = await fn();
@@ -132,11 +133,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         const text = errorText(e);
         if (text.endsWith("context canceled")) {
-          toast({ tone: "info", title: "Cancelado" });
+          toast({ tone: "info", title: t("Cancelado") });
           return undefined;
         }
         play("error");
-        toast({ tone: "error", title: "No se pudo completar", detail: text });
+        toast({ tone: "error", title: t("No se pudo completar"), detail: text });
         return undefined;
       } finally {
         setTask(null);

@@ -9,13 +9,14 @@ import (
 
 	"toque/internal/bench"
 	"toque/internal/catalog"
+	"toque/internal/i18n"
 	"toque/internal/overlay"
 	"toque/internal/roblox"
 	"toque/internal/tweaks"
 	"toque/internal/winx"
 )
 
-const Version = "1.18.0"
+const Version = "1.19.0"
 
 type Emitter func(name string, data any)
 
@@ -43,6 +44,9 @@ type Service struct {
 	sess       *session
 	calm       atomic.Bool
 	returning  bool
+	langOnce   sync.Once
+	langMu     sync.Mutex
+	lang       languageFile
 }
 
 func New(presentMon string, emit Emitter) *Service {
@@ -52,7 +56,7 @@ func New(presentMon string, emit Emitter) *Service {
 	return s
 }
 
-var ErrBusy = errors.New("Toque ya está ejecutando otra tarea")
+var ErrBusy = errors.New(i18n.Mark("Toque ya está ejecutando otra tarea"))
 
 func (s *Service) idle() error {
 	s.mu.Lock()
@@ -104,7 +108,7 @@ func (s *Service) Cancel() {
 func (s *Service) env() (bench.Env, error) {
 	inst, err := roblox.Find()
 	if err != nil {
-		return bench.Env{}, errors.New("no encuentro Roblox instalado en este usuario")
+		return bench.Env{}, errors.New(i18n.T("no encuentro Roblox instalado en este usuario"))
 	}
 	return bench.Env{PresentMon: s.presentMon, Install: inst, Dir: winx.DataDir("runs")}, nil
 }
@@ -212,16 +216,16 @@ var logTail roblox.Tail
 func currentSession(inst roblox.Install) (roblox.Session, error) {
 	pids := roblox.Running()
 	if len(pids) == 0 {
-		return roblox.Session{}, errors.New("Roblox no está abierto")
+		return roblox.Session{}, errors.New(i18n.T("Roblox no está abierto"))
 	}
 	log := roblox.NewestPlayerLog(inst.LogDir(), time.Now().Add(-12*time.Hour))
 	if log == "" {
-		return roblox.Session{PID: pids[0]}, errors.New("No encuentro el registro de Roblox")
+		return roblox.Session{PID: pids[0]}, errors.New(i18n.T("No encuentro el registro de Roblox"))
 	}
 	st := logTail.Read(log)
 	sess := roblox.Session{PID: pids[0], LogPath: log, JobID: st.JobID, PlaceID: st.PlaceID, ServerIP: st.ServerIP, ServerPort: st.ServerPort}
 	if sess.ServerIP == "" {
-		return sess, errors.New("Entra en una partida primero")
+		return sess, errors.New(i18n.T("Entra en una partida primero"))
 	}
 	return sess, nil
 }

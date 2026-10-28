@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
 import { win, api, onSessionSummary } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
@@ -36,27 +37,27 @@ import {
   IconRocket,
 } from "./icons";
 
-const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string }> }[] = [
-  { id: "home", label: "Inicio", icon: IconHome },
-  { id: "session", label: "Partida", icon: IconRocket },
-  { id: "diagnose", label: "Diagnóstico", icon: IconDiagnose },
-  { id: "optimize", label: "Optimizar", icon: IconOptimize },
+const nav = (): { id: Screen; label: string; icon: ComponentType<{ className?: string }> }[] => [
+  { id: "home", label: t("Inicio"), icon: IconHome },
+  { id: "session", label: t("Partida"), icon: IconRocket },
+  { id: "diagnose", label: t("Diagnóstico"), icon: IconDiagnose },
+  { id: "optimize", label: t("Optimizar"), icon: IconOptimize },
   { id: "hud", label: "HUD", icon: IconKeyboard },
-  { id: "tests", label: "Pruebas", icon: IconTests },
-  { id: "settings", label: "Ajustes", icon: IconSettings },
+  { id: "tests", label: t("Pruebas"), icon: IconTests },
+  { id: "settings", label: t("Ajustes"), icon: IconSettings },
 ];
 
 function WindowControls() {
   const btn = "no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none transition-colors duration-150 hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring";
   return (
     <div className="flex">
-      <button aria-label="Minimizar" className={btn} onClick={() => win.minimise()}>
+      <button aria-label={t("Minimizar")} className={btn} onClick={() => win.minimise()}>
         <IconMinimize className="size-4" />
       </button>
-      <button aria-label="Maximizar" className={btn} onClick={() => win.toggleMaximise()}>
+      <button aria-label={t("Maximizar")} className={btn} onClick={() => win.toggleMaximise()}>
         <IconMaximize className="size-3.5" />
       </button>
-      <button aria-label="Cerrar" className={cx(btn, "hover:bg-bad hover:text-canvas")} onClick={() => win.quit()}>
+      <button aria-label={t("Cerrar")} className={cx(btn, "hover:bg-bad hover:text-canvas")} onClick={() => win.quit()}>
         <IconClose className="size-4" />
       </button>
     </div>
@@ -69,7 +70,7 @@ function useSessionSummary() {
     () =>
       onSessionSummary((n) => {
         play("tap");
-        toast({ tone: "info", title: "En tu última partida", detail: `${n.title}. Lo tienes en Partida, en Qué te está frenando.` });
+        toast({ tone: "info", title: t("En tu última partida"), detail: t("{title}. Lo tienes en Partida, en Qué te está frenando.", { title: n.title }) });
       }),
     [toast],
   );
@@ -83,7 +84,7 @@ function useWatchToast() {
     if (!joined || announced.current === joined.jobId) return;
     announced.current = joined.jobId;
     play("success");
-    toast({ tone: "ok", title: `Entraste en una partida de ${joined.city ?? regionCity(watch?.region ?? "")}`, detail: "El vigía la encontró y te metió en cuanto hubo sitio." });
+    toast({ tone: "ok", title: t("Entraste en una partida de {city}", { city: joined.city ?? regionCity(watch?.region ?? "") }), detail: t("El vigía la encontró y te metió en cuanto hubo sitio.") });
   }, [watch, toast]);
   useEffect(() => {
     const note = watch?.note;
@@ -91,7 +92,7 @@ function useWatchToast() {
     if (!note || announced.current === key) return;
     announced.current = key;
     play("tap");
-    toast({ tone: "info", title: "Vigía detenido", detail: note, sticky: true });
+    toast({ tone: "info", title: t("Vigía detenido"), detail: note, sticky: true });
   }, [watch, toast]);
 }
 
@@ -115,18 +116,18 @@ function RobloxStatus() {
       ) : null}
       <div className="flex items-center gap-2">
         <span className={cx("relative size-2 rounded-full", inGame ? "live-dot text-volt bg-volt" : r.running ? "live-dot text-warn bg-warn" : "bg-ink-4")} />
-        <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
+        <span className="text-caption-1-semibold text-ink">{!r.installed ? t("Roblox no instalado") : inGame ? t("En partida") : r.running ? t("Roblox abierto") : t("Roblox cerrado")}</span>
       </div>
-      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : watch?.active ? `Vigilando ${regionCity(watch.region)}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
+      <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? t("Servidor {ip}", { ip: r.serverIp }) : watch?.active ? t("Vigilando {city}", { city: regionCity(watch.region) }) : region === PRIVATE ? t("Servidor privado") : region ? t("Servidor en {city}", { city: regionCity(region) }) : "Realistic Street Soccer"}</p>
       {overview?.session === "active" ? (
         <p className="mt-1 flex items-center gap-1.5 text-caption-1-semibold text-volt">
           <IconRocket className="size-3.5" />
-          Modo partida activo
+          {t("Modo partida activo")}
         </p>
       ) : null}
       {r.installed ? (
         <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task || (region === PRIVATE && !privateLink.trim())} onClick={start}>
-          {r.running ? "Cambiar de servidor" : "Jugar"}
+          {r.running ? t("Cambiar de servidor") : t("Jugar")}
         </Button>
       ) : null}
     </div>
@@ -147,9 +148,9 @@ function UpdateCard() {
         >
           <div className="flex items-center gap-2">
             <IconDownload className="size-4 text-volt" />
-            <span className="text-caption-1-semibold text-ink">Toque {update.latest} lista</span>
+            <span className="text-caption-1-semibold text-ink">{t("Toque {version} lista", { version: update.latest })}</span>
           </div>
-          <p className="mt-1 text-caption-1-medium text-ink-3">Se instala sola al volver a abrir Toque.</p>
+          <p className="mt-1 text-caption-1-medium text-ink-3">{t("Se instala sola al volver a abrir Toque.")}</p>
           <Button
             size="small"
             className="mt-3 w-full"
@@ -159,7 +160,7 @@ function UpdateCard() {
               installUpdate(toast);
             }}
           >
-            Actualizar ahora
+            {t("Actualizar ahora")}
           </Button>
         </motion.div>
       ) : null}
@@ -176,7 +177,7 @@ function RepoLink({ version }: { version: string }) {
         play("tap");
         win.open(repo?.url ?? "https://github.com/dimelim/toque");
       }}
-      aria-label="Ver el código de Toque en GitHub y darle una estrella"
+      aria-label={t("Ver el código de Toque en GitHub y darle una estrella")}
       className="group flex h-9 items-center gap-2 rounded-[10px] px-3 text-left outline-none transition-colors duration-150 hover:bg-surface-1 focus-visible:ring-2 focus-visible:ring-border-focus-ring"
     >
       <IconGithub className="size-4 shrink-0 text-ink-3 transition-colors duration-150 group-hover:text-ink" />
@@ -205,8 +206,8 @@ function Sidebar() {
       <div className="drag flex h-14 items-center px-3 pt-1">
         <Wordmark className="h-[22px] text-ink" />
       </div>
-      <nav className="mt-3 flex flex-col gap-0.5" aria-label="Secciones">
-        {nav.map((n) => {
+      <nav className="mt-3 flex flex-col gap-0.5" aria-label={t("Secciones")}>
+        {nav().map((n) => {
           const active = screen === n.id;
           const Icon = n.icon;
           return (
@@ -254,10 +255,10 @@ function TaskPanel() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-body-medium text-ink">{taskLabel}</p>
-              <p className="mt-0.5 truncate text-caption-1-medium text-ink-2">{progress?.message || "Trabajando"}</p>
+              <p className="mt-0.5 truncate text-caption-1-medium text-ink-2">{progress?.message || t("Trabajando")}</p>
             </div>
             <Button size="xs" variant="ghost" onClick={() => api.cancel()}>
-              Cancelar
+              {t("Cancelar")}
             </Button>
           </div>
           <div className="mt-3">
@@ -273,23 +274,23 @@ function Toasts() {
   const { toasts, dismiss } = useApp();
   return (
     <AnimatePresence initial={false}>
-      {toasts.map((t) => {
-        const Icon = t.tone === "ok" ? IconOk : t.tone === "error" ? IconBad : IconInfo;
+      {toasts.map((item) => {
+        const Icon = item.tone === "ok" ? IconOk : item.tone === "error" ? IconBad : IconInfo;
         return (
           <motion.button
-            key={t.id}
+            key={item.id}
             layout
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ type: "spring", duration: 0.35, bounce: 0 }}
-            onClick={() => dismiss(t.id)}
+            onClick={() => dismiss(item.id)}
             className="pointer-events-auto flex w-[360px] items-start gap-3 rounded-2xl bg-surface-3 p-4 text-left shadow-dropdown"
           >
-            <Icon className={cx("mt-0.5 size-[18px] shrink-0", t.tone === "ok" ? "text-volt" : t.tone === "error" ? "text-bad" : "text-ink-2")} />
+            <Icon className={cx("mt-0.5 size-[18px] shrink-0", item.tone === "ok" ? "text-volt" : item.tone === "error" ? "text-bad" : "text-ink-2")} />
             <span className="min-w-0">
-              <span className="block text-body-medium text-ink">{t.title}</span>
-              {t.detail ? <span className="mt-0.5 block text-caption-1-medium text-ink-2">{t.detail}</span> : null}
+              <span className="block text-body-medium text-ink">{item.title}</span>
+              {item.detail ? <span className="mt-0.5 block text-caption-1-medium text-ink-2">{item.detail}</span> : null}
             </span>
           </motion.button>
         );

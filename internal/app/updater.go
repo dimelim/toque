@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"toque/internal/i18n"
 	"toque/internal/install"
 	"toque/internal/update"
 	"toque/internal/winx"
@@ -18,6 +19,8 @@ type UpdateInfo struct {
 	State   string    `json:"state"`
 	Error   string    `json:"error"`
 	Checked time.Time `json:"checked"`
+
+	manifest update.Manifest
 }
 
 func othersRunning() bool {
@@ -45,6 +48,7 @@ func ApplyPendingUpdate() bool {
 func (s *Service) setUpdate(fn func(*UpdateInfo)) {
 	s.updMu.Lock()
 	fn(&s.upd)
+	s.upd.Notes = s.upd.manifest.NotesIn(i18n.Current())
 	info := s.upd
 	s.updMu.Unlock()
 	if s.emit != nil {
@@ -55,6 +59,7 @@ func (s *Service) setUpdate(fn func(*UpdateInfo)) {
 func (s *Service) UpdateStatus() UpdateInfo {
 	s.updMu.Lock()
 	defer s.updMu.Unlock()
+	s.upd.Notes = s.upd.manifest.NotesIn(i18n.Current())
 	return s.upd
 }
 
@@ -84,10 +89,12 @@ func (s *Service) checkUpdate() {
 		return
 	}
 	if !update.Newer(r.Manifest, Version) {
-		s.setUpdate(func(u *UpdateInfo) { u.State, u.Latest, u.Notes, u.Checked = "current", r.Version, r.Notes, time.Now() })
+		s.setUpdate(func(u *UpdateInfo) {
+			u.State, u.Latest, u.manifest, u.Checked = "current", r.Version, r.Manifest, time.Now()
+		})
 		return
 	}
-	s.setUpdate(func(u *UpdateInfo) { u.State, u.Latest, u.Notes = "downloading", r.Version, r.Notes })
+	s.setUpdate(func(u *UpdateInfo) { u.State, u.Latest, u.manifest = "downloading", r.Version, r.Manifest })
 	if err := update.Download(ctx, r); err != nil {
 		s.setUpdate(func(u *UpdateInfo) { u.State, u.Error, u.Checked = "error", err.Error(), time.Now() })
 		return
@@ -97,7 +104,7 @@ func (s *Service) checkUpdate() {
 
 func (s *Service) CheckUpdate() (UpdateInfo, error) {
 	if !install.Current(Version).RunningInstalled {
-		return s.UpdateStatus(), errors.New("instala Toque para recibir actualizaciones")
+		return s.UpdateStatus(), errors.New(i18n.T("instala Toque para recibir actualizaciones"))
 	}
 	s.checkUpdate()
 	return s.UpdateStatus(), nil
@@ -109,7 +116,7 @@ func (s *Service) ApplyUpdate() error {
 	}
 	_, path, ok := update.Pending(Version)
 	if !ok {
-		return errors.New("no hay ninguna actualización lista")
+		return errors.New(i18n.T("no hay ninguna actualización lista"))
 	}
 	if err := update.Apply(path); err != nil {
 		return err

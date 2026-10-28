@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/sys/windows/registry"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/winx"
 )
@@ -108,7 +109,7 @@ func loadJournal() (journal, error) {
 		return j, err
 	}
 	if err := json.Unmarshal(b, &j); err != nil {
-		return journal{Applied: map[string]Undo{}}, fmt.Errorf("el diario de cambios %s está dañado: %w", journalPath(), err)
+		return journal{Applied: map[string]Undo{}}, fmt.Errorf(i18n.T("el diario de cambios %s está dañado (%w)"), journalPath(), err)
 	}
 	if j.Applied == nil {
 		j.Applied = map[string]Undo{}
@@ -188,7 +189,7 @@ func Apply(ctx Context, t Tweak) error {
 	}
 	if err := t.Apply(ctx); err != nil {
 		if j.revert(ctx, t) != nil {
-			return fmt.Errorf("%w (el cambio quedó a medias y sigue en el diario para deshacerlo)", err)
+			return fmt.Errorf(i18n.T("%w (el cambio quedó a medias y sigue en el diario para deshacerlo)"), err)
 		}
 		return err
 	}

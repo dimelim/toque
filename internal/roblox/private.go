@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"toque/internal/i18n"
 )
 
 var (
@@ -14,7 +16,7 @@ var (
 	gamePath  = regexp.MustCompile(`^/games/([0-9]{1,15})(/|$)`)
 )
 
-var errNotPrivate = errors.New("ese enlace no es de un servidor privado de Roblox")
+var errNotPrivate = errors.New(i18n.Mark("ese enlace no es de un servidor privado de Roblox"))
 
 func ParsePrivateLink(raw string) (Target, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))

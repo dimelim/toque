@@ -3,11 +3,12 @@ import { Area, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip,
 import { Chip } from "@/components/ui/chip";
 import { useCountUp } from "@/hooks/use-count-up";
 import { num } from "@/lib/format";
+import { locale, t } from "@/lib/i18n";
 import type { PingPoint } from "@/lib/types";
 import { IconSignal } from "@/components/icons";
 
-const clock = (t: number) => new Date(t).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-const day = (t: number) => new Date(t).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+const clock = (ms: number) => new Date(ms).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
+const day = (ms: number) => new Date(ms).toLocaleDateString(locale(), { day: "numeric", month: "short" });
 
 function ActiveDot({ cx: x, cy: y }: { cx?: number; cy?: number }) {
   if (x === undefined || y === undefined) return null;
@@ -34,6 +35,7 @@ export function PingCard({ points, best }: { points: PingPoint[]; best: number |
   const yHi = Math.ceil((hi + 2) / step) * step;
   const yTicks = Array.from({ length: Math.round((yHi - yLo) / step) + 1 }, (_, k) => yLo + k * step);
   const servers = new Set(points.map((p) => p.serverIp)).size;
+  const summary = { n: num(data.length), servers, ms: num(best, 1) };
   const ticks = data.length > 1 ? [0, Math.floor((data.length - 1) / 2), data.length - 1] : [0];
 
   return (
@@ -42,7 +44,7 @@ export function PingCard({ points, best }: { points: PingPoint[]; best: number |
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
             <IconSignal className="size-4 text-ink-3" />
-            {active !== null && point ? `${day(point.t)}, ${clock(point.t)} · servidor ${point.server}` : "Ping real dentro del juego"}
+            {active !== null && point ? t("{day}, {clock} · servidor {server}", { day: day(point.t), clock: clock(point.t), server: point.server }) : t("Ping real dentro del juego")}
           </p>
           <div className="mt-1 flex items-center gap-2.5">
             <p key={active ?? "last"} className="animate-number-fade num text-[44px] leading-none font-semibold text-ink">
@@ -51,22 +53,22 @@ export function PingCard({ points, best }: { points: PingPoint[]; best: number |
             </p>
             {point && best !== null ? (
               <Chip variant="bold" color={near ? "lime" : "rose"}>
-                {near ? "Servidor cercano" : `+${num(gap, 0)} ms sobre tu mejor`}
+                {near ? t("Servidor cercano") : t("+{ms} ms sobre tu mejor", { ms: num(gap, 0) })}
               </Chip>
             ) : null}
           </div>
           <p className="mt-1.5 text-body-2-medium text-text-tertiary">
-            {num(data.length)} mediciones · {servers} {servers === 1 ? "servidor" : "servidores"} · mejor centro {num(best, 1)} ms
+            {servers === 1 ? t("{n} mediciones · {servers} servidor · mejor centro {ms} ms", summary) : t("{n} mediciones · {servers} servidores · mejor centro {ms} ms", summary)}
           </p>
         </div>
         <dl className="flex shrink-0 flex-col items-end gap-1.5 text-body-2-medium text-text-secondary">
           <div className="flex items-center gap-1.5">
             <span className="h-0.5 w-3 rounded-full bg-volt" aria-hidden />
-            <dt>Ping medido</dt>
+            <dt>{t("Ping medido")}</dt>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-0 w-3 border-t-2 border-dashed border-ink-4" aria-hidden />
-            <dt>Tu mejor centro</dt>
+            <dt>{t("Tu mejor centro")}</dt>
           </div>
         </dl>
       </div>

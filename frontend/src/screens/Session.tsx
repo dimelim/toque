@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { api, errorText } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import type { PrepCheck, SessionAction } from "@/lib/types";
 import { useSession } from "@/hooks/use-session";
@@ -13,11 +14,16 @@ import { Prep } from "./session/Prep";
 import { ActionCard } from "./session/Actions";
 import { Notes } from "./session/Notes";
 
-const prepCopy: Record<string, { running: string; done: string; detail: string }> = {
-  "fps-cap": { running: "Ajustando el límite de FPS", done: "Límite de FPS ajustado", detail: "Roblox lo usará la próxima vez que lo abras." },
-  windowed: { running: "Cambiando Juegos en ventana", done: "Juegos en ventana actualizado", detail: "Roblox lo usará la próxima vez que lo abras." },
-  gamemode: { running: "Cambiando el Modo de juego de Windows", done: "Modo de juego de Windows actualizado", detail: "Windows lo usará en tu próxima partida." },
-};
+function prepCopy(id: string): { running: string; done: string; detail: string } {
+  switch (id) {
+    case "windowed":
+      return { running: t("Cambiando Juegos en ventana"), done: t("Juegos en ventana actualizado"), detail: t("Roblox lo usará la próxima vez que lo abras.") };
+    case "gamemode":
+      return { running: t("Cambiando el Modo de juego de Windows"), done: t("Modo de juego de Windows actualizado"), detail: t("Windows lo usará en tu próxima partida.") };
+    default:
+      return { running: t("Ajustando el límite de FPS"), done: t("Límite de FPS ajustado"), detail: t("Roblox lo usará la próxima vez que lo abras.") };
+  }
+}
 
 function Section({ title, hint, index, children }: { title: string; hint: string; index: number; children: ReactNode }) {
   return (
@@ -46,7 +52,7 @@ export function Session() {
     try {
       setInfo(await api.setSession(on));
     } catch (e) {
-      fail("No pude cambiar el Modo partida", e);
+      fail(t("No pude cambiar el Modo partida"), e);
     }
   };
 
@@ -68,7 +74,7 @@ export function Session() {
       go("optimize");
       return;
     }
-    const copy = prepCopy[c.id] ?? prepCopy["fps-cap"];
+    const copy = prepCopy(c.id);
     const next = await run("prep", copy.running, () => api.applyPrep(c.id));
     if (next) {
       setInfo(next);
@@ -78,9 +84,9 @@ export function Session() {
   };
 
   const verify = async (a: SessionAction) => {
-    const rec = await run("verify", `Probando ${a.title.toLowerCase()}`, () => api.verify(a.verifyId));
+    const rec = await run("verify", t("Probando {title}", { title: a.title.toLowerCase() }), () => api.verify(a.verifyId));
     if (rec) {
-      toast({ tone: rec.verdict === "improves" ? "ok" : "info", title: rec.verdict === "improves" ? "Mejora confirmada en tu PC" : "Sin mejora clara en tu PC", detail: rec.summary });
+      toast({ tone: rec.verdict === "improves" ? "ok" : "info", title: rec.verdict === "improves" ? t("Mejora confirmada en tu PC") : t("Sin mejora clara en tu PC"), detail: rec.summary });
       setInfo(await api.session());
     }
   };
@@ -88,22 +94,22 @@ export function Session() {
   const on = !!info?.enabled;
   return (
     <div>
-      <PageHeader eyebrow="Partida" title="Modo partida">
-        <Switch size="lg" isSelected={on} isDisabled={!info} onChange={toggleMaster} aria-label="Activar durante mis partidas">
-          {on ? "Encendido" : "Apagado"}
+      <PageHeader eyebrow={t("Partida")} title={t("Modo partida")}>
+        <Switch size="lg" isSelected={on} isDisabled={!info} onChange={toggleMaster} aria-label={t("Activar durante mis partidas")}>
+          {on ? t("Encendido") : t("Apagado")}
         </Switch>
       </PageHeader>
 
       <Hero info={info} />
 
       {info && info.prep.length > 0 ? (
-        <Section title="Antes de jugar" hint="Cambios que se aplican al abrir Roblox" index={1}>
+        <Section title={t("Antes de jugar")} hint={t("Cambios que se aplican al abrir Roblox")} index={1}>
           <Prep checks={info.prep} disabled={!!task} onAct={act} />
         </Section>
       ) : null}
 
       {info ? (
-        <Section title="Durante la partida" hint="Todo se deshace al cerrar Roblox" index={2}>
+        <Section title={t("Durante la partida")} hint={t("Todo se deshace al cerrar Roblox")} index={2}>
           <div className="flex flex-col gap-3">
             {info.actions.map((a) => (
               <ActionCard
@@ -120,7 +126,7 @@ export function Session() {
       ) : null}
 
       {info ? (
-        <Section title="Qué te está frenando" hint="Solo lectura, Toque no toca nada aquí" index={3}>
+        <Section title={t("Qué te está frenando")} hint={t("Solo lectura, Toque no toca nada aquí")} index={3}>
           <Notes info={info} />
         </Section>
       ) : null}

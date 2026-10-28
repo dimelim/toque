@@ -17,11 +17,15 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"toque/internal/app"
+	"toque/internal/i18n"
 	"toque/internal/winx"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed frontend/src/locales
+var locales embed.FS
 
 func presentMonPath() string {
 	exe, _ := os.Executable()
@@ -46,6 +50,9 @@ func main() {
 	if runCLI() || app.ApplyPendingUpdate() {
 		return
 	}
+	if err := i18n.Load(locales); err != nil {
+		println("Error:", err.Error())
+	}
 	var started atomic.Value
 	withContext := func(fn func(context.Context)) {
 		if ctx, ok := started.Load().(context.Context); ok {
@@ -66,6 +73,7 @@ func main() {
 		AssetServer:      &assetserver.Options{Assets: assets},
 		OnStartup: func(ctx context.Context) {
 			started.Store(ctx)
+			go svc.Language()
 			svc.Recover()
 			svc.StartUpdates()
 			svc.StartMonitor(func() bool { return runtime.WindowIsMinimised(ctx) })

@@ -1,12 +1,13 @@
 package overlay
 
 import (
-	"fmt"
 	"sync"
 	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+
+	"toque/internal/i18n"
 )
 
 var keyColor = rgb(255, 0, 255)
@@ -242,10 +243,10 @@ func (h *HUD) paint(hwnd windows.HWND) {
 	fontKey, fontSmall, fontPing := h.fonts(cfg.Scale)
 
 	if cfg.ShowPing {
-		txt := "sin medir"
+		txt := i18n.T("sin medir")
 		col := cMuted
 		if ping := fr.ping; ping > 0 {
-			txt = fmt.Sprintf("%.0f ms de ping", ping)
+			txt = i18n.Tf("%.0f ms de ping", ping)
 			if ping <= 60 {
 				col = cKeyLit
 			} else {

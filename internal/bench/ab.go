@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"toque/internal/i18n"
+	"toque/internal/numfmt"
 	"toque/internal/roblox"
 	"toque/internal/stats"
 	"toque/internal/tweaks"
@@ -101,7 +103,7 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 	_, wasApplied := entries[t.ID()]
 	tctx := tweaks.Context{Install: env.Install}
 	if !wasApplied && t.State(tctx).Applied {
-		return ABResult{}, errors.New("este cambio ya estaba así antes de Toque, así que no hay un estado sin él con el que comparar")
+		return ABResult{}, errors.New(i18n.T("este cambio ya estaba así antes de Toque, así que no hay un estado sin él con el que comparar"))
 	}
 	res = ABResult{Config: cfg, Kind: t.Kind(), Started: time.Now()}
 	safe := strings.NewReplacer(":", "_", "=", "-", ",", "+", "/", "_", "*", "").Replace(cfg.Tweak)
@@ -124,7 +126,7 @@ func RunAB(ctx context.Context, env Env, cfg ABConfig, logf func(string, ...any)
 		}
 		if rerr := setArm(tctx, t, arm); rerr != nil {
 			if err == nil {
-				err = fmt.Errorf("no pude dejar el cambio como estaba y se deshará al volver a abrir Toque (%w)", rerr)
+				err = fmt.Errorf(i18n.T("no pude dejar el cambio como estaba y se deshará al volver a abrir Toque (%w)"), rerr)
 			}
 			return
 		}
@@ -250,37 +252,37 @@ func Evaluate(samples []Sample, primary []string) (map[string]stats.Comparison, 
 	sort.Strings(guardWorse)
 	switch {
 	case len(worsened) > 0:
-		return cmp, "worse", "Empeora " + join(worsened)
+		return cmp, "worse", i18n.Tf("Empeora %s", join(worsened))
 	case len(improved) > 0 && len(guardWorse) == 0:
-		return cmp, "improves", "Mejora " + join(improved)
+		return cmp, "improves", i18n.Tf("Mejora %s", join(improved))
 	case len(improved) > 0:
-		return cmp, "tradeoff", "Mejora " + join(improved) + ", pero empeora " + join(guardWorse)
+		return cmp, "tradeoff", i18n.Tf("Mejora %s, pero empeora %s", join(improved), join(guardWorse))
 	default:
 		labels := make([]string, 0, len(primary))
 		for _, k := range primary {
 			labels = append(labels, label(k))
 		}
-		return cmp, "no-effect", "Sin efecto medible en " + join(labels)
+		return cmp, "no-effect", i18n.Tf("Sin efecto medible en %s", join(labels))
 	}
 }
 
 var labels = map[string]string{
-	"fps": "los FPS medios", "low1": "el 1 % low", "low01": "el 0,1 % low", "stutterMin": "los tirones",
-	"latMs": "la latencia de render", "ftStdev": "la variación del frametime", "cpuBusy": "la CPU por frame",
-	"gpuBusy": "la GPU por frame", "rtt": "el ping", "jitter": "el jitter", "lossDown": "la pérdida de paquetes",
-	"maxGap": "el mayor corte de red", "hardFaults": "las lecturas de paginación", "ramRoblox": "la RAM de Roblox",
-	"cpuRoblox": "la CPU de Roblox",
+	"fps": i18n.Mark("los FPS medios"), "low1": i18n.Mark("el 1 % low"), "low01": i18n.Mark("el 0,1 % low"), "stutterMin": i18n.Mark("los tirones"),
+	"latMs": i18n.Mark("la latencia de render"), "ftStdev": i18n.Mark("la variación del frametime"), "cpuBusy": i18n.Mark("la CPU por frame"),
+	"gpuBusy": i18n.Mark("la GPU por frame"), "rtt": i18n.Mark("el ping"), "jitter": i18n.Mark("el jitter"), "lossDown": i18n.Mark("la pérdida de paquetes"),
+	"maxGap": i18n.Mark("el mayor corte de red"), "hardFaults": i18n.Mark("las lecturas de paginación"), "ramRoblox": i18n.Mark("la RAM de Roblox"),
+	"cpuRoblox": i18n.Mark("la CPU de Roblox"),
 }
 
 func label(k string) string {
 	if l, ok := labels[k]; ok {
-		return l
+		return i18n.T(l)
 	}
 	return k
 }
 
 func describe(k string, delta float64) string {
-	return fmt.Sprintf("%s (%s)", label(k), strings.Replace(fmt.Sprintf("%+.1f %%", delta), ".", ",", 1))
+	return fmt.Sprintf("%s (%s)", label(k), numfmt.Localize(fmt.Sprintf("%+.1f %%", delta)))
 }
 
 func join(items []string) string {
@@ -290,7 +292,7 @@ func join(items []string) string {
 	case 1:
 		return items[0]
 	}
-	return strings.Join(items[:len(items)-1], ", ") + " y " + items[len(items)-1]
+	return strings.Join(items[:len(items)-1], ", ") + " " + i18n.T("y") + " " + items[len(items)-1]
 }
 
 func contains(list []string, s string) bool {

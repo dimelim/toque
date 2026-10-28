@@ -8,6 +8,7 @@ import (
 
 	"toque/internal/bench"
 	"toque/internal/catalog"
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/tweaks"
 )
@@ -34,7 +35,7 @@ func (s *Service) context() tweaks.Context {
 }
 
 func (s *Service) describe(e catalog.Entry, managed map[string]tweaks.Undo, exps []ExperimentRecord) Optimization {
-	o := Optimization{Entry: e}
+	o := Optimization{Entry: e.Localized()}
 	t, err := tweaks.Get(e.ID)
 	if err != nil {
 		o.Detail = err.Error()
@@ -72,7 +73,7 @@ func (s *Service) Optimizations() []Optimization {
 func (s *Service) find(id string) (catalog.Entry, tweaks.Tweak, error) {
 	e, ok := catalog.Find(id)
 	if !ok {
-		return catalog.Entry{}, nil, fmt.Errorf("optimización desconocida %q", id)
+		return catalog.Entry{}, nil, fmt.Errorf(i18n.T("optimización desconocida %q"), id)
 	}
 	t, err := tweaks.Get(id)
 	return e, t, err
@@ -87,10 +88,10 @@ func (s *Service) Apply(id string) (Optimization, error) {
 		return Optimization{}, err
 	}
 	if e.Verdict == catalog.VerdictRejected {
-		return Optimization{}, errors.New("esta optimización se descartó porque no mejoró nada en las pruebas")
+		return Optimization{}, errors.New(i18n.T("esta optimización se descartó porque no mejoró nada en las pruebas"))
 	}
 	if t.Kind() == tweaks.Relaunch && len(roblox.Running()) > 0 {
-		return Optimization{}, errors.New("cierra Roblox para aplicar este cambio")
+		return Optimization{}, errors.New(i18n.T("cierra Roblox para aplicar este cambio"))
 	}
 	if err := tweaks.Apply(s.context(), t); err != nil {
 		return Optimization{}, err
@@ -108,7 +109,7 @@ func (s *Service) Revert(id string) (Optimization, error) {
 		return Optimization{}, err
 	}
 	if t.Kind() == tweaks.Relaunch && len(roblox.Running()) > 0 {
-		return Optimization{}, errors.New("cierra Roblox para revertir este cambio")
+		return Optimization{}, errors.New(i18n.T("cierra Roblox para revertir este cambio"))
 	}
 	if err := tweaks.Revert(s.context(), t); err != nil {
 		return Optimization{}, err
@@ -141,7 +142,7 @@ func (s *Service) RevertAll() error {
 		return err
 	}
 	if len(roblox.Running()) > 0 {
-		return errors.New("cierra Roblox para revertir todo")
+		return errors.New(i18n.T("cierra Roblox para revertir todo"))
 	}
 	return errors.Join(throttler().RestoreAll(), restoreSystem(), tweaks.RevertAll(s.context()))
 }

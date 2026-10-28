@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 )
 
@@ -80,24 +81,24 @@ func FlagsManaged(managed map[string]Undo, id string) bool {
 
 func UpdateFlags(ctx Context, set map[string]string, clear []string) error {
 	if ctx.Install.VersionDir == "" {
-		return errors.New("Roblox no está instalado")
+		return errors.New(i18n.T("Roblox no está instalado"))
 	}
 	if len(set)+len(clear) > maxFlagsChange {
-		return fmt.Errorf("como mucho %d flags de una vez", maxFlagsChange)
+		return fmt.Errorf(i18n.T("como mucho %d flags de una vez"), maxFlagsChange)
 	}
 	touched := map[string]bool{}
 	for k, v := range set {
 		if !roblox.ValidFlagName(k) {
-			return fmt.Errorf("%q no es un nombre de flag válido", k)
+			return fmt.Errorf(i18n.T("%q no es un nombre de flag válido"), k)
 		}
 		if len(v) > maxFlagValue {
-			return fmt.Errorf("el valor de %s es demasiado largo", k)
+			return fmt.Errorf(i18n.T("el valor de %s es demasiado largo"), k)
 		}
 		touched[k] = true
 	}
 	for _, k := range clear {
 		if !roblox.ValidFlagName(k) {
-			return fmt.Errorf("%q no es un nombre de flag válido", k)
+			return fmt.Errorf(i18n.T("%q no es un nombre de flag válido"), k)
 		}
 		touched[k] = true
 	}

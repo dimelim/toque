@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/tweaks"
 )
@@ -18,11 +19,11 @@ type FlagEntry struct {
 func (s *Service) Flags() ([]FlagEntry, error) {
 	dir := s.context().Install.VersionDir
 	if dir == "" {
-		return []FlagEntry{}, errors.New("Roblox no está instalado")
+		return []FlagEntry{}, errors.New(i18n.T("Roblox no está instalado"))
 	}
 	cur, err := roblox.ReadFlags(dir)
 	if err != nil {
-		return []FlagEntry{}, fmt.Errorf("no pude leer las flags de Roblox: %w", err)
+		return []FlagEntry{}, fmt.Errorf(i18n.T("no pude leer las flags de Roblox (%w)"), err)
 	}
 	out := make([]FlagEntry, 0, len(cur))
 	for k, v := range cur {

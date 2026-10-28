@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 )
 
@@ -114,7 +114,7 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 					}
 					if outcome == joinFailed && playing && ctx.Err() == nil {
 						s.updateWatch(gen, func(w *WatchInfo) {
-							w.Note = fmt.Sprintf("No pude entrar en la partida de %s, así que paré el vigía para no volver a sacarte de tu partida.", regionCity(key))
+							w.Note = i18n.Tf("No pude entrar en la partida de %s, así que paré el vigía para no volver a sacarte de tu partida.", regionCity(key))
 						})
 						return
 					}
@@ -152,7 +152,7 @@ func (s *Service) joinWatched(watching context.Context, key string, matches []ro
 	if err != nil {
 		return ServerProbe{}, joinSkipped
 	}
-	s.progress("play", "join", 0.1, fmt.Sprintf("Hay una partida en %s. Entrando", regionCity(key)))
+	s.progress("play", "join", 0.1, i18n.Tf("Hay una partida en %s. Entrando", regionCity(key)))
 	sess, _, err := s.joinIn(ctx, inst, key, matches, "play")
 	switch {
 	case task.Err() != nil:

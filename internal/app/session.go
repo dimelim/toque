@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"toque/internal/eco"
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/sysmon"
 	"toque/internal/winx"
@@ -426,7 +427,7 @@ func (s *Service) SetSessionAction(id string, on bool) (SessionInfo, error) {
 		s.sess.cfg.Watch = on
 	default:
 		s.sess.mu.Unlock()
-		return s.sessionInfo(), errors.New("acción desconocida")
+		return s.sessionInfo(), errors.New(i18n.T("acción desconocida"))
 	}
 	err := s.sess.saveConfig()
 	s.sess.mu.Unlock()

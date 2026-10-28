@@ -1,4 +1,5 @@
 import { num } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { bestRegion, regionPlace } from "@/lib/regions";
 import type { Region } from "@/lib/types";
 import { cx } from "@/utils/cx";
@@ -15,15 +16,15 @@ export function DatacentersCard({ regions, max = 7 }: { regions: Region[]; max?:
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
           <IconGlobe className="size-4 text-ink-3" />
-          Centros de datos
+          {t("Centros de datos")}
         </p>
         <Chip variant="caption" color="neutral">
-          {measured.length} medidos
+          {t("{n} medidos", { n: measured.length })}
         </Chip>
       </div>
-      <p className="mt-1 text-caption-1-medium text-ink-3">Ping real desde tu conexión a cada ciudad. Jugar evita los grises.</p>
+      <p className="mt-1 text-caption-1-medium text-ink-3">{t("Ping real desde tu conexión a cada ciudad. Jugar evita los grises.")}</p>
       {rows.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center py-8 text-center text-body-regular text-ink-3">Juega una partida con Toque y aquí aparecerán las ciudades de tus servidores.</p>
+        <p className="flex flex-1 items-center justify-center py-8 text-center text-body-regular text-ink-3">{t("Juega una partida con Toque y aquí aparecerán las ciudades de tus servidores.")}</p>
       ) : (
         <ul className="mt-3 flex flex-1 flex-col justify-between gap-2.5">
           {rows.map((r) => (
@@ -33,7 +34,7 @@ export function DatacentersCard({ regions, max = 7 }: { regions: Region[]; max?:
                 {r.rttMs > 0 ? (
                   <span className="num shrink-0 text-[14px] font-semibold text-ink-2">{num(r.rttMs, 0)} ms</span>
                 ) : (
-                  <span className="shrink-0 text-caption-1-medium text-ink-4">sin medir</span>
+                  <span className="shrink-0 text-caption-1-medium text-ink-4">{t("sin medir")}</span>
                 )}
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">

@@ -1,11 +1,11 @@
 package app
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
 	"toque/internal/catalog"
+	"toque/internal/i18n"
 	"toque/internal/tweaks"
 )
 
@@ -16,15 +16,15 @@ type ActiveChange struct {
 
 func changeTitle(id string) string {
 	if c, ok := windowsText[id]; ok {
-		return c.title
+		return i18n.T(c.title)
 	}
 	switch {
 	case id == "windowed-games":
-		return "Juegos en ventana"
+		return i18n.T("Juegos en ventana")
 	case id == "windows:gamemode":
-		return "Modo de juego de Windows"
+		return i18n.T("Modo de juego de Windows")
 	case strings.HasPrefix(id, "setting:FramerateCap="):
-		return "Límite de FPS a " + strings.TrimPrefix(id, "setting:FramerateCap=")
+		return i18n.Tf("Límite de FPS a %s", strings.TrimPrefix(id, "setting:FramerateCap="))
 	}
 	return catalog.Title(id)
 }
@@ -43,9 +43,9 @@ func (s *Service) ActiveChanges() []ActiveChange {
 	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
 	switch {
 	case flags == 1:
-		out = append(out, ActiveChange{ID: "flags", Title: "1 flag de Roblox"})
+		out = append(out, ActiveChange{ID: "flags", Title: i18n.T("1 flag de Roblox")})
 	case flags > 1:
-		out = append(out, ActiveChange{ID: "flags", Title: fmt.Sprintf("%d flags de Roblox", flags)})
+		out = append(out, ActiveChange{ID: "flags", Title: i18n.Tf("%d flags de Roblox", flags)})
 	}
 	return out
 }

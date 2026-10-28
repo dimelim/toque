@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Focusable } from "react-aria-components";
 import { cx } from "@/utils/cx";
-import { improvement, metricMeta, num, when } from "@/lib/format";
+import { improvement, metricMeta, num, share, when } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import type { ExperimentRecord, SessionAction, SessionProc } from "@/lib/types";
 import { Card, DeltaChip, Pill } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,15 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { IconFlask } from "@/components/icons";
 
-const statusLabel: Record<SessionAction["status"], string> = {
-  off: "Apagada",
-  waiting: "En espera",
-  active: "Activa",
+const statusLabel = (status: SessionAction["status"]) => {
+  switch (status) {
+    case "off":
+      return t("Apagada");
+    case "waiting":
+      return t("En espera");
+    case "active":
+      return t("Activa");
+  }
 };
 
 function Indicator({ status }: { status: SessionAction["status"] }) {
@@ -22,7 +28,7 @@ function Indicator({ status }: { status: SessionAction["status"] }) {
       <span className={cx("relative size-2 rounded-full", status === "active" ? "live-dot bg-volt text-volt" : status === "waiting" ? "bg-volt-line" : "bg-ink-4")} />
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={status} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className={status === "active" ? "text-volt" : undefined}>
-          {statusLabel[status]}
+          {statusLabel(status)}
         </motion.span>
       </AnimatePresence>
     </span>
@@ -36,7 +42,7 @@ function ProcChips({ procs }: { procs: SessionProc[] }) {
       {procs.map((p) => (
         <Chip key={p.name} variant="caption" color="neutral">
           {p.name}
-          <span className="num ml-1.5 text-ink-3">{num(p.cpu, p.cpu >= 10 ? 0 : 1)} %</span>
+          <span className="num ml-1.5 text-ink-3">{share(p.cpu, p.cpu >= 10 ? 0 : 1)}</span>
         </Chip>
       ))}
     </div>
@@ -44,9 +50,9 @@ function ProcChips({ procs }: { procs: SessionProc[] }) {
 }
 
 function Result({ exp }: { exp: ExperimentRecord }) {
-  const keys = (exp.primary ?? []).filter((k) => metricMeta[k] && exp.compare[k]);
+  const keys = (exp.primary ?? []).filter((k) => metricMeta(k) && exp.compare[k]);
   const tone = exp.verdict === "improves" ? "volt" : exp.verdict === "tradeoff" ? "warn" : exp.verdict === "worse" ? "bad" : "neutral";
-  const label = exp.verdict === "improves" ? "Mejora en tu PC" : exp.verdict === "tradeoff" ? "Mejora con un coste en tu PC" : exp.verdict === "worse" ? "Empeora en tu PC" : "Sin efecto claro en tu PC";
+  const label = exp.verdict === "improves" ? t("Mejora en tu PC") : exp.verdict === "tradeoff" ? t("Mejora con un coste en tu PC") : exp.verdict === "worse" ? t("Empeora en tu PC") : t("Sin efecto claro en tu PC");
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", duration: 0.4, bounce: 0 }} className="mt-4 rounded-xl bg-surface-2 p-4">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -87,11 +93,11 @@ export function ActionCard({
                 <Focusable>
                   <span className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">
                     <Chip variant="caption" color="yellow">
-                      Sin probar
+                      {t("Sin probar")}
                     </Chip>
                   </span>
                 </Focusable>
-                <Tooltip>Toque aún no ha medido si esto mejora tus FPS. Compruébalo en tu PC con Probar en mi PC.</Tooltip>
+                <Tooltip>{t("Toque aún no ha medido si esto mejora tus FPS. Compruébalo en tu PC con Probar en mi PC.")}</Tooltip>
               </TooltipTrigger>
             ) : null}
             <Indicator status={action.status} />
@@ -102,7 +108,7 @@ export function ActionCard({
           {verifiable ? (
             <div className="mt-4">
               <Button size="small" variant="ghost" leadingIcon={IconFlask} disabled={taskActive} onClick={onVerify}>
-                Probar en mi PC
+                {t("Probar en mi PC")}
               </Button>
             </div>
           ) : null}

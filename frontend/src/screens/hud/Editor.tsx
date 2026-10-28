@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { cx } from "@/utils/cx";
+import { t } from "@/lib/i18n";
 import type { HudConfig, HudLayout } from "@/lib/types";
 
 const margin = 32;
@@ -110,7 +111,7 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
         <div className="absolute inset-x-0 bottom-0 h-[3.5%] bg-surface-2" />
         <div
           role="slider"
-          aria-label="Posición del HUD"
+          aria-label={t("Posición del HUD")}
           aria-valuetext={`x ${pos.x}, y ${pos.y}`}
           onPointerDown={down}
           onPointerMove={move}
@@ -133,7 +134,7 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
       </div>
       <div className="mt-2 flex items-center justify-between text-caption-1-medium text-ink-3">
         <span>
-          Tu pantalla {layout.screenW} × {layout.screenH}
+          {t("Tu pantalla {w} × {h}", { w: layout.screenW, h: layout.screenH })}
         </span>
         <span className="num">
           X {pos.x} · Y {pos.y}

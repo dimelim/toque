@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Label, Slider, SliderOutput, SliderThumb, SliderTrack } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
+import { share } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { play } from "@/lib/sound";
 import type { HudConfig, HudLayout } from "@/lib/types";
 import { useApp } from "@/state";
@@ -71,11 +73,11 @@ function Range({
   );
 }
 
-const corners = [
-  { id: "tl", label: "Arriba izq." },
-  { id: "tr", label: "Arriba der." },
-  { id: "bl", label: "Abajo izq." },
-  { id: "br", label: "Abajo der." },
+const corners = () => [
+  { id: "tl", label: t("Arriba izq.") },
+  { id: "tr", label: t("Arriba der.") },
+  { id: "bl", label: t("Abajo izq.") },
+  { id: "br", label: t("Abajo der.") },
 ];
 
 export function Hud() {
@@ -107,7 +109,7 @@ export function Hud() {
       setCfg(await api.setHudConfig(next));
       api.hudLayout().then(setLayout).catch(() => undefined);
     } catch (e) {
-      toast({ tone: "error", title: "No pude cambiar el HUD", detail: errorText(e) });
+      toast({ tone: "error", title: t("No pude cambiar el HUD"), detail: errorText(e) });
       load();
     }
   };
@@ -120,7 +122,7 @@ export function Hud() {
       const next = await api.placeHud(x, y, save);
       if (save) setCfg(next);
     } catch (e) {
-      if (save) toast({ tone: "error", title: "No pude mover el HUD", detail: errorText(e) });
+      if (save) toast({ tone: "error", title: t("No pude mover el HUD"), detail: errorText(e) });
     }
   };
   const corner = async (id: string) => {
@@ -128,7 +130,7 @@ export function Hud() {
       play("tap");
       setCfg(await api.moveHud(id));
     } catch (e) {
-      toast({ tone: "error", title: "No pude mover el HUD", detail: errorText(e) });
+      toast({ tone: "error", title: t("No pude mover el HUD"), detail: errorText(e) });
     }
   };
 
@@ -137,7 +139,7 @@ export function Hud() {
 
   return (
     <div>
-      <PageHeader eyebrow="HUD" title="Tu HUD en el juego">
+      <PageHeader eyebrow="HUD" title={t("Tu HUD en el juego")}>
         <Switch
           size="lg"
           isSelected={on}
@@ -146,45 +148,45 @@ export function Hud() {
             play(v ? "on" : "off");
             patch({ enabled: v });
           }}
-          aria-label="Mostrar el HUD"
+          aria-label={t("Mostrar el HUD")}
         >
-          {on ? "Encendido" : "Apagado"}
+          {on ? t("Encendido") : t("Apagado")}
         </Switch>
       </PageHeader>
 
       <Card className="mb-8 p-5">
-        <Eyebrow>Qué es</Eyebrow>
+        <Eyebrow>{t("Qué es")}</Eyebrow>
         <p className="mt-2 max-w-[80ch] text-body-regular text-ink-2">
-          Una capa encima de Roblox con tu ping, las teclas W A S D y los botones del ratón, que se encienden al pulsarlas. Útil para grabar o para ver tus entradas mientras juegas. Solo aparece mientras Roblox está en primer plano y solo se redibuja cuando algo cambia, para gastar lo mínimo.
+          {t("Una capa encima de Roblox con tu ping, las teclas W A S D y los botones del ratón, que se encienden al pulsarlas. Útil para grabar o para ver tus entradas mientras juegas. Solo aparece mientras Roblox está en primer plano y solo se redibuja cuando algo cambia, para gastar lo mínimo.")}
         </p>
         <p className="mt-2 text-caption-1-medium text-ink-3">
-          {running ? "Roblox está abierto. Juega en ventana o pantalla completa sin bordes para verlo encima." : "Se ve encima de Roblox en ventana o pantalla completa sin bordes, no en pantalla completa exclusiva."}
+          {running ? t("Roblox está abierto. Juega en ventana o pantalla completa sin bordes para verlo encima.") : t("Se ve encima de Roblox en ventana o pantalla completa sin bordes, no en pantalla completa exclusiva.")}
         </p>
       </Card>
 
       <div className={cx("grid grid-cols-2 gap-3", !on && "pointer-events-none opacity-50")}>
         <Card className="p-5">
-          <h2 className="mb-1 text-[15px] font-semibold text-ink">Qué mostrar</h2>
-          <Row title="Ping" text="Tu ping al servidor" on={!!cfg?.showPing} disabled={!on} onChange={(v) => patch({ showPing: v })} />
-          <Row title="Teclas W A S D" text="Con espacio y shift, animadas" on={!!cfg?.showKeys} disabled={!on} onChange={(v) => patch({ showKeys: v })} />
-          <Row title="Ratón" text="Clics y movimiento" on={!!cfg?.showMouse} disabled={!on} onChange={(v) => patch({ showMouse: v })} />
+          <h2 className="mb-1 text-[15px] font-semibold text-ink">{t("Qué mostrar")}</h2>
+          <Row title="Ping" text={t("Tu ping al servidor")} on={!!cfg?.showPing} disabled={!on} onChange={(v) => patch({ showPing: v })} />
+          <Row title={t("Teclas W A S D")} text={t("Con espacio y shift, animadas")} on={!!cfg?.showKeys} disabled={!on} onChange={(v) => patch({ showKeys: v })} />
+          <Row title={t("Ratón")} text={t("Clics y movimiento")} on={!!cfg?.showMouse} disabled={!on} onChange={(v) => patch({ showMouse: v })} />
         </Card>
 
         <Card className="flex flex-col gap-5 p-5">
-          <h2 className="text-[15px] font-semibold text-ink">Tamaño</h2>
-          <Range label="Escala" value={cfg?.scale ?? 1} min={0.6} max={2.2} step={0.1} format={(v) => `${Math.round(v * 100)} %`} disabled={!on} onCommit={(v) => patch({ scale: v })} />
-          <Range label="Opacidad" value={cfg?.opacity ?? 90} min={30} max={100} step={5} format={(v) => `${Math.round(v)} %`} disabled={!on} onCommit={(v) => patch({ opacity: Math.round(v) })} />
+          <h2 className="text-[15px] font-semibold text-ink">{t("Tamaño")}</h2>
+          <Range label={t("Escala")} value={cfg?.scale ?? 1} min={0.6} max={2.2} step={0.1} format={(v) => share(Math.round(v * 100))} disabled={!on} onCommit={(v) => patch({ scale: v })} />
+          <Range label={t("Opacidad")} value={cfg?.opacity ?? 90} min={30} max={100} step={5} format={(v) => share(Math.round(v))} disabled={!on} onCommit={(v) => patch({ opacity: Math.round(v) })} />
         </Card>
 
         <Card className="col-span-2 p-5">
-          <h2 className="mb-1 text-[15px] font-semibold text-ink">Posición</h2>
-          <p className="mb-4 text-caption-1-medium text-ink-3">Arrastra el HUD en la miniatura de tu pantalla o muévelo con las flechas, con Mayús para ir más rápido. Se pega a los bordes y al centro, y mientras estás aquí lo ves también encima del escritorio.</p>
+          <h2 className="mb-1 text-[15px] font-semibold text-ink">{t("Posición")}</h2>
+          <p className="mb-4 text-caption-1-medium text-ink-3">{t("Arrastra el HUD en la miniatura de tu pantalla o muévelo con las flechas, con Mayús para ir más rápido. Se pega a los bordes y al centro, y mientras estás aquí lo ves también encima del escritorio.")}</p>
           <div className="grid grid-cols-[minmax(0,1fr)_200px] items-start gap-6">
             {cfg && layout ? <HudEditor cfg={cfg} layout={layout} disabled={!on} onPlace={place} /> : <div />}
             <div>
-              <p className="mb-2 text-caption-1-medium text-ink-3">Esquinas</p>
+              <p className="mb-2 text-caption-1-medium text-ink-3">{t("Esquinas")}</p>
               <div className="grid grid-cols-2 gap-2">
-                {corners.map((c) => (
+                {corners().map((c) => (
                   <Button key={c.id} size="small" variant="secondary" disabled={!on} onClick={() => corner(c.id)}>
                     {c.label}
                   </Button>

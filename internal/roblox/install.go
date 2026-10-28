@@ -5,8 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"golang.org/x/sys/windows/registry"
 
@@ -22,46 +23,122 @@ type Install struct {
 	Version    string
 }
 
-var quotedExe = regexp.MustCompile(`"([^"]+RobloxPlayerBeta\.exe)"`)
+var (
+	commandExe = regexp.MustCompile(`(?i)^\s*"([^"]+\.exe)"|^\s*(\S+\.exe)`)
+	lastPlayer atomic.Value
+)
 
 func Find() (Install, error) {
-	root := filepath.Join(winx.LocalAppData(), "Roblox")
-	if p := playerFromProtocol(); p != "" {
-		if _, err := os.Stat(p); err == nil {
-			dir := filepath.Dir(p)
-			if versions := filepath.Dir(dir); strings.EqualFold(filepath.Base(versions), "Versions") {
-				root = filepath.Dir(versions)
-			}
-			return Install{Root: root, VersionDir: dir, Player: p, Version: filepath.Base(dir)}, nil
-		}
+	local := winx.UserLocalAppData()
+	root := filepath.Join(local, "Roblox")
+	player := protocolPlayer()
+	if player == "" {
+		player = newestPlayer(versionDirs(local, root)...)
 	}
-	dirs, _ := filepath.Glob(filepath.Join(root, "Versions", "*", PlayerExe))
-	if len(dirs) == 0 {
+	if player == "" {
+		player = runningPlayer()
+	}
+	if player == "" {
 		return Install{Root: root}, errors.New("roblox player not installed")
 	}
-	sort.Slice(dirs, func(i, j int) bool {
-		a, _ := os.Stat(dirs[i])
-		b, _ := os.Stat(dirs[j])
-		return a.ModTime().After(b.ModTime())
-	})
-	dir := filepath.Dir(dirs[0])
-	return Install{Root: root, VersionDir: dir, Player: dirs[0], Version: filepath.Base(dir)}, nil
+	dir := filepath.Dir(player)
+	return Install{Root: root, VersionDir: dir, Player: player, Version: filepath.Base(dir)}, nil
 }
 
-func playerFromProtocol() string {
-	for _, key := range []string{`Software\Classes\roblox-player\shell\open\command`, `Software\Classes\roblox\shell\open\command`} {
-		k, err := registry.OpenKey(registry.CURRENT_USER, key, registry.QUERY_VALUE)
-		if err != nil {
+func versionDirs(local, root string) []string {
+	dirs := []string{
+		filepath.Join(root, "Versions"),
+		filepath.Join(local, "Bloxstrap", "Versions"),
+		filepath.Join(local, "Fishstrap", "Versions"),
+		filepath.Join(local, "Voidstrap", "RblxVersions"),
+	}
+	for _, env := range []string{"ProgramFiles(x86)", "ProgramFiles"} {
+		if pf := os.Getenv(env); pf != "" {
+			dirs = append(dirs, filepath.Join(pf, "Roblox", "Versions"))
+		}
+	}
+	return dirs
+}
+
+func newestPlayer(dirs ...string) string {
+	var best string
+	var bestTime time.Time
+	for _, dir := range dirs {
+		entries, _ := os.ReadDir(dir)
+		for _, e := range entries {
+			p := filepath.Join(dir, e.Name(), PlayerExe)
+			if info, err := os.Stat(p); e.IsDir() && err == nil && !info.IsDir() && info.ModTime().After(bestTime) {
+				best, bestTime = p, info.ModTime()
+			}
+		}
+	}
+	return best
+}
+
+func exists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
+}
+
+func protocolPlayer() string {
+	for _, exe := range protocolTargets() {
+		if !filepath.IsAbs(exe) {
 			continue
 		}
-		v, _, err := k.GetStringValue("")
-		k.Close()
-		if err != nil {
-			continue
+		dir := filepath.Dir(exe)
+		if p := filepath.Join(dir, PlayerExe); exists(p) {
+			return p
 		}
-		if m := quotedExe.FindStringSubmatch(v); m != nil {
-			return m[1]
+		if p := newestPlayer(filepath.Join(dir, "Versions"), filepath.Join(dir, "RblxVersions")); p != "" {
+			return p
 		}
+	}
+	return ""
+}
+
+func protocolTargets() []string {
+	var roots []registry.Key
+	if user, err := winx.UserRoot(); err == nil {
+		roots = append(roots, user)
+	}
+	roots = append(roots, registry.LOCAL_MACHINE)
+	var out []string
+	for _, root := range roots {
+		for _, scheme := range []string{"roblox-player", "roblox"} {
+			k, err := registry.OpenKey(root, `Software\Classes\`+scheme+`\shell\open\command`, registry.QUERY_VALUE)
+			if err != nil {
+				continue
+			}
+			v, _, err := k.GetStringValue("")
+			k.Close()
+			if exe := commandTarget(v); err == nil && exe != "" {
+				out = append(out, exe)
+			}
+		}
+	}
+	return out
+}
+
+func commandTarget(command string) string {
+	m := commandExe.FindStringSubmatch(command)
+	if m == nil {
+		return ""
+	}
+	if m[1] != "" {
+		return m[1]
+	}
+	return m[2]
+}
+
+func runningPlayer() string {
+	for _, p := range winx.FindByName(PlayerExe) {
+		if path, err := winx.ImagePath(p.PID); err == nil && exists(path) {
+			lastPlayer.Store(path)
+			return path
+		}
+	}
+	if p, ok := lastPlayer.Load().(string); ok && exists(p) {
+		return p
 	}
 	return ""
 }

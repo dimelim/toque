@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"toque/internal/i18n"
 	"toque/internal/install"
 	"toque/internal/winx"
 )
@@ -32,7 +33,19 @@ type Manifest struct {
 	URL       string    `json:"url"`
 	SHA256    string    `json:"sha256"`
 	Notes     string    `json:"notes"`
+	NotesPT   string    `json:"notesPt"`
+	NotesEN   string    `json:"notesEn"`
 	Published time.Time `json:"published"`
+}
+
+func (m Manifest) NotesIn(lang i18n.Lang) string {
+	switch {
+	case lang == i18n.PT && m.NotesPT != "":
+		return m.NotesPT
+	case lang == i18n.EN && m.NotesEN != "":
+		return m.NotesEN
+	}
+	return m.Notes
 }
 
 type Release struct {
@@ -54,7 +67,7 @@ func get(ctx context.Context, url string, limit int64) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("el servidor de versiones respondió %s", resp.Status)
+		return nil, fmt.Errorf(i18n.T("el servidor de versiones respondió %s"), resp.Status)
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, limit))
 }
@@ -62,18 +75,18 @@ func get(ctx context.Context, url string, limit int64) ([]byte, error) {
 func parse(raw, sig []byte) (Release, error) {
 	key, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil || len(key) != ed25519.PublicKeySize {
-		return Release{}, errors.New("la clave pública de actualizaciones no es válida")
+		return Release{}, errors.New(i18n.T("la clave pública de actualizaciones no es válida"))
 	}
 	signature, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(sig)))
 	if err != nil || !ed25519.Verify(key, raw, signature) {
-		return Release{}, errors.New("la firma de la actualización no es válida")
+		return Release{}, errors.New(i18n.T("la firma de la actualización no es válida"))
 	}
 	r := Release{raw: raw, sig: sig}
 	if err := json.Unmarshal(raw, &r.Manifest); err != nil {
 		return Release{}, err
 	}
 	if r.Version == "" || len(r.SHA256) != 64 || !strings.HasPrefix(r.URL, releases+"download/") {
-		return Release{}, errors.New("el manifiesto de la actualización no es válido")
+		return Release{}, errors.New(i18n.T("el manifiesto de la actualización no es válido"))
 	}
 	return r, nil
 }
@@ -139,7 +152,7 @@ func fetchExe(ctx context.Context, m Manifest, final string) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("la descarga respondió %s", resp.Status)
+		return fmt.Errorf(i18n.T("la descarga respondió %s"), resp.Status)
 	}
 	tmp := final + ".part"
 	f, err := os.Create(tmp)
@@ -152,7 +165,7 @@ func fetchExe(ctx context.Context, m Manifest, final string) error {
 		err = cerr
 	}
 	if err == nil && !strings.EqualFold(hex.EncodeToString(h.Sum(nil)), m.SHA256) {
-		err = errors.New("el archivo descargado no coincide con el que firmó Toque")
+		err = errors.New(i18n.T("el archivo descargado no coincide con el que firmó Toque"))
 	}
 	if err != nil {
 		os.Remove(tmp)

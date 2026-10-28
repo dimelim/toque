@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"toque/internal/eco"
+	"toque/internal/i18n"
 	"toque/internal/winx"
 )
 
@@ -31,7 +32,7 @@ func (s *Service) CloseApp(name string) (int, error) {
 	exes := appExes(name)
 	for exe := range exes {
 		if neverClose[exe] || quietProcs[exe] {
-			return 0, errors.New("Toque no cierra ese programa")
+			return 0, errors.New(i18n.T("Toque no cierra ese programa"))
 		}
 	}
 	session, _ := winx.SessionOf(ownPID())
@@ -49,11 +50,11 @@ func (s *Service) CloseApp(name string) (int, error) {
 		}
 	}
 	if len(pids) == 0 {
-		return 0, fmt.Errorf("%s ya no está abierto", name)
+		return 0, fmt.Errorf(i18n.T("%s ya no está abierto"), name)
 	}
 	n := winx.CloseWindowsOf(pids)
 	if n == 0 {
-		return 0, fmt.Errorf("%s no tiene ventanas abiertas. Ciérralo desde su icono junto al reloj", name)
+		return 0, fmt.Errorf(i18n.T("%s no tiene ventanas abiertas. Ciérralo desde su icono junto al reloj"), name)
 	}
 	return n, nil
 }

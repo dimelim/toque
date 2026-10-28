@@ -26,6 +26,7 @@ Toque es una app para Windows que mide el retraso real de Roblox, empezando por 
 - **Entra en tu servidor privado.** Con su enlace de invitación. Eliges en qué ciudad abrirlo y te dice dónde se abrió.
 - **Ajusta las flags de Roblox.** Los ajustes más usados con controles claros y un editor para cualquier flag, que importa listas en JSON de Bloxstrap o Fishstrap.
 - **HUD en el juego.** Una capa encima de Roblox con tu ping y las teclas W A S D y el ratón encendiéndose al pulsarlas. Lo colocas arrastrándolo sobre una miniatura de tu pantalla.
+- **En tu idioma.** Español, portugués de Brasil e inglés. Toque elige el idioma según tu Windows y tu país, y lo cambias cuando quieras en Ajustes.
 
 ## Descargar
 
@@ -45,6 +46,7 @@ Los detalles técnicos están en [docs/como-funciona.md](docs/como-funciona.md).
 
 - Nunca lee la cookie de tu cuenta ni toca la memoria del juego, y solo usa las flags que Roblox permite.
 - Para saber en qué ciudad está un servidor consulta [ipinfo.io](https://ipinfo.io) y la lista pública de centros de datos de [RoValra](https://github.com/NotValra/RoValra).
+- Si tu Windows no está en español ni en portugués, la primera vez consulta tu país en ipinfo.io para elegir el idioma.
 - El enlace de tu servidor privado se queda en tu PC.
 - Las actualizaciones vienen solo de este repositorio y Toque comprueba su firma antes de instalarlas.
 

@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
+	"toque/internal/i18n"
 	"toque/internal/roblox"
 	"toque/internal/winx"
 )
@@ -44,12 +45,12 @@ func (s *Service) NoteError(text string) {
 func (s *Service) ExportReport() (string, error) {
 	desktop, err := windows.KnownFolderPath(windows.FOLDERID_Desktop, 0)
 	if err != nil {
-		return "", fmt.Errorf("no encuentro tu escritorio: %w", err)
+		return "", fmt.Errorf(i18n.T("no encuentro tu escritorio (%w)"), err)
 	}
 	path := filepath.Join(desktop, "Toque-informe-"+time.Now().Format("20060102-150405")+".zip")
 	if err := writeReport(path); err != nil {
 		os.Remove(path)
-		return "", fmt.Errorf("no pude crear el informe: %w", err)
+		return "", fmt.Errorf(i18n.T("no pude crear el informe (%w)"), err)
 	}
 	winx.LaunchAsUser(filepath.Join(os.Getenv("WINDIR"), "explorer.exe"), `/select,"`+path+`"`, "")
 	return path, nil

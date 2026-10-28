@@ -1,3 +1,5 @@
+import type { Lang } from "./i18n";
+
 export interface SystemInfo {
   cpu: string;
   threads: number;
@@ -408,4 +410,12 @@ export interface WindowsOption {
   applicable: boolean;
   note: string;
   changes: string[];
+}
+
+export type LanguageChoice = "auto" | Lang;
+
+export interface LanguageInfo {
+  choice: LanguageChoice;
+  active: Lang;
+  detected: Lang;
 }

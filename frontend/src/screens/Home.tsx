@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { bestRegion } from "@/lib/regions";
 import type { Optimization, PingPoint, Region, RunRecord } from "@/lib/types";
 import { useApp } from "@/state";
@@ -42,9 +43,9 @@ export function Home() {
     refresh();
   };
   const measure = async () => {
-    const rec = await run("benchmark", "Midiendo una partida", () => api.benchmark(""));
+    const rec = await run("benchmark", t("Midiendo una partida"), () => api.benchmark(""));
     if (rec) {
-      toast({ tone: "ok", title: "Partida medida", detail: `${num(rec.window.frames.avgFps)} FPS y ${num(rec.window.net.rttMs)} ms de ping` });
+      toast({ tone: "ok", title: t("Partida medida"), detail: t("{fps} FPS y {ms} ms de ping", { fps: num(rec.window.frames.avgFps), ms: num(rec.window.net.rttMs) }) });
       reload();
     }
   };
@@ -56,11 +57,11 @@ export function Home() {
         <div className="min-w-0">
           <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-ink">Realistic Street Soccer</h1>
           <p className="mt-0.5 text-body-regular text-ink-3">
-            {overview?.lastRun ? `Última partida medida con ${num(overview.lastRun.window.frames.avgFps)} FPS en el servidor ${overview.lastRun.serverIp}` : "Mide una partida para ver cómo va tu Roblox"}
+            {overview?.lastRun ? t("Última partida medida con {fps} FPS en el servidor {ip}", { fps: num(overview.lastRun.window.frames.avgFps), ip: overview.lastRun.serverIp }) : t("Mide una partida para ver cómo va tu Roblox")}
           </p>
         </div>
         <Button variant="secondary" leadingIcon={IconStopwatch} disabled={!!task} onClick={measure}>
-          Medir una partida
+          {t("Medir una partida")}
         </Button>
       </header>
 

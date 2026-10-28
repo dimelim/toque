@@ -8,6 +8,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"toque/internal/i18n"
 )
 
 var nicKeywords = map[string]bool{
@@ -53,13 +55,13 @@ func waitOnline(timeout time.Duration) error {
 			return nil
 		}
 	}
-	return errors.New("la red no volvió después de reiniciar la tarjeta")
+	return errors.New(i18n.T("la red no volvió después de reiniciar la tarjeta"))
 }
 
 func (n nicProperty) State(Context) State {
 	cur, err := n.current()
 	if err != nil || cur == "" {
-		return State{Detail: "propiedad no disponible en esta tarjeta"}
+		return State{Detail: i18n.T("propiedad no disponible en esta tarjeta")}
 	}
 	return State{Applicable: true, Applied: cur == n.value, Detail: n.keyword + "=" + cur}
 }
@@ -70,7 +72,7 @@ func (n nicProperty) Snapshot(Context) (Undo, error) {
 		return nil, err
 	}
 	if cur == "" {
-		return nil, errors.New("propiedad no disponible en esta tarjeta")
+		return nil, errors.New(i18n.T("propiedad no disponible en esta tarjeta"))
 	}
 	return Undo{"prev": cur}, nil
 }

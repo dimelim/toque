@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
+
+	"toque/internal/i18n"
 )
 
 type procPriority struct {
@@ -37,7 +39,7 @@ func setPriority(pid, class uint32) error {
 
 func (p procPriority) State(c Context) State {
 	if c.PID == 0 {
-		return State{Applicable: false, Detail: "Roblox no está abierto"}
+		return State{Applicable: false, Detail: i18n.T("Roblox no está abierto")}
 	}
 	cur, err := priorityOf(c.PID)
 	if err != nil {
@@ -48,7 +50,7 @@ func (p procPriority) State(c Context) State {
 
 func (p procPriority) Snapshot(c Context) (Undo, error) {
 	if c.PID == 0 {
-		return nil, errors.New("Roblox no está abierto")
+		return nil, errors.New(i18n.T("Roblox no está abierto"))
 	}
 	prev, err := priorityOf(c.PID)
 	if err != nil {
@@ -59,7 +61,7 @@ func (p procPriority) Snapshot(c Context) (Undo, error) {
 
 func (p procPriority) Apply(c Context) error {
 	if c.PID == 0 {
-		return errors.New("Roblox no está abierto")
+		return errors.New(i18n.T("Roblox no está abierto"))
 	}
 	return setPriority(c.PID, p.class)
 }
@@ -116,7 +118,7 @@ func skipFirstCore(system uintptr) uintptr {
 
 func (affinitySkipFirstCore) State(c Context) State {
 	if c.PID == 0 {
-		return State{Applicable: false, Detail: "Roblox no está abierto"}
+		return State{Applicable: false, Detail: i18n.T("Roblox no está abierto")}
 	}
 	cur, sys, err := affinityOf(c.PID)
 	if err != nil {
@@ -127,7 +129,7 @@ func (affinitySkipFirstCore) State(c Context) State {
 
 func (affinitySkipFirstCore) Snapshot(c Context) (Undo, error) {
 	if c.PID == 0 {
-		return nil, errors.New("Roblox no está abierto")
+		return nil, errors.New(i18n.T("Roblox no está abierto"))
 	}
 	cur, _, err := affinityOf(c.PID)
 	if err != nil {
@@ -138,7 +140,7 @@ func (affinitySkipFirstCore) Snapshot(c Context) (Undo, error) {
 
 func (affinitySkipFirstCore) Apply(c Context) error {
 	if c.PID == 0 {
-		return errors.New("Roblox no está abierto")
+		return errors.New(i18n.T("Roblox no está abierto"))
 	}
 	_, sys, err := affinityOf(c.PID)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"toque/internal/geo"
+	"toque/internal/i18n"
 )
 
 const base = "https://apis.rovalra.com"
@@ -29,7 +30,7 @@ func get(ctx context.Context, path string, out any) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("RoValra respondió %s", resp.Status)
+		return fmt.Errorf(i18n.T("RoValra respondió %s"), resp.Status)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
 }
@@ -67,7 +68,7 @@ func Datacenters(ctx context.Context) ([]Datacenter, error) {
 		out = append(out, Datacenter{IDs: l.DataCenterIDs, Place: p})
 	}
 	if len(out) == 0 {
-		return nil, errors.New("RoValra devolvió una lista vacía")
+		return nil, errors.New(i18n.T("RoValra devolvió una lista vacía"))
 	}
 	return out, nil
 }

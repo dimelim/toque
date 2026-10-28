@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { metricMeta, num, pct, when } from "@/lib/format";
+import { t } from "@/lib/i18n";
 
 export interface StripPoint {
   arm: "A" | "B";
@@ -50,7 +51,7 @@ const PAD = 14;
 export function EvidenceStrip({ metric, points }: { metric: string; points: StripPoint[] }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const meta = metricMeta[metric];
+  const meta = metricMeta(metric);
   const values = points.map((p) => p.value);
   const lo = Math.min(...values);
   const hi = Math.max(...values);
@@ -72,8 +73,8 @@ export function EvidenceStrip({ metric, points }: { metric: string; points: Stri
     <div className="flex w-full gap-3">
       <div className="relative w-[104px] shrink-0" style={{ height: HEIGHT }}>
         {[
-          { y: ROW_A, label: "Sin el cambio", value: medA, dot: "bg-before", ink: "text-ink-2" },
-          { y: ROW_B, label: "Con el cambio", value: medB, dot: "bg-volt", ink: "text-ink" },
+          { y: ROW_A, label: t("Sin el cambio"), value: medA, dot: "bg-before", ink: "text-ink-2" },
+          { y: ROW_B, label: t("Con el cambio"), value: medB, dot: "bg-volt", ink: "text-ink" },
         ].map((r) => (
           <div key={r.label} className="absolute left-0 -translate-y-1/2" style={{ top: r.y }}>
             <p className="flex items-center gap-1.5 text-caption-1-medium text-ink-3">
@@ -88,7 +89,7 @@ export function EvidenceStrip({ metric, points }: { metric: string; points: Stri
       </div>
     <div ref={ref} className="relative min-w-0 flex-1" style={{ height: HEIGHT }}>
       {width > 0 ? (
-        <svg width={width} height={HEIGHT} role="img" aria-label={`${meta?.label ?? metric}, mediana sin el cambio ${num(medA, meta?.digits ?? 1)} y con el cambio ${num(medB, meta?.digits ?? 1)} ${meta?.unit ?? ""}`}>
+        <svg width={width} height={HEIGHT} role="img" aria-label={t("{metric}, mediana sin el cambio {before} y con el cambio {after} {unit}", { metric: meta?.label ?? metric, before: num(medA, meta?.digits ?? 1), after: num(medB, meta?.digits ?? 1), unit: meta?.unit ?? "" })}>
           <line x1={PAD} x2={width - PAD} y1={HEIGHT - 18} y2={HEIGHT - 18} stroke="var(--color-line-strong)" strokeWidth={1} />
           {[medA, medB].map((m, k) =>
             Number.isFinite(m) ? (
@@ -134,7 +135,7 @@ export function EvidenceStrip({ metric, points }: { metric: string; points: Stri
             {num(h.value, (meta?.digits ?? 1) + 1)} <span className="font-sans text-[11px] font-medium text-ink-3">{meta?.unit}</span>
           </p>
           <p className="text-caption-1-medium text-ink-3">
-            {h.arm === "B" ? "Con el cambio" : "Sin el cambio"} · ventana {h.index} · {when(h.at)}
+            {h.arm === "B" ? t("Con el cambio") : t("Sin el cambio")} · {t("ventana {n}", { n: h.index })} · {when(h.at)}
           </p>
         </div>
       ) : null}

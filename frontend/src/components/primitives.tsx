@@ -61,7 +61,7 @@ export function Pill({ children, tone = "neutral", className }: { children: Reac
 }
 
 export function DeltaChip({ metric, deltaPct, conclusive = true }: { metric: string; deltaPct: number; conclusive?: boolean }) {
-  const meta = metricMeta[metric];
+  const meta = metricMeta(metric);
   const good = improvement(metric, deltaPct) > 0;
   const tone = !conclusive ? "neutral" : good ? "volt" : "bad";
   return (

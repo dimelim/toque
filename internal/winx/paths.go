@@ -20,6 +20,29 @@ func LocalAppData() string {
 	return os.Getenv("LOCALAPPDATA")
 }
 
+var (
+	userLocalMu sync.Mutex
+	userLocal   string
+)
+
+func UserLocalAppData() string {
+	if !IsElevated() {
+		return LocalAppData()
+	}
+	userLocalMu.Lock()
+	defer userLocalMu.Unlock()
+	if userLocal == "" {
+		if imp, err := shellImpersonation(); err == nil {
+			userLocal, _ = imp.KnownFolderPath(windows.FOLDERID_LocalAppData, 0)
+			imp.Close()
+		}
+	}
+	if userLocal == "" {
+		return LocalAppData()
+	}
+	return userLocal
+}
+
 func ProgramData() string {
 	if p, err := windows.KnownFolderPath(windows.FOLDERID_ProgramData, 0); err == nil {
 		return p

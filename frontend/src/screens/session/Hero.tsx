@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
+import { t } from "@/lib/i18n";
 import type { SessionInfo, SessionState } from "@/lib/types";
 import { Card } from "@/components/primitives";
 import { IconRocket } from "@/components/icons";
 
-const copy: Record<SessionState, { title: string; text: string }> = {
-  off: { title: "Modo partida apagado", text: "Enciéndelo y Toque cuidará tu partida cada vez que abras Roblox." },
-  waiting: { title: "Listo para tu próxima partida", text: "Se activa solo cuando abras Roblox." },
-  active: { title: "Cuidando tu partida", text: "" },
-  paused: { title: "En pausa", text: "En pausa mientras Toque hace una prueba." },
+const copy = (state: SessionState): { title: string; text: string } => {
+  switch (state) {
+    case "off":
+      return { title: t("Modo partida apagado"), text: t("Enciéndelo y Toque cuidará tu partida cada vez que abras Roblox.") };
+    case "waiting":
+      return { title: t("Listo para tu próxima partida"), text: t("Se activa solo cuando abras Roblox.") };
+    case "active":
+      return { title: t("Cuidando tu partida"), text: "" };
+    case "paused":
+      return { title: t("En pausa"), text: t("En pausa mientras Toque hace una prueba.") };
+  }
 };
 
 const iconTone: Record<SessionState, string> = {
@@ -26,8 +33,8 @@ function useNow(active: boolean) {
   useEffect(() => {
     if (!active) return;
     setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(timer);
   }, [active]);
   return now;
 }
@@ -36,9 +43,9 @@ function elapsed(since: string, now: number) {
   const start = new Date(since).getTime();
   if (Number.isNaN(start)) return "";
   const min = Math.max(0, Math.floor((now - start) / 60000));
-  if (min < 1) return "Acabas de empezar";
-  if (min < 60) return `Llevas ${min} min de partida`;
-  return `Llevas ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min de partida`;
+  if (min < 1) return t("Acabas de empezar");
+  if (min < 60) return t("Llevas {n} min de partida", { n: min });
+  return t("Llevas {h} h {m} min de partida", { h: Math.floor(min / 60), m: String(min % 60).padStart(2, "0") });
 }
 
 function Engine({ state }: { state: SessionState }) {
@@ -88,7 +95,7 @@ function Engine({ state }: { state: SessionState }) {
 export function Hero({ info }: { info: SessionInfo | null }) {
   const state: SessionState = info?.state ?? "off";
   const now = useNow(state === "active");
-  const text = state === "active" && info ? elapsed(info.since, now) : copy[state].text;
+  const text = state === "active" && info ? elapsed(info.since, now) : copy(state).text;
   const working = (info?.actions ?? []).filter((a) => a.enabled && a.status === "active");
   return (
     <Card className="mb-8 flex items-center gap-8 overflow-hidden p-6">
@@ -96,7 +103,7 @@ export function Hero({ info }: { info: SessionInfo | null }) {
       <div className="min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={state} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
-            <h2 className={cx("text-[26px] leading-[1.15] font-semibold tracking-[-0.02em]", state === "active" ? "text-volt" : "text-ink")}>{copy[state].title}</h2>
+            <h2 className={cx("text-[26px] leading-[1.15] font-semibold tracking-[-0.02em]", state === "active" ? "text-volt" : "text-ink")}>{copy(state).title}</h2>
             <p className="num mt-2 text-body-regular text-ink-2">{text}</p>
             {state === "active" && working.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -117,7 +124,7 @@ export function Hero({ info }: { info: SessionInfo | null }) {
           </motion.div>
         </AnimatePresence>
         <p className="mt-5 max-w-[60ch] text-caption-1-medium text-ink-3">
-          Toque solo cambia lo que puede deshacer y te enseña qué te frena. Lo que no está medido lo marca como sin probar.
+          {t("Toque solo cambia lo que puede deshacer y te enseña qué te frena. Lo que no está medido lo marca como sin probar.")}
         </p>
       </div>
     </Card>
