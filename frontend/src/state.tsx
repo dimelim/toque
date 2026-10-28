@@ -47,7 +47,7 @@ function stored(key: string) {
   }
 }
 
-function store(key: string, value: string) {
+export function remember(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -55,12 +55,12 @@ function store(key: string, value: string) {
   }
 }
 
-function useStored(key: string) {
+export function useStored(key: string) {
   const [value, setValue] = useState(() => stored(key));
   const set = useCallback(
     (next: string) => {
       setValue(next);
-      store(key, next);
+      remember(key, next);
     },
     [key],
   );

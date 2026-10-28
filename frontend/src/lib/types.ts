@@ -297,6 +297,7 @@ export interface WatchInfo {
   since: string;
   checked: number;
   joined?: ServerProbe;
+  note?: string;
 }
 
 export interface ServerSearch {
@@ -397,7 +398,7 @@ export interface WindowState {
 
 export interface WindowsOption {
   id: string;
-  group: "datos" | "anuncios";
+  group: "datos" | "anuncios" | "funciones";
   title: string;
   what: string;
   applied: boolean;

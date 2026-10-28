@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useStored } from "@/state";
 import { SegmentedControl, SegmentedControlItem } from "@/components/ui/segmented-control";
 import { Optimize } from "./Optimize";
 import { Flags } from "./Flags";
@@ -11,7 +11,8 @@ const tabs = [
 ];
 
 export function OptimizeArea() {
-  const [tab, setTab] = useState("tested");
+  const [stored, setTab] = useStored("toque.optimizeTab");
+  const tab = tabs.some((t) => t.id === stored) ? stored : "tested";
   return (
     <div>
       <SegmentedControl

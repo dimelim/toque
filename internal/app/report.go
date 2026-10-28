@@ -73,7 +73,7 @@ func writeReport(path string) error {
 	if b, err := json.MarshalIndent(info, "", "  "); err == nil {
 		addBytes(z, "info.json", b)
 	}
-	for _, name := range []string{"errores.log", "errores.log.old", "hud.json"} {
+	for _, name := range []string{"errores.log", "errores.log.old", "hud.json", "session.json", "journal.json", "eco.json", "visual.json", "power.json", "version.txt"} {
 		addFile(z, name, filepath.Join(winx.DataDir(), name))
 	}
 	if inst.VersionDir != "" {

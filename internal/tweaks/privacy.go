@@ -16,11 +16,20 @@ import (
 )
 
 type regValue struct {
-	root  registry.Key
-	path  string
-	name  string
-	value uint32
+	root    registry.Key
+	path    string
+	name    string
+	value   uint32
+	ceiling bool
 }
+
+type regState int
+
+const (
+	regAbsent regState = iota
+	regDword
+	regOther
+)
 
 type privacy struct {
 	id      string
@@ -28,7 +37,10 @@ type privacy struct {
 	service string
 }
 
-const absent = "absent"
+const (
+	absent = "absent"
+	other  = "other"
+)
 
 func (v regValue) key() string {
 	root := "HKCU"
@@ -38,18 +50,44 @@ func (v regValue) key() string {
 	return root + `\` + v.path + `\` + v.name
 }
 
-func (v regValue) read() (uint32, bool) {
-	k, err := registry.OpenKey(v.root, v.path, registry.QUERY_VALUE)
+func (v regValue) base() registry.Key {
+	if v.root == registry.CURRENT_USER {
+		return winx.UserRoot()
+	}
+	return v.root
+}
+
+func (v regValue) read() (uint32, regState) {
+	k, err := registry.OpenKey(v.base(), v.path, registry.QUERY_VALUE)
 	if err != nil {
-		return 0, false
+		return 0, regAbsent
 	}
 	defer k.Close()
 	n, _, err := k.GetIntegerValue(v.name)
-	return uint32(n), err == nil
+	switch {
+	case err == nil:
+		return uint32(n), regDword
+	case errors.Is(err, registry.ErrNotExist):
+		return 0, regAbsent
+	}
+	return 0, regOther
+}
+
+func (v regValue) satisfied() bool {
+	cur, st := v.read()
+	switch {
+	case st == regOther:
+		return true
+	case st == regAbsent:
+		return false
+	case v.ceiling:
+		return cur <= v.value
+	}
+	return cur == v.value
 }
 
 func (v regValue) write(n uint32) error {
-	k, _, err := registry.CreateKey(v.root, v.path, registry.SET_VALUE)
+	k, _, err := registry.CreateKey(v.base(), v.path, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}
@@ -58,7 +96,7 @@ func (v regValue) write(n uint32) error {
 }
 
 func (v regValue) remove() error {
-	k, err := registry.OpenKey(v.root, v.path, registry.SET_VALUE)
+	k, err := registry.OpenKey(v.base(), v.path, registry.SET_VALUE)
 	if err != nil {
 		return ignoreMissing(err)
 	}
@@ -84,7 +122,7 @@ func (p privacy) admin() bool {
 func (p privacy) State(Context) State {
 	applied := true
 	for _, v := range p.values {
-		if cur, ok := v.read(); !ok || cur != v.value {
+		if !v.satisfied() {
 			applied = false
 		}
 	}
@@ -98,10 +136,13 @@ func (p privacy) State(Context) State {
 func (p privacy) Snapshot(Context) (Undo, error) {
 	u := Undo{}
 	for _, v := range p.values {
-		if cur, ok := v.read(); ok {
+		switch cur, st := v.read(); st {
+		case regDword:
 			u[v.key()] = strconv.FormatUint(uint64(cur), 10)
-		} else {
+		case regAbsent:
 			u[v.key()] = absent
+		default:
+			u[v.key()] = other
 		}
 	}
 	if p.service != "" {
@@ -116,7 +157,9 @@ func (p privacy) Snapshot(Context) (Undo, error) {
 func (p privacy) Apply(Context) error {
 	var errs []error
 	for _, v := range p.values {
-		errs = append(errs, v.write(v.value))
+		if !v.satisfied() {
+			errs = append(errs, v.write(v.value))
+		}
 	}
 	if p.service != "" {
 		errs = append(errs, disableService(p.service))
@@ -129,7 +172,7 @@ func (p privacy) Revert(_ Context, u Undo) error {
 	for _, v := range p.values {
 		prev, ok := u[v.key()]
 		switch {
-		case !ok:
+		case !ok, prev == other:
 		case prev == absent:
 			errs = append(errs, v.remove())
 		default:
@@ -238,55 +281,72 @@ func waitRunning(s *mgr.Service) {
 }
 
 const (
-	contentDelivery = `Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager`
-	inputPersonal   = `Software\Microsoft\InputPersonalization`
+	contentDelivery  = `Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager`
+	inputPersonal    = `Software\Microsoft\InputPersonalization`
+	explorerAdvanced = `Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced`
 )
 
 var privacyTweaks = []privacy{
 	{
 		id:      "privacy:telemetry",
-		values:  []regValue{{registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection`, "AllowTelemetry", 1}},
+		values:  []regValue{{root: registry.LOCAL_MACHINE, path: `SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection`, name: "AllowTelemetry", value: 1, ceiling: true}},
 		service: "DiagTrack",
 	},
 	{
 		id: "privacy:typing",
 		values: []regValue{
-			{registry.CURRENT_USER, `Software\Microsoft\Input\TIPC`, "Enabled", 0},
-			{registry.CURRENT_USER, inputPersonal, "RestrictImplicitTextCollection", 1},
-			{registry.CURRENT_USER, inputPersonal, "RestrictImplicitInkCollection", 1},
-			{registry.CURRENT_USER, inputPersonal + `\TrainedDataStore`, "HarvestContacts", 0},
+			{root: registry.CURRENT_USER, path: `Software\Microsoft\Input\TIPC`, name: "Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: inputPersonal, name: "RestrictImplicitTextCollection", value: 1},
+			{root: registry.CURRENT_USER, path: inputPersonal, name: "RestrictImplicitInkCollection", value: 1},
+			{root: registry.CURRENT_USER, path: inputPersonal + `\TrainedDataStore`, name: "HarvestContacts", value: 0},
 		},
 	},
 	{
 		id:     "privacy:feedback",
-		values: []regValue{{registry.CURRENT_USER, `Software\Microsoft\Siuf\Rules`, "NumberOfSIUFInPeriod", 0}},
+		values: []regValue{{root: registry.CURRENT_USER, path: `Software\Microsoft\Siuf\Rules`, name: "NumberOfSIUFInPeriod", value: 0}},
 	},
 	{
 		id: "privacy:ads",
 		values: []regValue{
-			{registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo`, "Enabled", 0},
-			{registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Privacy`, "TailoredExperiencesWithDiagnosticDataEnabled", 0},
+			{root: registry.CURRENT_USER, path: `Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo`, name: "Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: `Software\Microsoft\Windows\CurrentVersion\Privacy`, name: "TailoredExperiencesWithDiagnosticDataEnabled", value: 0},
 		},
 	},
 	{
 		id: "privacy:suggestions",
 		values: []regValue{
-			{registry.CURRENT_USER, contentDelivery, "SubscribedContent-338388Enabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SubscribedContent-338389Enabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SubscribedContent-353694Enabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SubscribedContent-353696Enabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SubscribedContent-310093Enabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SystemPaneSuggestionsEnabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SoftLandingEnabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "SilentInstalledAppsEnabled", 0},
-			{registry.CURRENT_USER, contentDelivery, "RotatingLockScreenOverlayEnabled", 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-338388Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-338389Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-353694Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-353696Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-310093Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SystemPaneSuggestionsEnabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SoftLandingEnabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SilentInstalledAppsEnabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "RotatingLockScreenOverlayEnabled", value: 0},
+			{root: registry.CURRENT_USER, path: contentDelivery, name: "SubscribedContent-338387Enabled", value: 0},
+			{root: registry.CURRENT_USER, path: explorerAdvanced, name: "Start_IrisRecommendations", value: 0},
+			{root: registry.CURRENT_USER, path: explorerAdvanced, name: "ShowSyncProviderNotifications", value: 0},
+			{root: registry.CURRENT_USER, path: `Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement`, name: "ScoobeSystemSettingEnabled", value: 0},
 		},
+	},
+	{
+		id: "privacy:ai",
+		values: []regValue{
+			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\WindowsCopilot`, name: "TurnOffWindowsCopilot", value: 1},
+			{root: registry.CURRENT_USER, path: explorerAdvanced, name: "ShowCopilotButton", value: 0},
+			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\WindowsAI`, name: "DisableAIDataAnalysis", value: 1},
+		},
+	},
+	{
+		id:     "privacy:widgets",
+		values: []regValue{{root: registry.LOCAL_MACHINE, path: `SOFTWARE\Policies\Microsoft\Dsh`, name: "AllowNewsAndInterests", value: 0}},
 	},
 	{
 		id: "privacy:search",
 		values: []regValue{
-			{registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Search`, "BingSearchEnabled", 0},
-			{registry.CURRENT_USER, `Software\Policies\Microsoft\Windows\Explorer`, "DisableSearchBoxSuggestions", 1},
+			{root: registry.CURRENT_USER, path: `Software\Microsoft\Windows\CurrentVersion\Search`, name: "BingSearchEnabled", value: 0},
+			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\Explorer`, name: "DisableSearchBoxSuggestions", value: 1},
 		},
 	},
 }

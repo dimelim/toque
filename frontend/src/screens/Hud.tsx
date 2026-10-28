@@ -105,6 +105,7 @@ export function Hud() {
     setCfg(next);
     try {
       setCfg(await api.setHudConfig(next));
+      api.hudLayout().then(setLayout).catch(() => undefined);
     } catch (e) {
       toast({ tone: "error", title: "No pude cambiar el HUD", detail: errorText(e) });
       load();

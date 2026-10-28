@@ -9,7 +9,7 @@ import (
 func TestEveryPrivacyTweakHasCopy(t *testing.T) {
 	for _, id := range tweaks.PrivacyIDs() {
 		c, ok := windowsText[id]
-		if !ok || c.title == "" || c.what == "" || (c.group != "datos" && c.group != "anuncios") {
+		if !ok || c.title == "" || c.what == "" || (c.group != "datos" && c.group != "anuncios" && c.group != "funciones") {
 			t.Fatalf("%s sin texto completo: %+v", id, c)
 		}
 	}

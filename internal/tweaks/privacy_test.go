@@ -11,8 +11,8 @@ const testPath = `Software\ToqueTest`
 func TestPrivacyRestoresPreviousAndAbsentValues(t *testing.T) {
 	registry.DeleteKey(registry.CURRENT_USER, testPath)
 	t.Cleanup(func() { registry.DeleteKey(registry.CURRENT_USER, testPath) })
-	existing := regValue{registry.CURRENT_USER, testPath, "Existing", 0}
-	missing := regValue{registry.CURRENT_USER, testPath, "Missing", 1}
+	existing := regValue{root: registry.CURRENT_USER, path: testPath, name: "Existing", value: 0}
+	missing := regValue{root: registry.CURRENT_USER, path: testPath, name: "Missing", value: 1}
 	if err := existing.write(7); err != nil {
 		t.Fatal(err)
 	}
@@ -33,10 +33,10 @@ func TestPrivacyRestoresPreviousAndAbsentValues(t *testing.T) {
 	if err := p.Revert(Context{}, u); err != nil {
 		t.Fatal(err)
 	}
-	if v, ok := existing.read(); !ok || v != 7 {
-		t.Fatalf("existing = %d, %v; want 7", v, ok)
+	if v, st := existing.read(); st != regDword || v != 7 {
+		t.Fatalf("existing = %d, %v; want 7", v, st)
 	}
-	if _, ok := missing.read(); ok {
+	if _, st := missing.read(); st != regAbsent {
 		t.Fatal("missing value was left behind")
 	}
 }
@@ -49,4 +49,37 @@ func TestPrivacyTweaksAreRegistered(t *testing.T) {
 	}
 	start, _, err := serviceStart("DiagTrack")
 	t.Logf("DiagTrack start=%d err=%v", start, err)
+}
+
+func TestPrivacyNeverRaisesACeilingOrTouchesOtherTypes(t *testing.T) {
+	registry.DeleteKey(registry.CURRENT_USER, testPath)
+	t.Cleanup(func() { registry.DeleteKey(registry.CURRENT_USER, testPath) })
+	k, _, err := registry.CreateKey(registry.CURRENT_USER, testPath, registry.SET_VALUE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	k.SetDWordValue("Telemetry", 0)
+	k.SetStringValue("Text", "keep")
+	k.Close()
+	ceiling := regValue{root: registry.CURRENT_USER, path: testPath, name: "Telemetry", value: 1, ceiling: true}
+	text := regValue{root: registry.CURRENT_USER, path: testPath, name: "Text", value: 0}
+	p := privacy{id: "privacy:test", values: []regValue{ceiling, text}}
+	if !p.State(Context{}).Applied {
+		t.Fatal("a lower value and a non-dword value should count as applied")
+	}
+	u, _ := p.Snapshot(Context{})
+	if err := p.Apply(Context{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Revert(Context{}, u); err != nil {
+		t.Fatal(err)
+	}
+	if v, st := ceiling.read(); st != regDword || v != 0 {
+		t.Fatalf("telemetry = %d, %v; want 0", v, st)
+	}
+	k, _ = registry.OpenKey(registry.CURRENT_USER, testPath, registry.QUERY_VALUE)
+	defer k.Close()
+	if s, _, err := k.GetStringValue("Text"); err != nil || s != "keep" {
+		t.Fatalf("string value changed: %q %v", s, err)
+	}
 }

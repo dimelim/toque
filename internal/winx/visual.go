@@ -11,6 +11,7 @@ import (
 const (
 	spiGetAnimation      = 0x0048
 	spiSetAnimation      = 0x0049
+	spifUpdate           = 0x01
 	spifUpdateAndNotify  = 0x01 | 0x02
 	wmSettingChange      = 0x001A
 	hwndBroadcast        = 0xFFFF
@@ -76,7 +77,7 @@ func ApplyVisualFX(fx VisualFX) error {
 		if !ok {
 			continue
 		}
-		if r, _, err := procSystemParametersInfoW.Call(f.set, 0, boolArg(on), spifUpdateAndNotify); r == 0 {
+		if r, _, err := procSystemParametersInfoW.Call(f.set, 0, boolArg(on), spifUpdate); r == 0 {
 			errs = append(errs, err)
 		}
 	}
@@ -124,7 +125,7 @@ func boolArg(on bool) uintptr {
 }
 
 func dword(path, name string, missing bool) bool {
-	k, err := registry.OpenKey(registry.CURRENT_USER, path, registry.QUERY_VALUE)
+	k, err := registry.OpenKey(UserRoot(), path, registry.QUERY_VALUE)
 	if err != nil {
 		return missing
 	}
@@ -137,7 +138,7 @@ func dword(path, name string, missing bool) bool {
 }
 
 func setDword(path, name string, on bool) error {
-	k, _, err := registry.CreateKey(registry.CURRENT_USER, path, registry.SET_VALUE)
+	k, _, err := registry.CreateKey(UserRoot(), path, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}

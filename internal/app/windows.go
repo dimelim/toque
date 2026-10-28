@@ -25,11 +25,17 @@ var windowsText = map[string]windowsCopy{
 	"privacy:typing":      {"datos", "Datos de escritura y lápiz", "Windows deja de recopilar lo que escribes y dibujas para afinar sus sugerencias."},
 	"privacy:feedback":    {"datos", "Preguntas de opinión", "Windows deja de pedirte que valores cómo funciona."},
 	"privacy:ads":         {"anuncios", "Publicidad personalizada", "Apaga el identificador de publicidad y las experiencias personalizadas con tus datos de diagnóstico."},
-	"privacy:suggestions": {"anuncios", "Sugerencias y apps automáticas", "Quita consejos y sugerencias de Inicio, Configuración y la pantalla de bloqueo, y evita que Windows instale por su cuenta apps que te sugiere."},
+	"privacy:suggestions": {"anuncios", "Sugerencias y apps automáticas", "Quita consejos, recomendaciones y avisos de Inicio, Configuración, el Explorador y la pantalla de bloqueo, y evita que Windows instale por su cuenta apps que te sugiere."},
 	"privacy:search":      {"anuncios", "Búsqueda web en Inicio", "La búsqueda del menú Inicio deja de mandar lo que escribes a Bing. Se nota al volver a iniciar sesión."},
+	"privacy:widgets":     {"funciones", "Widgets y noticias", "Quita el panel de widgets, que mantiene procesos web abiertos en segundo plano gastando memoria."},
+	"privacy:ai":          {"funciones", "Copilot y Recall", "Apaga Copilot y su botón, y evita que Recall guarde capturas de lo que haces en los equipos que lo traen."},
 }
 
 func (s *Service) WindowsOptions() []WindowsOption {
+	return windowsOptions()
+}
+
+func windowsOptions() []WindowsOption {
 	managed, _ := tweaks.Entries()
 	out := []WindowsOption{}
 	for _, id := range tweaks.PrivacyIDs() {
@@ -53,10 +59,15 @@ func setWindowsOption(id string, on bool) error {
 	if err != nil {
 		return err
 	}
-	if on {
-		return tweaks.Apply(tweaks.Context{}, t)
+	if !on {
+		return tweaks.Revert(tweaks.Context{}, t)
 	}
-	return tweaks.Revert(tweaks.Context{}, t)
+	if managed, _ := tweaks.Entries(); managed != nil {
+		if _, mine := managed[id]; mine {
+			return t.Apply(tweaks.Context{})
+		}
+	}
+	return tweaks.Apply(tweaks.Context{}, t)
 }
 
 func (s *Service) SetWindowsOption(id string, on bool) ([]WindowsOption, error) {
@@ -81,4 +92,14 @@ func (s *Service) SetAllWindowsOptions(on bool) ([]WindowsOption, error) {
 		}
 	}
 	return s.WindowsOptions(), errors.Join(errs...)
+}
+
+func pendingPrivacy() int {
+	n := 0
+	for _, o := range windowsOptions() {
+		if o.Applicable && !o.Applied {
+			n++
+		}
+	}
+	return n
 }

@@ -42,10 +42,11 @@ type Service struct {
 	hud        *overlay.HUD
 	sess       *session
 	calm       atomic.Bool
+	returning  bool
 }
 
 func New(presentMon string, emit Emitter) *Service {
-	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New(), sess: loadSession()}
+	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New(), sess: loadSession(), returning: returningUser()}
 	s.hud.Apply(loadHudConfig())
 	return s
 }

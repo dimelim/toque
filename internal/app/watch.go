@@ -15,6 +15,7 @@ type WatchInfo struct {
 	Since   time.Time    `json:"since"`
 	Checked int          `json:"checked"`
 	Joined  *ServerProbe `json:"joined,omitempty"`
+	Note    string       `json:"note,omitempty"`
 }
 
 const (
@@ -102,8 +103,15 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 				cursor = next
 				s.updateWatch(gen, func(w *WatchInfo) { w.Checked += len(page) })
 				if matches, _ := serversIn(ctx, key, page); len(matches) > 0 {
+					playing := len(roblox.Running()) > 0
 					if probe, ok := s.joinWatched(key, matches); ok {
 						s.updateWatch(gen, func(w *WatchInfo) { w.Joined = &probe })
+						return
+					}
+					if playing && ctx.Err() == nil {
+						s.updateWatch(gen, func(w *WatchInfo) {
+							w.Note = fmt.Sprintf("No pude entrar en la partida de %s, así que paré el vigía para no volver a sacarte de tu partida.", regionCity(key))
+						})
 						return
 					}
 				}

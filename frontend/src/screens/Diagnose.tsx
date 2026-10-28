@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { num, when } from "@/lib/format";
 import { play } from "@/lib/sound";
 import type { BloatResult, Diagnosis, Finding, PathStep, Region } from "@/lib/types";
-import { useApp } from "@/state";
+import { remember, useApp } from "@/state";
 import { Card, Eyebrow, PageHeader, Pill, StatRow } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -97,10 +97,11 @@ function FindingRow({ f }: { f: Finding }) {
           variant="secondary"
           onClick={() => {
             play("tap");
+            if (f.fix === "windows") remember("toque.optimizeTab", "windows");
             go(f.fix === "server" ? "home" : "optimize");
           }}
         >
-          {f.fix === "server" ? "Buscar servidor" : "Arreglar"}
+          {f.fix === "server" ? "Buscar servidor" : f.fix === "windows" ? "Ver ajustes" : "Arreglar"}
         </Button>
       ) : null}
     </div>

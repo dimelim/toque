@@ -73,6 +73,13 @@ function useWatchToast() {
     play("success");
     toast({ tone: "ok", title: `Entraste en una partida de ${joined.city ?? regionCity(watch?.region ?? "")}`, detail: "El vigía la encontró y te metió en cuanto hubo sitio." });
   }, [watch, toast]);
+  useEffect(() => {
+    const note = watch?.note;
+    if (!note || announced.current === note) return;
+    announced.current = note;
+    play("error");
+    toast({ tone: "info", title: "Vigía detenido", detail: note, sticky: true });
+  }, [watch, toast]);
 }
 
 function RobloxStatus() {

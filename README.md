@@ -18,13 +18,14 @@ Toque es una app para Windows que mide el retraso real de Roblox, empezando por 
 
 - **Mide tu partida.** FPS, 1 % low, tirones, latencia de render y el ping real dentro del juego.
 - **Optimiza con pruebas.** Solo recomienda lo que mejoró en pruebas A/B, y cada cambio se deshace con un clic.
-- **Modo partida.** Mientras juegas, Toque se aparta, te cuenta qué programas gastan CPU o memoria y, si lo activas, pone en modo eficiencia las apps de fondo conocidas. Todo se deshace al cerrar Roblox.
+- **Modo partida.** Mientras juegas, Toque se aparta, te cuenta qué programas gastan CPU o memoria y, si lo activas, pone en modo eficiencia las apps de fondo conocidas, apaga la grabación de fondo y las animaciones de Windows y, en portátiles, sube el modo de energía. Todo se deshace al cerrar Roblox.
+- **Windows más limpio.** Quita la telemetría opcional, la publicidad y las sugerencias de Windows, cada ajuste reversible.
 - **Diagnostica qué te frena.** Red tramo a tramo, memoria y disco, cómo dibuja Roblox, Windows y energía.
 - **Juega cerca.** Comprueba el servidor al entrar y te mueve si Roblox te mandó lejos.
 - **Elige la ciudad.** Los 35 centros de datos de Roblox, incluidos Lima, Santiago, Buenos Aires y Querétaro. Si no hay partidas en esa ciudad, Toque vigila y entra en cuanto aparece una.
 - **Entra en tu servidor privado.** Con su enlace de invitación. Eliges en qué ciudad abrirlo y te dice dónde se abrió.
 - **Ajusta las flags de Roblox.** Los ajustes más usados con controles claros y un editor para cualquier flag, que importa listas en JSON de Bloxstrap o Fishstrap.
-- **HUD en el juego.** Una capa encima de Roblox con tu ping y las teclas W A S D y el ratón encendiéndose al pulsarlas, con tamaño, opacidad y posición ajustables.
+- **HUD en el juego.** Una capa encima de Roblox con tu ping y las teclas W A S D y el ratón encendiéndose al pulsarlas. Lo colocas arrastrándolo sobre una miniatura de tu pantalla.
 
 ## Descargar
 

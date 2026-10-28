@@ -12,6 +12,7 @@ import { IconRevert, IconWindows } from "@/components/icons";
 const groups = [
   { id: "datos", title: "Datos que Windows envía" },
   { id: "anuncios", title: "Publicidad y sugerencias" },
+  { id: "funciones", title: "Funciones que puedes quitar" },
 ];
 
 function Row({ o, disabled, onChange }: { o: WindowsOption; disabled: boolean; onChange: (on: boolean) => void }) {
@@ -79,14 +80,14 @@ export function WindowsTab() {
         <Button variant="secondary" leadingIcon={IconRevert} disabled={disabled || mine === 0} onClick={() => change(() => api.setAllWindowsOptions(false), false, "Windows vuelve a como estaba")}>
           Deshacer todo
         </Button>
-        <Button leadingIcon={IconWindows} disabled={disabled || pending === 0} onClick={() => change(() => api.setAllWindowsOptions(true), true, "Windows ya no envía datos opcionales ni te muestra publicidad")}>
+        <Button leadingIcon={IconWindows} disabled={disabled || pending === 0} onClick={() => change(() => api.setAllWindowsOptions(true), true, "Windows envía menos datos y te muestra menos sugerencias")}>
           {pending === 0 ? "Todo aplicado" : `Aplicar ${pending}`}
         </Button>
       </PageHeader>
       <Card className="mb-8 p-5">
         <Eyebrow>Qué hace</Eyebrow>
         <p className="mt-2 max-w-[78ch] text-body-regular text-ink-2">
-          Quita la publicidad, las sugerencias y el envío de datos opcionales de Windows, así que hace menos cosas en segundo plano mientras juegas. No sube los FPS por sí solo. Cada cambio se guarda y se deshace con un clic, desde Ajustes o al desinstalar Toque.
+          Quita la publicidad, las sugerencias, funciones que no usas y el envío de datos opcionales de Windows. No sube los FPS por sí solo. Cada cambio se guarda y se deshace con un clic, desde Ajustes o al desinstalar Toque.
         </p>
       </Card>
       <div className="flex flex-col gap-4">

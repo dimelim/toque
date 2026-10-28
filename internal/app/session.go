@@ -86,16 +86,18 @@ type session struct {
 	self       map[uint32]selfEntry
 	excused    map[string]bool
 	launchedAt time.Time
+	failures   int
 	prep       []PrepCheck
 	experiment map[string]*ExperimentRecord
 }
 
 const (
-	stateOff     = "off"
-	stateWaiting = "waiting"
-	stateActive  = "active"
-	statePaused  = "paused"
-	launchGrace  = 2 * time.Minute
+	stateOff        = "off"
+	stateWaiting    = "waiting"
+	stateActive     = "active"
+	statePaused     = "paused"
+	launchGrace     = 2 * time.Minute
+	maxRestoreTries = 3
 )
 
 var (
@@ -153,8 +155,10 @@ func (ss *session) step(running, sample bool) {
 		if next != statePaused && len(throttler().Throttled()) > 0 {
 			throttler().RestoreAll()
 		}
-		if next != statePaused && time.Since(ss.launchedAt) > launchGrace {
-			restoreSystem()
+		if next != statePaused && time.Since(ss.launchedAt) > launchGrace && ss.failures < maxRestoreTries {
+			if restoreSystem() != nil {
+				ss.failures++
+			}
 		}
 		return
 	}
@@ -169,6 +173,7 @@ func (ss *session) step(running, sample bool) {
 
 func (ss *session) start() {
 	ss.since = time.Now()
+	ss.failures = 0
 	ss.watch = watchLog{}
 	ss.excused = map[string]bool{}
 	ss.sampler.Reset()

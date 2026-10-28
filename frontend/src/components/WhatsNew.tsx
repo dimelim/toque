@@ -32,7 +32,7 @@ export function WhatsNew() {
     toast({ tone: "info", title: `Toque ${update.latest} está lista`, detail: "Se instala sola al volver a abrir Toque, o ahora desde la barra lateral." });
   }, [update, toast]);
 
-  const open = !!version && update?.state === "current" && update.latest === version && !!update.notes;
+  const open = !!version && update?.latest === version && !!update.notes;
   const close = () => {
     play("tap");
     api.seenWhatsNew().catch(() => undefined);

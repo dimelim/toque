@@ -16,7 +16,7 @@ type WhatsNew struct {
 func versionPath() string { return filepath.Join(winx.DataDir(), "version.txt") }
 
 func returningUser() bool {
-	for _, name := range []string{"update", "journal.json", "history", "dcmap.json", "places.json"} {
+	for _, name := range []string{"journal.json", "datacenters.json", "places.json", "session.json", "hud.json", "errores.log"} {
 		if _, err := os.Stat(filepath.Join(winx.DataDir(), name)); err == nil {
 			return true
 		}
@@ -30,7 +30,7 @@ func (s *Service) WhatsNew() WhatsNew {
 	if last == Version {
 		return WhatsNew{Version: Version}
 	}
-	if last == "" && !returningUser() {
+	if last == "" && !s.returning {
 		s.SeenWhatsNew()
 		return WhatsNew{Version: Version}
 	}

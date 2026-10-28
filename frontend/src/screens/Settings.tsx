@@ -64,6 +64,7 @@ export function Settings() {
           </p>
           <p className="mt-3 text-body-regular text-ink-2">{updateLine(update)}</p>
           {update?.notes && (update.state === "ready" || update.state === "downloading") ? <p className="mt-2 text-caption-1-medium text-ink-3">{update.notes}</p> : null}
+          {update?.notes && update.state === "current" && update.latest === update.current ? <p className="mt-2 text-caption-1-medium text-ink-3">Novedades de esta versión. {update.notes}</p> : null}
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Chip variant="caption" color="lime">
               Firma Ed25519
