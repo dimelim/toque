@@ -69,6 +69,7 @@ export const api = {
   seenWhatsNew: () => Service.SeenWhatsNew() as Promise<void>,
   closeApp: (name: string) => Service.CloseApp(name) as Promise<number>,
   activeChanges: () => Service.ActiveChanges() as Promise<{ id: string; title: string }[]>,
+  clearRobloxCache: () => Service.ClearRobloxCache() as Promise<number>,
   language: () => Service.Language() as Promise<LanguageInfo>,
   setLanguage: (choice: LanguageChoice) => Service.SetLanguage(choice) as Promise<LanguageInfo>,
   cancel: () => Service.Cancel() as Promise<void>,

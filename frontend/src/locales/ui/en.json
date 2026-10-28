@@ -596,5 +596,8 @@
   "Windows envía menos datos y te muestra menos sugerencias": "Windows sends less data and shows you fewer suggestions",
   "Aplicar {n}": "Apply {n}",
   "Qué hace": "What it does",
-  "Quita la publicidad, las sugerencias, funciones que no usas y el envío de datos opcionales de Windows. No sube los FPS por sí solo. Cada cambio se guarda y se deshace con un clic, desde Ajustes o al desinstalar Toque.": "It removes ads, suggestions, features you don't use and Windows' optional data sharing. It doesn't raise your FPS on its own. Every change is saved and undone with one click, from Settings or when you uninstall Toque."
+  "Quita la publicidad, las sugerencias, funciones que no usas y el envío de datos opcionales de Windows. No sube los FPS por sí solo. Cada cambio se guarda y se deshace con un clic, desde Ajustes o al desinstalar Toque.": "It removes ads, suggestions, features you don't use and Windows' optional data sharing. It doesn't raise your FPS on its own. Every change is saved and undone with one click, from Settings or when you uninstall Toque.",
+  "Borrando la caché de sonidos de Roblox": "Clearing Roblox's sound cache",
+  "Liberaste {gb} GB": "You freed {gb} GB",
+  "Borrar caché": "Clear cache"
 }

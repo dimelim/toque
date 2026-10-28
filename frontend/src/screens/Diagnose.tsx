@@ -89,10 +89,23 @@ const levelUI: Record<Finding["level"], { icon: ComponentType<{ className?: stri
   ok: { icon: IconOk, color: "text-volt", rank: 3 },
 };
 
-function FindingRow({ f }: { f: Finding }) {
-  const { go } = useApp();
+function FindingRow({ f, onChange }: { f: Finding; onChange: () => void }) {
+  const { go, run, task, toast } = useApp();
   const ui = levelUI[f.level];
   const Icon = ui.icon;
+  const fix = async () => {
+    play("tap");
+    if (f.fix === "roblox-cache") {
+      const freed = await run("cache", t("Borrando la caché de sonidos de Roblox"), () => api.clearRobloxCache());
+      if (freed !== undefined) {
+        toast({ tone: "ok", title: t("Liberaste {gb} GB", { gb: num(freed / 2 ** 30, 1) }) });
+        onChange();
+      }
+      return;
+    }
+    if (f.fix === "windows") remember("toque.optimizeTab", "windows");
+    go(f.fix === "server" ? "home" : "optimize");
+  };
   return (
     <div className="flex items-start gap-4 px-5 py-4">
       <Icon className={cx("mt-0.5 size-[18px] shrink-0", ui.color)} />
@@ -101,16 +114,8 @@ function FindingRow({ f }: { f: Finding }) {
         <p className="mt-0.5 max-w-[78ch] text-body-regular text-ink-2">{f.detail}</p>
       </div>
       {f.fix ? (
-        <Button
-          size="small"
-          variant="secondary"
-          onClick={() => {
-            play("tap");
-            if (f.fix === "windows") remember("toque.optimizeTab", "windows");
-            go(f.fix === "server" ? "home" : "optimize");
-          }}
-        >
-          {f.fix === "server" ? t("Buscar servidor") : f.fix === "windows" ? t("Ver ajustes") : t("Arreglar")}
+        <Button size="small" variant="secondary" disabled={f.fix === "roblox-cache" && !!task} onClick={fix}>
+          {f.fix === "server" ? t("Buscar servidor") : f.fix === "windows" ? t("Ver ajustes") : f.fix === "roblox-cache" ? t("Borrar caché") : t("Arreglar")}
         </Button>
       ) : null}
     </div>
@@ -281,7 +286,16 @@ export function Diagnose() {
             </div>
             <div className="divide-y divide-line">
               {findings.map((f) => (
-                <FindingRow key={f.id} f={f} />
+                <FindingRow
+                  key={f.id}
+                  f={f}
+                  onChange={() =>
+                    api
+                      .lastDiagnosis()
+                      .then((v) => v && setD(v))
+                      .catch(() => undefined)
+                  }
+                />
               ))}
             </div>
           </Card>

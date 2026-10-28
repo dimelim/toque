@@ -52,6 +52,7 @@ type Diagnosis struct {
 	UptimeSec        int     `json:"uptimeSec"`
 	PrivacyPending   int     `json:"privacyPending"`
 	BestDatacenterMs float64 `json:"bestDatacenterMs"`
+	RobloxCacheMB    float64 `json:"robloxCacheMB"`
 }
 
 var routerLabel = i18n.Mark("Router")
@@ -110,6 +111,7 @@ func (s *Service) Diagnose(withGame bool) (Diagnosis, error) {
 	s.progress("diagnose", "system", 0.05, i18n.T("Revisando memoria, disco y energía"))
 	d.Pagefile = tweaks.Pagefile()
 	d.RAMAvailMB = sysmon.AvailableMB()
+	d.RobloxCacheMB = float64(dirBytes(robloxSoundsDir())) / (1 << 20)
 	if plan, err := tweaks.ActivePlan(); err == nil {
 		d.PowerPlan = plan
 		d.PowerName = tweaks.PlanName(plan)
@@ -212,6 +214,10 @@ func findings(d Diagnosis) []Finding {
 			"pagefile-ssd")
 	} else if len(pf.Drives) > 0 {
 		add("pagefile-ok", "ok", "memoria", i18n.T("Archivo de paginación en SSD"), i18n.T("Las páginas que Windows recupera durante la partida se leen en alrededor de 1 ms."), "")
+	}
+	if d.RobloxCacheMB >= 2048 {
+		add("roblox-cache", "warn", "memoria", i18n.Tf("Roblox guarda %s GB de sonidos en caché", dec(d.RobloxCacheMB/1024)),
+			i18n.T("Roblox nunca vacía esta carpeta temporal. Borrarla es seguro y libera espacio en el disco, y la primera partida después tarda un poco más en cargar porque vuelve a descargar los sonidos."), "roblox-cache")
 	}
 	if d.System.RAMGB <= 8.5 && d.RAMAvailMB < 2048 {
 		names := []string{}
