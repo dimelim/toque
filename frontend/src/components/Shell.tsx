@@ -13,6 +13,7 @@ import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
 import { Wordmark } from "./Logo";
+import { WhatsNew } from "./WhatsNew";
 import { ProgressBar } from "./primitives";
 import { Button } from "./ui/button";
 import {
@@ -22,7 +23,6 @@ import {
   IconMaximize,
   IconMinimize,
   IconOptimize,
-  IconFlag,
   IconKeyboard,
   IconPlay,
   IconSettings,
@@ -41,7 +41,6 @@ const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string
   { id: "session", label: "Partida", icon: IconRocket },
   { id: "diagnose", label: "Diagnóstico", icon: IconDiagnose },
   { id: "optimize", label: "Optimizar", icon: IconOptimize },
-  { id: "flags", label: "Flags", icon: IconFlag },
   { id: "hud", label: "HUD", icon: IconKeyboard },
   { id: "tests", label: "Pruebas", icon: IconTests },
   { id: "settings", label: "Ajustes", icon: IconSettings },
@@ -278,6 +277,7 @@ export function Shell({ children }: { children: ReactNode }) {
   useWatchToast();
   return (
     <div className="flex h-full bg-canvas text-ink">
+      <WhatsNew />
       <Sidebar />
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div className="drag flex h-10 shrink-0 items-start justify-end">

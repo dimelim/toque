@@ -394,3 +394,13 @@ export interface SessionInfo {
 export interface WindowState {
   calm: boolean;
 }
+
+export interface WindowsOption {
+  id: string;
+  group: "datos" | "anuncios";
+  title: string;
+  what: string;
+  applied: boolean;
+  managed: boolean;
+  applicable: boolean;
+}

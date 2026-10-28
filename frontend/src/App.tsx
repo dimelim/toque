@@ -5,8 +5,7 @@ import { Shell } from "./components/Shell";
 import { Home } from "./screens/Home";
 import { Session } from "./screens/Session";
 import { Diagnose } from "./screens/Diagnose";
-import { Optimize } from "./screens/Optimize";
-import { Flags } from "./screens/Flags";
+import { OptimizeArea } from "./screens/OptimizeArea";
 import { Hud } from "./screens/Hud";
 import { Tests } from "./screens/Tests";
 import { Settings } from "./screens/Settings";
@@ -21,9 +20,7 @@ function Current() {
     case "diagnose":
       return <Diagnose />;
     case "optimize":
-      return <Optimize />;
-    case "flags":
-      return <Flags />;
+      return <OptimizeArea />;
     case "hud":
       return <Hud />;
     case "tests":

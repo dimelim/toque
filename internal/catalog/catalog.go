@@ -210,7 +210,7 @@ var Catalog = []Entry{
 		ID:       "session:windows-fx",
 		Title:    "Windows en modo juego",
 		Category: CategorySession,
-		What:     "Mientras juegas, Windows deja de grabar en segundo plano y apaga animaciones, sombras y transparencia, como hace AtlasOS.",
+		What:     "Mientras juegas, Windows deja de grabar en segundo plano y apaga animaciones, sombras y transparencia.",
 		Why:      "La grabación en segundo plano de la Xbox Game Bar codifica vídeo todo el tiempo, y Microsoft reconoce que cuesta rendimiento salvo en gráficas de gama alta. Las animaciones y la transparencia hacen trabajar al compositor de Windows cuando se ven.",
 		Metric:   "1 % low, tirones y latencia de render.",
 		Risk:     "Windows se ve más plano mientras juegas.",

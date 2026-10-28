@@ -23,6 +23,7 @@ import type {
   UpdateInfo,
   WatchInfo,
   WindowState,
+  WindowsOption,
 } from "./types";
 
 export const api = {
@@ -57,6 +58,11 @@ export const api = {
   hudLayout: () => Service.HudLayout() as Promise<HudLayout>,
   placeHud: (x: number, y: number, save: boolean) => Service.PlaceHud(x, y, save) as Promise<HudConfig>,
   previewHud: (on: boolean) => Service.PreviewHud(on) as Promise<void>,
+  windowsOptions: () => Service.WindowsOptions() as Promise<WindowsOption[]>,
+  setWindowsOption: (id: string, on: boolean) => Service.SetWindowsOption(id, on) as Promise<WindowsOption[]>,
+  setAllWindowsOptions: (on: boolean) => Service.SetAllWindowsOptions(on) as Promise<WindowsOption[]>,
+  whatsNew: () => Service.WhatsNew() as Promise<{ version: string; show: boolean }>,
+  seenWhatsNew: () => Service.SeenWhatsNew() as Promise<void>,
   cancel: () => Service.Cancel() as Promise<void>,
   noteError: (text: string) => Service.NoteError(text) as Promise<void>,
   exportReport: () => Service.ExportReport() as Promise<string>,

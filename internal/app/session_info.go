@@ -100,7 +100,7 @@ func (ss *session) windowsAction() SessionAction {
 		VerifyID:   visualID,
 		Experiment: ss.experiment[visualID],
 		Title:      "Windows en modo juego",
-		What:       "Mientras juegas, Windows deja de grabar tus partidas en segundo plano y apaga animaciones, sombras y transparencia, como hace AtlasOS. Microsoft reconoce que esa grabación cuesta rendimiento salvo en gráficas de gama alta. Al cerrar Roblox todo vuelve a como lo tenías.",
+		What:       "Mientras juegas, Windows deja de grabar tus partidas en segundo plano y apaga animaciones, sombras y transparencia. Microsoft reconoce que esa grabación cuesta rendimiento salvo en gráficas de gama alta. Al cerrar Roblox todo vuelve a como lo tenías.",
 		Tested:     false,
 		Enabled:    ss.cfg.Windows,
 		Status:     ss.status(ss.cfg.Windows),

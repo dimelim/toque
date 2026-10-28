@@ -353,7 +353,7 @@ export function Flags() {
   if (error && !flags) {
     return (
       <div>
-        <PageHeader eyebrow="Flags" title="Ajustes internos de Roblox" />
+        <PageHeader eyebrow="Optimizar" title="Ajustes internos de Roblox" />
         <Empty title="No puedo leer las flags" action={<Button onClick={load}>Reintentar</Button>}>
           {error}
         </Empty>
@@ -363,7 +363,7 @@ export function Flags() {
 
   return (
     <div>
-      <PageHeader eyebrow="Flags" title="Ajustes internos de Roblox">
+      <PageHeader eyebrow="Optimizar" title="Ajustes internos de Roblox">
         <Button variant="secondary" leadingIcon={IconCopy} disabled={!flags?.length} onClick={copy}>
           Copiar JSON
         </Button>
