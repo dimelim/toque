@@ -65,6 +65,7 @@ export const api = {
   whatsNew: () => Service.WhatsNew() as Promise<{ version: string; show: boolean }>,
   seenWhatsNew: () => Service.SeenWhatsNew() as Promise<void>,
   closeApp: (name: string) => Service.CloseApp(name) as Promise<number>,
+  activeChanges: () => Service.ActiveChanges() as Promise<{ id: string; title: string }[]>,
   cancel: () => Service.Cancel() as Promise<void>,
   noteError: (text: string) => Service.NoteError(text) as Promise<void>,
   exportReport: () => Service.ExportReport() as Promise<string>,

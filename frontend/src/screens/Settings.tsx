@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, errorText } from "@/lib/api";
 import { play, setSoundEnabled, soundEnabled } from "@/lib/sound";
 import { installUpdate, updateLine } from "@/lib/updates";
@@ -35,6 +35,16 @@ export function Settings() {
   const [sound, setSound] = useState(soundEnabled());
   const [checking, setChecking] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [changes, setChanges] = useState<{ id: string; title: string }[]>([]);
+  const loadChanges = useCallback(() => {
+    api
+      .activeChanges()
+      .then(setChanges)
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    loadChanges();
+  }, [loadChanges]);
   return (
     <div>
       <PageHeader eyebrow="Ajustes" title="Preferencias" />
@@ -138,6 +148,19 @@ export function Settings() {
             Restaurar
           </p>
           <p className="mt-1 text-body-regular text-ink-2">Deshace todos los cambios que Toque hizo en Windows y en Roblox y deja cada ajuste como estaba antes de instalarlo. Desinstalar Toque hace lo mismo.</p>
+          <div className="mt-3 rounded-lg bg-surface-1 px-3 py-2 shadow-[inset_0_0_0_1px_var(--color-line)]">
+            <p className="text-caption-1-medium text-ink-3">{changes.length === 0 ? "Ahora mismo Toque no tiene ningún cambio activo." : changes.length === 1 ? "1 cambio activo ahora mismo" : `${changes.length} cambios activos ahora mismo`}</p>
+            {changes.length > 0 ? (
+              <ul className="mt-1.5 flex max-h-[132px] flex-col gap-1 overflow-y-auto">
+                {changes.map((c) => (
+                  <li key={c.id} className="flex items-center gap-2 text-caption-1-medium text-ink-2">
+                    <span className="size-1.5 shrink-0 rounded-full bg-volt" />
+                    <span className="truncate">{c.title}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
           <div className="mt-auto pt-4">
             <Button
               variant="secondary"
@@ -146,6 +169,7 @@ export function Settings() {
               onClick={async () => {
                 await run("revert", "Revirtiendo todos los cambios", () => api.revertAll());
                 toast({ tone: "ok", title: "Todo vuelve a como estaba" });
+                loadChanges();
               }}
             >
               Revertir todos los cambios
