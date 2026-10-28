@@ -39,14 +39,49 @@ const (
 	absent        = "absent"
 	other         = "other"
 	servicePrefix = "service:"
+	keyPrefix     = "key:"
 )
 
-func (v regValue) key() string {
+func (v regValue) parent() string {
 	root := "HKCU"
 	if v.root == registry.LOCAL_MACHINE {
 		root = "HKLM"
 	}
-	return root + `\` + v.path + `\` + v.name
+	return root + `\` + v.path
+}
+
+func (v regValue) key() string {
+	return v.parent() + `\` + v.name
+}
+
+func (v regValue) keyExists() bool {
+	base, err := v.base()
+	if err != nil {
+		return true
+	}
+	k, err := registry.OpenKey(base, v.path, registry.QUERY_VALUE)
+	if err != nil {
+		return !errors.Is(err, registry.ErrNotExist)
+	}
+	k.Close()
+	return true
+}
+
+func (v regValue) removeKeyIfEmpty() error {
+	base, err := v.base()
+	if err != nil {
+		return err
+	}
+	k, err := registry.OpenKey(base, v.path, registry.QUERY_VALUE)
+	if err != nil {
+		return ignoreMissing(err)
+	}
+	st, err := k.Stat()
+	k.Close()
+	if err != nil || st.SubKeyCount > 0 || st.ValueCount > 0 {
+		return err
+	}
+	return ignoreMissing(registry.DeleteKey(base, v.path))
 }
 
 func (v regValue) base() (registry.Key, error) {
@@ -156,6 +191,9 @@ func (p privacy) Snapshot(Context) (Undo, error) {
 		default:
 			return nil, fmt.Errorf("no puedo leer %s", v.key())
 		}
+		if !v.keyExists() {
+			u[keyPrefix+v.parent()] = absent
+		}
 	}
 	return u, nil
 }
@@ -185,6 +223,11 @@ func (p privacy) Revert(_ Context, u Undo) error {
 				continue
 			}
 			errs = append(errs, v.write(uint32(n)))
+		}
+	}
+	for _, v := range p.values {
+		if u[keyPrefix+v.parent()] == absent {
+			errs = append(errs, v.removeKeyIfEmpty())
 		}
 	}
 	for k, prev := range u {

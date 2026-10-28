@@ -83,3 +83,37 @@ func TestPrivacyNeverRaisesACeilingOrTouchesOtherTypes(t *testing.T) {
 		t.Fatalf("string value changed: %q %v", s, err)
 	}
 }
+
+func TestPrivacyRemovesKeysItCreated(t *testing.T) {
+	path := testPath + `\Created\Leaf`
+	registry.DeleteKey(registry.CURRENT_USER, path)
+	registry.DeleteKey(registry.CURRENT_USER, testPath+`\Created`)
+	registry.DeleteKey(registry.CURRENT_USER, testPath)
+	k, _, _ := registry.CreateKey(registry.CURRENT_USER, testPath+`\Created`, registry.SET_VALUE)
+	k.Close()
+	t.Cleanup(func() {
+		registry.DeleteKey(registry.CURRENT_USER, path)
+		registry.DeleteKey(registry.CURRENT_USER, testPath+`\Created`)
+		registry.DeleteKey(registry.CURRENT_USER, testPath)
+	})
+	p := privacy{id: "privacy:keys", values: []regValue{{root: registry.CURRENT_USER, path: path, name: "Value", value: 1}}}
+	u, err := p.Snapshot(Context{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Apply(Context{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Revert(Context{}, u); err != nil {
+		t.Fatal(err)
+	}
+	if k, err := registry.OpenKey(registry.CURRENT_USER, path, registry.QUERY_VALUE); err == nil {
+		k.Close()
+		t.Fatal("the key Toque created is still there")
+	}
+	if k, err := registry.OpenKey(registry.CURRENT_USER, testPath+`\Created`, registry.QUERY_VALUE); err != nil {
+		t.Fatal("removed a key that existed before")
+	} else {
+		k.Close()
+	}
+}

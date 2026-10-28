@@ -12,6 +12,7 @@ import { StatTiles } from "./home/StatTiles";
 import { OptimizationsCard } from "./home/OptimizationsCard";
 import { DatacentersCard } from "./home/DatacentersCard";
 import { SystemCard } from "./home/SystemCard";
+import { FirstSteps } from "./home/FirstSteps";
 
 export function Home() {
   const { overview, run, task, toast, refresh } = useApp();
@@ -62,6 +63,8 @@ export function Home() {
           Medir una partida
         </Button>
       </header>
+
+      <FirstSteps />
 
       <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-4">
         <PingCard points={points} best={best} />
