@@ -1,13 +1,16 @@
 import { useState } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { motion } from "motion/react";
 import * as Service from "@wails/go/app/Service";
 import { errorText, win } from "@/lib/api";
 import { play } from "@/lib/sound";
-import { Wordmark } from "@/components/Logo";
+import { SymbolReveal, Wordmark } from "@/components/Logo";
+import { IconTile } from "@/components/IconTile";
+import type { TileTone } from "@/components/IconTile";
 import { ProgressBar } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { IconClose, IconMinimize } from "@/components/icons";
+import { IconArrowRight, IconClose, IconFlask, IconGlobe, IconMinimize, IconRevert } from "@/components/icons";
 
 export interface InstallState {
   installed: boolean;
@@ -18,11 +21,21 @@ export interface InstallState {
   newer: boolean;
 }
 
-const points = [
-  { n: "01", t: "Mide antes de tocar nada", d: "Tu ping real dentro de Realistic Street Soccer, tus FPS y cada tirón, sin modificar el juego." },
-  { n: "02", t: "Solo cambios con pruebas", d: "Cada optimización se valida alternando con y sin ella. Lo que no mejora, no se aplica." },
-  { n: "03", t: "Todo se puede deshacer", d: "Toque guarda cómo estaba cada ajuste y lo restaura con un clic o al desinstalar." },
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const points: { icon: ComponentType<{ className?: string }>; tone: TileTone; title: string; text: string }[] = [
+  { icon: IconGlobe, tone: "cyan", title: "Elige la ciudad", text: "Los 35 centros de datos de Roblox, también Lima, Santiago, Buenos Aires y Querétaro." },
+  { icon: IconFlask, tone: "lime", title: "Solo cambios con pruebas", text: "Cada ajuste se prueba con y sin él. Lo que no mejora, no se aplica." },
+  { icon: IconRevert, tone: "amber", title: "Todo se puede deshacer", text: "Toque guarda cómo estaba cada ajuste y lo restaura con un clic." },
 ];
+
+function Reveal({ delay, className, children }: { delay: number; className?: string; children: ReactNode }) {
+  return (
+    <motion.div className={className} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay, ease }}>
+      {children}
+    </motion.div>
+  );
+}
 
 export function Install({ state, onSkip }: { state: InstallState; onSkip: () => void }) {
   const [desktop, setDesktop] = useState(true);
@@ -43,62 +56,73 @@ export function Install({ state, onSkip }: { state: InstallState; onSkip: () => 
     }
   };
   return (
-    <div className="pitch-lines relative flex h-full flex-col bg-canvas">
+    <div className="flex h-full flex-col bg-canvas">
       <div className="drag flex h-10 shrink-0 items-start justify-end">
-        <button aria-label="Minimizar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring" onClick={() => win.minimise()}>
+        <button aria-label="Minimizar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-inset" onClick={() => win.minimise()}>
           <IconMinimize className="size-4" />
         </button>
-        <button aria-label="Cerrar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-bad hover:text-canvas focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus-ring" onClick={() => win.quit()}>
+        <button aria-label="Cerrar" className="no-drag grid h-10 w-12 place-items-center text-ink-3 outline-none hover:bg-bad hover:text-canvas focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-inset" onClick={() => win.quit()}>
           <IconClose className="size-4" />
         </button>
       </div>
-      <div className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center px-10 pb-16">
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-          <Wordmark className="h-[40px] text-ink" />
-          <h1 className="mt-10 max-w-[18ch] text-[44px] leading-[1.02] font-semibold tracking-[-0.03em] text-ink">
-            {update ? `Actualizar a la versión ${state.version}` : "Juega al toque."}
-          </h1>
-          <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-ink-2">
-            {update
-              ? `Tienes la versión ${state.installedVersion}. La actualización conserva tus pruebas, tus resultados y los cambios que tengas activos.`
-              : "Toque mide el retraso real de Roblox en tu PC y aplica solo los cambios que demuestran reducirlo."}
-          </p>
-        </motion.div>
-        {!update ? (
-          <div className="mt-12 grid grid-cols-3 gap-6">
-            {points.map((p, i) => (
-              <motion.div
-                key={p.n}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                className="shadow-[inset_0_1px_0_var(--color-line-strong)] pt-4"
-              >
-                <p className="num text-[15px] font-semibold text-volt">{p.n}</p>
-                <p className="mt-2 text-body-medium text-ink">{p.t}</p>
-                <p className="mt-1 text-body-regular text-ink-2">{p.d}</p>
-              </motion.div>
-            ))}
-          </div>
-        ) : null}
-        <div className="mt-12 flex items-center gap-6">
-          <Button disabled={busy} onClick={go} className="h-11 px-5 text-[15px]">
-            {busy ? (update ? "Actualizando" : "Instalando") : update ? "Actualizar ahora" : "Instalar Toque"}
-          </Button>
+      <div className="mx-auto flex w-full max-w-[1040px] flex-1 items-center gap-12 px-12 pb-12">
+        <div className="min-w-0 flex-1">
+          <Reveal delay={0}>
+            <Wordmark className="h-[30px] text-ink" />
+          </Reveal>
           {!update ? (
-            <Switch size="sm" isSelected={desktop} onChange={setDesktop} isDisabled={busy}>
-              <span className="text-body-regular text-ink-2">Acceso directo en el escritorio</span>
-            </Switch>
+            <Reveal delay={0.08} className="mt-8">
+              <span className="inline-flex items-center gap-2 rounded-full bg-volt-soft px-3 py-1 text-caption-1-semibold text-volt">
+                <span className="size-1.5 rounded-full bg-volt" />
+                Hecho para Realistic Street Soccer
+              </span>
+            </Reveal>
           ) : null}
-          <Button variant="ghost" disabled={busy} onClick={onSkip}>
-            {update ? "Abrir sin actualizar" : "Probar sin instalar"}
-          </Button>
+          <Reveal delay={0.14} className={update ? "mt-10" : "mt-4"}>
+            <h1 className="max-w-[16ch] text-[50px] leading-[1.02] font-semibold tracking-[-0.035em] text-ink">{update ? `Actualizar a la versión ${state.version}` : "Juega al toque."}</h1>
+            <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-ink-2">
+              {update
+                ? `Tienes la versión ${state.installedVersion}. La actualización conserva tus pruebas, tus resultados y los cambios que tengas activos.`
+                : "Toque mide el retraso real de Roblox en tu PC y aplica solo los cambios que demuestran reducirlo."}
+            </p>
+          </Reveal>
+          {!update ? (
+            <div className="mt-8 flex flex-col gap-4">
+              {points.map((p, i) => (
+                <Reveal key={p.title} delay={0.24 + i * 0.08} className="flex items-start gap-3.5">
+                  <IconTile icon={p.icon} tone={p.tone} className="size-9" />
+                  <div className="min-w-0">
+                    <p className="text-body-medium text-ink">{p.title}</p>
+                    <p className="mt-0.5 text-body-regular text-ink-3">{p.text}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          ) : null}
+          <Reveal delay={update ? 0.24 : 0.5} className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <Button disabled={busy} onClick={go} trailingIcon={busy ? undefined : IconArrowRight} className="h-11 px-5 text-[15px]">
+              {busy ? (update ? "Actualizando" : "Instalando") : update ? "Actualizar ahora" : "Instalar Toque"}
+            </Button>
+            <Button variant="ghost" disabled={busy} onClick={onSkip}>
+              {update ? "Abrir sin actualizar" : "Probar sin instalar"}
+            </Button>
+            {!update ? (
+              <Switch size="sm" isSelected={desktop} onChange={setDesktop} isDisabled={busy}>
+                <span className="text-body-regular text-ink-2">Acceso directo en el escritorio</span>
+              </Switch>
+            ) : null}
+          </Reveal>
+          <div className="mt-4 h-5 max-w-[420px]">
+            {busy ? <ProgressBar value={0} indeterminate /> : null}
+            {error ? <p className="text-body-regular text-bad">{error}</p> : null}
+          </div>
+          <Reveal delay={update ? 0.3 : 0.58}>
+            <p className="mt-3 max-w-[56ch] text-caption-1-medium text-ink-4">Se instala en {state.dir}. Necesita permisos de administrador para medir con las herramientas de Windows.</p>
+          </Reveal>
         </div>
-        <div className="mt-5 h-5 max-w-[420px]">
-          {busy ? <ProgressBar value={0} indeterminate /> : null}
-          {error ? <p className="text-body-regular text-bad">{error}</p> : null}
+        <div className="flex w-[360px] shrink-0 justify-center" aria-hidden>
+          <SymbolReveal className="h-[300px]" />
         </div>
-        <p className="mt-6 text-caption-1-medium text-ink-4">Se instala en {state.dir}. Necesita permisos de administrador para medir con las herramientas de Windows.</p>
       </div>
     </div>
   );

@@ -233,12 +233,6 @@
   }
 }
 
-.pitch-lines {
-  background-image:
-    radial-gradient(circle at 50% 50%, transparent 0 59px, oklch(0.91 0.195 123 / 0.045) 60px 61px, transparent 62px),
-    linear-gradient(90deg, transparent calc(50% - 0.5px), oklch(0.91 0.195 123 / 0.045) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px));
-}
-
 @keyframes pulse-ring {
   0% {
     transform: scale(0.6);
@@ -345,17 +339,6 @@
     opacity: 0.65;
   }
 }
-@keyframes session-glow {
-  0%,
-  100% {
-    transform: scale(0.94);
-    opacity: 0.35;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 0.85;
-  }
-}
 .session-spin {
   animation: session-spin 3.4s linear infinite;
 }
@@ -364,7 +347,4 @@
 }
 .session-breathe {
   animation: session-breathe 4.4s ease-in-out infinite;
-}
-.session-glow {
-  animation: session-glow 3.2s ease-in-out infinite;
 }

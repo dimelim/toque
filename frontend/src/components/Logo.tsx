@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="-8 -8 808 272" className={className} role="img" aria-label="Toque" fill="currentColor">
@@ -26,5 +28,33 @@ export function AppIcon({ className = "" }: { className?: string }) {
     <span className={`grid place-items-center rounded-[22%] bg-volt text-volt-ink ${className}`}>
       <Symbol className="h-[62%]" />
     </span>
+  );
+}
+
+const ring = "M36 120A76 76 0 1 1 188 120A76 76 0 1 1 36 120ZM72 120A40 40 0 1 0 152 120A40 40 0 1 0 72 120Z";
+const tail = "M152 120H188V256L152 227.2Z";
+const drawEase = [0.65, 0, 0.35, 1] as const;
+
+export function SymbolReveal({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="26 34 172 232" className={className} role="img" aria-label="Toque">
+      <motion.path
+        d={ring}
+        fillRule="evenodd"
+        className="fill-volt stroke-volt"
+        strokeWidth="1.5"
+        initial={{ pathLength: 0, fillOpacity: 0 }}
+        animate={{ pathLength: 1, fillOpacity: 1 }}
+        transition={{ pathLength: { duration: 1.2, ease: drawEase }, fillOpacity: { duration: 0.6, delay: 1.05, ease: "easeOut" } }}
+      />
+      <motion.path
+        d={tail}
+        className="fill-volt stroke-volt"
+        strokeWidth="1.5"
+        initial={{ pathLength: 0, fillOpacity: 0 }}
+        animate={{ pathLength: 1, fillOpacity: 1 }}
+        transition={{ pathLength: { duration: 0.7, delay: 0.75, ease: drawEase }, fillOpacity: { duration: 0.6, delay: 1.25, ease: "easeOut" } }}
+      />
+    </svg>
   );
 }

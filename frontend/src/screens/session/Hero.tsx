@@ -45,20 +45,11 @@ function Engine({ state }: { state: SessionState }) {
   return (
     <div className="relative size-[200px] shrink-0">
       <svg viewBox="0 0 200 200" className="absolute inset-0 size-full" aria-hidden>
-        <defs>
-          <radialGradient id="session-glow-fill">
-            <stop offset="0%" style={{ stopColor: "var(--color-volt)", stopOpacity: 0.5 }} />
-            <stop offset="100%" style={{ stopColor: "var(--color-volt)", stopOpacity: 0 }} />
-          </radialGradient>
-        </defs>
         <circle cx="100" cy="100" r="94" className="fill-none stroke-line-strong" strokeWidth="2" strokeDasharray="1 9" strokeLinecap="round" />
         <circle cx="100" cy="100" r="78" className="fill-none stroke-surface-3" strokeWidth="3" />
         <AnimatePresence initial={false}>
           {state === "active" ? (
             <motion.g key="active" {...layer}>
-              <g className="session-layer session-glow">
-                <circle cx="100" cy="100" r="72" fill="url(#session-glow-fill)" />
-              </g>
               <g className="session-layer session-spin">
                 <circle cx="100" cy="100" r="78" className="fill-none stroke-volt" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="140 350" />
               </g>
@@ -99,7 +90,7 @@ export function Hero({ info }: { info: SessionInfo | null }) {
   const now = useNow(state === "active");
   const text = state === "active" && info ? elapsed(info.since, now) : copy[state].text;
   return (
-    <Card className="pitch-lines mb-8 flex items-center gap-8 overflow-hidden p-6">
+    <Card className="mb-8 flex items-center gap-8 overflow-hidden p-6">
       <Engine state={state} />
       <div className="min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
