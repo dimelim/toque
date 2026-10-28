@@ -7,14 +7,15 @@ import (
 )
 
 type WindowsOption struct {
-	ID         string `json:"id"`
-	Group      string `json:"group"`
-	Title      string `json:"title"`
-	What       string `json:"what"`
-	Applied    bool   `json:"applied"`
-	Managed    bool   `json:"managed"`
-	Applicable bool   `json:"applicable"`
-	Note       string `json:"note"`
+	ID         string   `json:"id"`
+	Group      string   `json:"group"`
+	Title      string   `json:"title"`
+	What       string   `json:"what"`
+	Applied    bool     `json:"applied"`
+	Managed    bool     `json:"managed"`
+	Applicable bool     `json:"applicable"`
+	Note       string   `json:"note"`
+	Changes    []string `json:"changes"`
 }
 
 type windowsCopy struct {
@@ -47,7 +48,7 @@ func windowsOptions() []WindowsOption {
 		st := t.State(tweaks.Context{})
 		_, mine := managed[id]
 		c := windowsText[id]
-		out = append(out, WindowsOption{ID: id, Group: c.group, Title: c.title, What: c.what, Applied: st.Applied, Managed: mine, Applicable: st.Applicable, Note: st.Detail})
+		out = append(out, WindowsOption{ID: id, Group: c.group, Title: c.title, What: c.what, Applied: st.Applied, Managed: mine, Applicable: st.Applicable, Note: st.Detail, Changes: tweaks.PrivacyChanges(id)})
 	}
 	return out
 }

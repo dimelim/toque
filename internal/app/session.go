@@ -95,12 +95,12 @@ type session struct {
 }
 
 const (
-	stateOff        = "off"
-	stateWaiting    = "waiting"
-	stateActive     = "active"
-	statePaused     = "paused"
-	launchGrace     = 2 * time.Minute
-	restoreRetry    = 30 * time.Second
+	stateOff     = "off"
+	stateWaiting = "waiting"
+	stateActive  = "active"
+	statePaused  = "paused"
+	launchGrace  = 2 * time.Minute
+	restoreRetry = 30 * time.Second
 )
 
 var (

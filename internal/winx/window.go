@@ -1,6 +1,7 @@
 package winx
 
 import (
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -101,4 +102,39 @@ func IdleTime() time.Duration {
 	}
 	now, _, _ := procGetTickCount.Call()
 	return time.Duration(uint32(now)-info.Time) * time.Millisecond
+}
+
+var (
+	procGetWindow = user32.NewProc("GetWindow")
+	closeMu       sync.Mutex
+	closePIDs     map[uint32]bool
+	closed        int
+	closeEach     = sync.OnceValue(func() uintptr {
+		return syscall.NewCallback(func(h windows.HWND, _ uintptr) uintptr {
+			var pid uint32
+			windows.GetWindowThreadProcessId(h, &pid)
+			if !closePIDs[pid] || !windows.IsWindowVisible(h) {
+				return 1
+			}
+			if owner, _, _ := procGetWindow.Call(uintptr(h), gwOwner); owner != 0 {
+				return 1
+			}
+			procPostMessageW.Call(uintptr(h), wmClose, 0, 0)
+			closed++
+			return 1
+		})
+	})
+)
+
+const (
+	gwOwner = 4
+	wmClose = 0x0010
+)
+
+func CloseWindowsOf(pids map[uint32]bool) int {
+	closeMu.Lock()
+	defer closeMu.Unlock()
+	closePIDs, closed = pids, 0
+	windows.EnumWindows(closeEach(), nil)
+	return closed
 }

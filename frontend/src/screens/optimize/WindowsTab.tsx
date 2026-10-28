@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { api, errorText } from "@/lib/api";
 import { play } from "@/lib/sound";
 import type { WindowsOption } from "@/lib/types";
@@ -17,6 +18,7 @@ const groups = [
 
 function Row({ o, disabled, onChange }: { o: WindowsOption; disabled: boolean; onChange: (on: boolean) => void }) {
   const already = o.applied && !o.managed;
+  const [open, setOpen] = useState(false);
   return (
     <div className="flex items-start justify-between gap-6 py-4 shadow-[inset_0_-1px_0_var(--color-line)] last:shadow-none">
       <div className="min-w-0">
@@ -34,6 +36,26 @@ function Row({ o, disabled, onChange }: { o: WindowsOption; disabled: boolean; o
           ) : null}
         </div>
         <p className="mt-1 max-w-[70ch] text-body-regular text-ink-2">{o.what}</p>
+        <button className="mt-2 text-caption-1-medium text-ink-3 underline-offset-2 outline-none hover:text-ink-2 hover:underline focus-visible:underline" onClick={() => setOpen(!open)} aria-expanded={open}>
+          {open ? "Ocultar qué cambia" : "Ver qué cambia"}
+        </button>
+        <AnimatePresence initial={false}>
+          {open ? (
+            <motion.ul
+              className="mt-2 flex flex-col gap-1 overflow-hidden rounded-lg bg-surface-1 px-3 py-2 font-mono text-[11.5px] leading-relaxed text-ink-3"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {o.changes.map((c) => (
+                <li key={c} className="break-all">
+                  {c}
+                </li>
+              ))}
+            </motion.ul>
+          ) : null}
+        </AnimatePresence>
       </div>
       <Switch size="md" className="mt-0.5 shrink-0" isSelected={o.applied} isDisabled={disabled || !o.applicable || already} onChange={onChange} aria-label={o.title} />
     </div>

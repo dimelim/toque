@@ -63,6 +63,7 @@ export const api = {
   setAllWindowsOptions: (on: boolean) => Service.SetAllWindowsOptions(on) as Promise<WindowsOption[]>,
   whatsNew: () => Service.WhatsNew() as Promise<{ version: string; show: boolean }>,
   seenWhatsNew: () => Service.SeenWhatsNew() as Promise<void>,
+  closeApp: (name: string) => Service.CloseApp(name) as Promise<number>,
   cancel: () => Service.Cancel() as Promise<void>,
   noteError: (text: string) => Service.NoteError(text) as Promise<void>,
   exportReport: () => Service.ExportReport() as Promise<string>,

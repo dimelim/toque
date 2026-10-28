@@ -407,4 +407,5 @@ export interface WindowsOption {
   managed: boolean;
   applicable: boolean;
   note: string;
+  changes: string[];
 }

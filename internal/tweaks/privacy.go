@@ -307,6 +307,24 @@ var privacyTweaks = []privacy{
 	},
 }
 
+func PrivacyChanges(id string) []string {
+	for _, p := range privacyTweaks {
+		if p.id != id {
+			continue
+		}
+		out := make([]string, len(p.values))
+		for i, v := range p.values {
+			op := "="
+			if v.ceiling {
+				op = "≤"
+			}
+			out[i] = fmt.Sprintf("%s %s %d", v.key(), op, v.value)
+		}
+		return out
+	}
+	return nil
+}
+
 func PrivacyIDs() []string {
 	ids := make([]string, len(privacyTweaks))
 	for i, p := range privacyTweaks {

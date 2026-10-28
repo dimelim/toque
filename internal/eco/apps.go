@@ -32,3 +32,13 @@ func Label(exe string) (string, bool) {
 	l, ok := apps[exe]
 	return l, ok
 }
+
+func Exes(label string) []string {
+	var out []string
+	for exe, l := range apps {
+		if l == label {
+			out = append(out, exe)
+		}
+	}
+	return out
+}
