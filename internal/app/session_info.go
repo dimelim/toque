@@ -145,7 +145,7 @@ func (ss *session) watchAction() SessionAction {
 	a := SessionAction{
 		ID:      "watch",
 		Title:   "Vigilar qué te frena",
-		What:    "Mira cada 10 segundos qué programas gastan procesador y memoria y te lo cuenta aquí. No cambia nada.",
+		What:    "Mira cada 10 segundos qué programas gastan procesador, gráfica y memoria y te lo cuenta aquí. No cambia nada.",
 		Tested:  true,
 		Enabled: ss.cfg.Watch,
 		Status:  ss.status(ss.cfg.Watch),

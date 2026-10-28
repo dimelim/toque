@@ -62,6 +62,7 @@ func (s *Service) monitor(minimized func() bool) {
 			}
 		}
 		s.sess.step(o.Roblox.Running, tick%sampleEvery == 0)
+		o.Session = s.sess.current()
 		if !calm {
 			sendIfChanged(s, "overview", o, &lastOverview)
 			sendIfChanged(s, "session", s.sessionInfo(), &lastSession)

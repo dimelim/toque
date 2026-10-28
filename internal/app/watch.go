@@ -104,12 +104,15 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 				s.updateWatch(gen, func(w *WatchInfo) { w.Checked += len(page) })
 				if matches, _ := serversIn(ctx, key, page); len(matches) > 0 {
 					playing := len(roblox.Running()) > 0
-					probe, tried, ok := s.joinWatched(ctx, key, matches)
-					if ok {
+					probe, outcome := s.joinWatched(ctx, key, matches)
+					switch {
+					case outcome == joinDone:
 						s.updateWatch(gen, func(w *WatchInfo) { w.Joined = &probe })
 						return
+					case outcome == joinCancelled:
+						return
 					}
-					if tried && playing && ctx.Err() == nil {
+					if outcome == joinFailed && playing && ctx.Err() == nil {
 						s.updateWatch(gen, func(w *WatchInfo) {
 							w.Note = fmt.Sprintf("No pude entrar en la partida de %s, así que paré el vigía para no volver a sacarte de tu partida.", regionCity(key))
 						})
@@ -126,22 +129,36 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 	}
 }
 
-func (s *Service) joinWatched(watching context.Context, key string, matches []roblox.PublicServer) (ServerProbe, bool, bool) {
-	ctx, done, err := s.begin("play")
+type joinOutcome int
+
+const (
+	joinSkipped joinOutcome = iota
+	joinFailed
+	joinCancelled
+	joinDone
+)
+
+func (s *Service) joinWatched(watching context.Context, key string, matches []roblox.PublicServer) (ServerProbe, joinOutcome) {
+	task, done, err := s.begin("play")
 	if err != nil {
-		return ServerProbe{}, false, false
+		return ServerProbe{}, joinSkipped
 	}
 	defer done()
-	stop := context.AfterFunc(watching, s.Cancel)
+	ctx, cancel := context.WithCancel(task)
+	defer cancel()
+	stop := context.AfterFunc(watching, cancel)
 	defer stop()
 	inst, err := s.launchInstall()
 	if err != nil {
-		return ServerProbe{}, false, false
+		return ServerProbe{}, joinSkipped
 	}
 	s.progress("play", "join", 0.1, fmt.Sprintf("Hay una partida en %s. Entrando", regionCity(key)))
 	sess, _, err := s.joinIn(ctx, inst, key, matches, "play")
-	if err != nil {
-		return ServerProbe{}, true, false
+	switch {
+	case task.Err() != nil:
+		return ServerProbe{}, joinCancelled
+	case err != nil:
+		return ServerProbe{}, joinFailed
 	}
-	return joinedProbe(ctx, sess), true, true
+	return joinedProbe(ctx, sess), joinDone
 }

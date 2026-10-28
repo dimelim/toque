@@ -7,8 +7,9 @@ import (
 func fakeChange(t *testing.T, value *int, target int) *systemChange[int] {
 	t.Helper()
 	dir := t.TempDir()
+	orig := systemDir
 	systemDir = func() string { return dir }
-	t.Cleanup(func() { systemDir = func() string { return "" } })
+	t.Cleanup(func() { systemDir = orig })
 	return &systemChange[int]{
 		file:   "fake.json",
 		read:   func() (int, error) { return *value, nil },

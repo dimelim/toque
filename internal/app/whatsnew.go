@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"toque/internal/winx"
 )
 
 type WhatsNew struct {
@@ -13,11 +11,11 @@ type WhatsNew struct {
 	Show    bool   `json:"show"`
 }
 
-func versionPath() string { return filepath.Join(winx.DataDir(), "version.txt") }
+func versionPath() string { return filepath.Join(systemDir(), "version.txt") }
 
 func returningUser() bool {
 	for _, name := range []string{"journal.json", "datacenters.json", "places.json", "session.json", "hud.json"} {
-		if _, err := os.Stat(filepath.Join(winx.DataDir(), name)); err == nil {
+		if _, err := os.Stat(filepath.Join(systemDir(), name)); err == nil {
 			return true
 		}
 	}

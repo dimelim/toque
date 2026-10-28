@@ -6,7 +6,7 @@ import { Card } from "@/components/primitives";
 import { IconInfo, IconOk, IconWarn } from "@/components/icons";
 
 function amount(note: SessionNote, p: SessionProc) {
-  return note.id === "ram" ? p.ramMb : p.cpu;
+  return note.id === "ram" ? p.ramMb : note.id === "gpu" ? p.gpu : p.cpu;
 }
 
 function amountText(note: SessionNote, value: number) {
@@ -70,7 +70,7 @@ export function Notes({ info }: { info: SessionInfo }) {
           <div>
             <p className="text-body-medium text-ink">{active ? "Nada te está frenando ahora mismo" : "Todavía no hay nada que mostrar"}</p>
             <p className="mt-1 text-body-regular text-ink-2">
-              {active ? "Toque sigue mirando y te avisa aquí si algo empieza a gastar de más." : "Los datos aparecen durante tu partida. Cuando juegues, Toque te dice aquí qué consume CPU o memoria."}
+              {active ? "Toque sigue mirando y te avisa aquí si algo empieza a gastar de más." : "Los datos aparecen durante tu partida. Cuando juegues, Toque te dice aquí qué consume CPU, gráfica o memoria."}
             </p>
           </div>
         </div>

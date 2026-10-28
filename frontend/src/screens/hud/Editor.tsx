@@ -92,7 +92,11 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
     const x = Math.min(maxX, Math.max(0, pos.x + m[0]));
     const y = Math.min(maxY, Math.max(0, pos.y + m[1]));
     setPos({ x, y });
-    onPlace(x, y, true);
+    onPlace(x, y, false);
+  };
+
+  const save = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!disabled && e.key.startsWith("Arrow")) onPlace(pos.x, pos.y, true);
   };
 
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
@@ -113,6 +117,10 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
           onPointerUp={up}
           onPointerCancel={up}
           onKeyDown={nudge}
+          onKeyUp={save}
+          aria-valuemin={0}
+          aria-valuemax={maxX}
+          aria-valuenow={pos.x}
           tabIndex={disabled ? -1 : 0}
           className={cx(
             "absolute touch-none rounded-[10%] bg-surface-3 p-[1.2%] ring-1 transition-[box-shadow,background-color] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",

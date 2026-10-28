@@ -30,8 +30,9 @@ func TestWatchNotesGroupAppsAndHideToque(t *testing.T) {
 		{PID: 50, Name: "svchost.exe", Core: 20 * cores},
 		{PID: 60, Name: "robloxplayerbeta.exe", Core: 30 * cores},
 	}
-	w.add(procs, own)
-	w.add(procs, own)
+	gpu := map[uint32]float64{20: 12, 60: 80, 11: 40}
+	w.add(procs, own, gpu)
+	w.add(procs, own, gpu)
 	ids := map[string]SessionNote{}
 	for _, n := range w.notes() {
 		ids[n.ID] = n
@@ -42,6 +43,9 @@ func TestWatchNotesGroupAppsAndHideToque(t *testing.T) {
 	}
 	if cpu.Tone != "warn" {
 		t.Errorf("7 %% of the CPU should warn, got %q", cpu.Tone)
+	}
+	if g, ok := ids["gpu"]; !ok || len(g.Procs) != 1 || g.Procs[0].Name != "Steam" || g.Procs[0].GPU != 12 || g.Tone != "warn" {
+		t.Fatalf("gpu note = %+v", g)
 	}
 	if _, ok := ids["defender"]; !ok {
 		t.Error("missing defender note")

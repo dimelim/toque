@@ -15,6 +15,7 @@ const (
 	lowRAMMB     = 1500
 	topCPUShown  = 3
 	minCPUShown  = 1.0
+	minGPUShown  = 2.0
 	defenderBusy = 3.0
 )
 
@@ -29,14 +30,15 @@ type watchLog struct {
 	samples int
 	own     float64
 	core    map[string]float64
+	gpu     map[string]float64
 	ram     map[string]float64
 	seen    map[string]bool
 	ramFree float64
 }
 
-func (w *watchLog) add(procs []sysmon.ProcCPU, own map[uint32]bool) {
+func (w *watchLog) add(procs []sysmon.ProcCPU, own map[uint32]bool, gpu map[uint32]float64) {
 	if w.core == nil {
-		w.core, w.seen = map[string]float64{}, map[string]bool{}
+		w.core, w.gpu, w.seen = map[string]float64{}, map[string]float64{}, map[string]bool{}
 	}
 	w.samples++
 	ram := map[string]float64{}
@@ -50,6 +52,7 @@ func (w *watchLog) add(procs []sysmon.ProcCPU, own map[uint32]bool) {
 			continue
 		}
 		w.core[p.Name] += p.Core
+		w.gpu[p.Name] += gpu[p.PID]
 		ram[p.Name] += p.RAMMB
 	}
 	w.ram = ram
@@ -82,6 +85,13 @@ func (w watchLog) notes() []SessionNote {
 		}
 		notes = append(notes, n)
 	}
+	if top := w.topGPU(); len(top) > 0 {
+		n := SessionNote{ID: "gpu", Tone: "info", Title: "Lo que más gráfica gastó mientras jugabas", Detail: "Media de toda la partida, en porcentaje de la gráfica. Lo que la usa de fondo se la quita a Roblox.", Procs: top}
+		if top[0].GPU >= 10 {
+			n.Tone = "warn"
+		}
+		notes = append(notes, n)
+	}
 	if w.ramFree > 0 && w.ramFree < lowRAMMB {
 		notes = append(notes, SessionNote{ID: "ram", Tone: "warn", Title: "Te queda poca memoria libre", Detail: fmt.Sprintf("Quedan %.0f MB libres. Cerrar alguno de estos programas antes de jugar libera memoria para Roblox.", w.ramFree), Procs: w.topRAM()})
 	}
@@ -107,11 +117,12 @@ func (w watchLog) byApp() []SessionProc {
 			apps[name] = p
 		}
 		p.CPU += share(w.core[exe], w.samples)
+		p.GPU += w.gpu[exe] / float64(w.samples)
 		p.RAMMB += w.ram[exe]
 	}
 	out := make([]SessionProc, 0, len(apps))
 	for _, p := range apps {
-		out = append(out, SessionProc{Name: p.Name, CPU: round1(p.CPU), RAMMB: round1(p.RAMMB)})
+		out = append(out, SessionProc{Name: p.Name, CPU: round1(p.CPU), GPU: round1(p.GPU), RAMMB: round1(p.RAMMB)})
 	}
 	return out
 }
@@ -130,6 +141,10 @@ func top(list []SessionProc, by func(SessionProc) float64, min float64) []Sessio
 
 func (w watchLog) topCPU() []SessionProc {
 	return top(w.byApp(), func(p SessionProc) float64 { return p.CPU }, minCPUShown)
+}
+
+func (w watchLog) topGPU() []SessionProc {
+	return top(w.byApp(), func(p SessionProc) float64 { return p.GPU }, minGPUShown)
 }
 
 func (w watchLog) topRAM() []SessionProc {

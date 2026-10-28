@@ -59,7 +59,12 @@ func windowedCheck() (PrepCheck, bool) {
 	}
 	c := PrepCheck{ID: "windowed", Title: "Juegos en ventana"}
 	if st.Applied {
-		c.Done, c.Detail = true, "Windows 11 pasa Roblox al modo flip, que Microsoft documenta con menos retraso."
+		c.Done, c.Detail = true, "Activado. Reabre Roblox y mide de nuevo para comprobar que ya no copia cada frame."
+		if mine {
+			c.Action = "Quitar"
+		} else {
+			c.Detail = "Ya lo tenías activado en Windows."
+		}
 		return c, true
 	}
 	c.Detail = "En tu última medición Roblox se mostraba copiando cada frame al escritorio. Windows 11 puede pasarlo al modo flip, que Microsoft documenta con menos retraso. Se nota al reabrir Roblox."
@@ -69,13 +74,16 @@ func windowedCheck() (PrepCheck, bool) {
 
 func windowsCheck() PrepCheck {
 	c := PrepCheck{ID: "windows", Title: "Windows más limpio", Action: "Ver ajustes"}
-	switch n := pendingPrivacy(); n {
-	case 0:
-		c.Done, c.Action, c.Detail = true, "", "Sin telemetría opcional, publicidad ni sugerencias."
-	case 1:
+	pending, unknown := pendingPrivacy()
+	switch {
+	case pending == 1:
 		c.Detail = "Te queda 1 ajuste de privacidad por quitar."
+	case pending > 1:
+		c.Detail = fmt.Sprintf("Te quedan %d ajustes de privacidad por quitar.", pending)
+	case unknown > 0:
+		c.Detail = "No pude comprobar algunos ajustes de Windows."
 	default:
-		c.Detail = fmt.Sprintf("Te quedan %d ajustes de privacidad por quitar.", n)
+		c.Done, c.Action, c.Detail = true, "", "Sin telemetría opcional, publicidad ni sugerencias."
 	}
 	return c
 }
@@ -134,7 +142,13 @@ func (s *Service) ApplyPrep(id string) (SessionInfo, error) {
 	}
 	switch id {
 	case "windowed":
-		return s.Session(), tweaks.Apply(s.context(), tweaks.WindowedGames())
+		t := tweaks.WindowedGames()
+		if managed, _ := tweaks.Entries(); managed != nil {
+			if _, mine := managed[t.ID()]; mine && t.State(s.context()).Applied {
+				return s.Session(), tweaks.Revert(s.context(), t)
+			}
+		}
+		return s.Session(), tweaks.Apply(s.context(), t)
 	case "fps-cap":
 	default:
 		return s.Session(), errors.New("no conozco ese ajuste")

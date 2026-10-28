@@ -60,7 +60,7 @@ export function WindowsTab() {
     try {
       setItems(await fn());
       play(on ? "on" : "off");
-      if (done) toast({ tone: "ok", title: done });
+      if (done) toast({ tone: "ok", title: done, detail: on ? "Algunos cambios, como la búsqueda o las recomendaciones de Inicio, se notan al volver a iniciar sesión." : undefined });
     } catch (e) {
       play("error");
       toast({ tone: "error", title: "No pude cambiar Windows", detail: errorText(e) });

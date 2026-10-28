@@ -30,7 +30,7 @@ func windows11() bool {
 	defer k.Close()
 	build, _, err := k.GetStringValue("CurrentBuild")
 	n, _ := strconv.Atoi(build)
-	return err == nil && n >= 22000
+	return err == nil && n >= 22621
 }
 
 func readDirectX() (string, bool, error) {
@@ -96,12 +96,18 @@ func withDirectXSetting(settings, name, value string) string {
 			continue
 		}
 		if k, _, ok := strings.Cut(part, "="); ok && k == name {
+			if value == "" {
+				continue
+			}
 			part, found = name+"="+value, true
 		}
 		parts = append(parts, part)
 	}
-	if !found {
+	if !found && value != "" {
 		parts = append(parts, name+"="+value)
+	}
+	if len(parts) == 0 {
+		return ""
 	}
 	return strings.Join(parts, ";") + ";"
 }
@@ -116,10 +122,11 @@ func (windowedGames) Snapshot(Context) (Undo, error) {
 	if err != nil {
 		return nil, err
 	}
+	u := Undo{"setting": directXSetting(cur, swapUpgrade)}
 	if !ok {
-		return Undo{"value": absent}, nil
+		u["value"] = absent
 	}
-	return Undo{"value": cur}, nil
+	return u, nil
 }
 
 func (windowedGames) Apply(Context) error {
@@ -131,14 +138,19 @@ func (windowedGames) Apply(Context) error {
 }
 
 func (windowedGames) Revert(_ Context, u Undo) error {
-	prev, ok := u["value"]
-	switch {
-	case !ok:
+	prev, ok := u["setting"]
+	if !ok {
 		return nil
-	case prev == absent:
+	}
+	cur, _, err := readDirectX()
+	if err != nil {
+		return err
+	}
+	next := withDirectXSetting(cur, swapUpgrade, prev)
+	if next == "" && u["value"] == absent {
 		return removeDirectX()
 	}
-	return writeDirectX(prev)
+	return writeDirectX(next)
 }
 
 func WindowedGames() Tweak { return windowedGames{} }

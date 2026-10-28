@@ -22,13 +22,13 @@ type windowsCopy struct {
 }
 
 var windowsText = map[string]windowsCopy{
-	"privacy:telemetry":   {"datos", "Datos de diagnóstico opcionales", "Apaga el envío de datos de diagnóstico opcionales, igual que el interruptor de Configuración. Windows sigue mandando el mínimo obligatorio, que usa para no ofrecerte actualizaciones con fallos conocidos en tu equipo."},
+	"privacy:telemetry":   {"datos", "Datos de diagnóstico opcionales", "Apaga el envío de datos de diagnóstico opcionales. Windows sigue mandando el mínimo obligatorio, que usa para no ofrecerte actualizaciones con fallos conocidos en tu equipo. Mientras esté puesto, Configuración puede decir que tu organización administra este ajuste."},
 	"privacy:typing":      {"datos", "Datos de escritura y lápiz", "Windows deja de recopilar lo que escribes y dibujas para afinar sus sugerencias."},
 	"privacy:feedback":    {"datos", "Preguntas de opinión", "Windows deja de pedirte que valores cómo funciona."},
 	"privacy:ads":         {"anuncios", "Publicidad personalizada", "Apaga el identificador de publicidad y las experiencias personalizadas con tus datos de diagnóstico."},
 	"privacy:suggestions": {"anuncios", "Sugerencias y apps automáticas", "Quita consejos, recomendaciones y avisos de Inicio, Configuración, el Explorador y la pantalla de bloqueo, y evita que Windows instale por su cuenta apps que te sugiere."},
 	"privacy:search":      {"anuncios", "Búsqueda web en Inicio", "La búsqueda del menú Inicio deja de mandar lo que escribes a Bing. Se nota al volver a iniciar sesión."},
-	"privacy:widgets":     {"funciones", "Widgets y noticias", "Quita el panel de widgets, que mantiene procesos web abiertos en segundo plano gastando memoria."},
+	"privacy:widgets":     {"funciones", "Widgets y noticias", "Quita el panel de widgets, que mantiene procesos web abiertos en segundo plano."},
 	"privacy:ai":          {"funciones", "Recall y Copilot antiguo", "Evita que Recall guarde capturas de lo que haces en los equipos que lo traen, y quita el Copilot lateral de Windows 11 23H2. El Copilot nuevo es una app normal que puedes desinstalar."},
 }
 
@@ -95,12 +95,14 @@ func (s *Service) SetAllWindowsOptions(on bool) ([]WindowsOption, error) {
 	return s.WindowsOptions(), errors.Join(errs...)
 }
 
-func pendingPrivacy() int {
-	n := 0
+func pendingPrivacy() (pending, unknown int) {
 	for _, o := range windowsOptions() {
-		if o.Applicable && !o.Applied {
-			n++
+		switch {
+		case !o.Applicable && !o.Applied:
+			unknown++
+		case !o.Applied:
+			pending++
 		}
 	}
-	return n
+	return pending, unknown
 }

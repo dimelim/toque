@@ -30,8 +30,11 @@ if ($LASTEXITCODE -ne 0) { throw 'No se pudo firmar el manifiesto' }
 
 git tag $tag
 git push origin $tag
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo subir la etiqueta' }
 $notesPath = Join-Path $env:TEMP "toque-notes-$version.txt"
 [IO.File]::WriteAllText($notesPath, $Notes, (New-Object Text.UTF8Encoding $false))
 gh release create $tag --repo dimelim/toque --title "Toque $version" --notes-file $notesPath $exe $manifestPath "$manifestPath.sig"
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo publicar en dimelim/toque' }
+$published = $LASTEXITCODE
+Remove-Item $notesPath -ErrorAction SilentlyContinue
+if ($published -ne 0) { throw 'No se pudo publicar en dimelim/toque' }
 Write-Host "== Toque $version publicada"

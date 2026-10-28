@@ -17,6 +17,7 @@ import (
 type SessionProc struct {
 	Name  string  `json:"name"`
 	CPU   float64 `json:"cpu"`
+	GPU   float64 `json:"gpu"`
 	RAMMB float64 `json:"ramMb"`
 }
 
@@ -81,12 +82,14 @@ type session struct {
 	since      time.Time
 	paused     int
 	sampler    sysmon.CPUSampler
+	gpu        *sysmon.GPUSampler
+	gpuUse     map[uint32]float64
 	procs      []sysmon.ProcCPU
 	watch      watchLog
 	self       map[uint32]selfEntry
 	excused    map[string]bool
 	launchedAt time.Time
-	failures   int
+	retryAt    time.Time
 	prep       []PrepCheck
 	experiment map[string]*ExperimentRecord
 }
@@ -97,7 +100,7 @@ const (
 	stateActive     = "active"
 	statePaused     = "paused"
 	launchGrace     = 2 * time.Minute
-	maxRestoreTries = 3
+	restoreRetry    = 30 * time.Second
 )
 
 var (
@@ -155,15 +158,18 @@ func (ss *session) step(running, sample bool) {
 		if next != statePaused && len(throttler().Throttled()) > 0 {
 			throttler().RestoreAll()
 		}
-		if next != statePaused && time.Since(ss.launchedAt) > launchGrace && ss.failures < maxRestoreTries {
+		if next != statePaused && time.Since(ss.launchedAt) > launchGrace && time.Now().After(ss.retryAt) {
 			if restoreSystem() != nil {
-				ss.failures++
+				ss.retryAt = time.Now().Add(restoreRetry)
 			}
 		}
 		return
 	}
 	if sample {
 		ss.procs = ss.sampler.Sample()
+		if ss.gpu != nil {
+			ss.gpuUse = ss.gpu.Sample()
+		}
 	}
 	ss.followForeground()
 	if sample {
@@ -173,11 +179,11 @@ func (ss *session) step(running, sample bool) {
 
 func (ss *session) start() {
 	ss.since = time.Now()
-	ss.failures = 0
 	ss.watch = watchLog{}
 	ss.excused = map[string]bool{}
 	ss.sampler.Reset()
 	ss.procs = ss.sampler.Sample()
+	ss.gpu, _ = sysmon.NewGPUSampler()
 	if ss.cfg.Windows {
 		visualChange.on()
 	}
@@ -196,6 +202,10 @@ func (s *Service) prelaunch() {
 }
 
 func (ss *session) stop() {
+	if ss.gpu != nil {
+		ss.gpu.Close()
+		ss.gpu = nil
+	}
 	ss.relaxSelf()
 	throttler().RestoreAll()
 	restoreSystem()
@@ -204,7 +214,7 @@ func (ss *session) stop() {
 
 func (ss *session) act() {
 	if ss.cfg.Watch {
-		ss.watch.add(ss.procs, ss.ownTree())
+		ss.watch.add(ss.procs, ss.ownTree(), ss.gpuUse)
 	}
 	if ss.cfg.Self && winx.ForegroundPID() != ownPID() {
 		ss.calmSelf()
@@ -316,6 +326,12 @@ func (ss *session) relaxSelf() {
 		}
 		delete(ss.self, pid)
 	}
+}
+
+func (ss *session) current() string {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	return ss.state
 }
 
 func (s *Service) pauseSession() {

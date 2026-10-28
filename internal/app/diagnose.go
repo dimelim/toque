@@ -239,8 +239,8 @@ func findings(d Diagnosis) []Finding {
 			add("paging", "warn", "memoria", "Windows lee memoria del disco durante la partida", fmt.Sprintf("%.0f lecturas de paginación por segundo de media.", g.Sys.HardFaults), "")
 		}
 	}
-	if n := pendingPrivacy(); n > 0 {
-		add("windows-privacy", "info", "sistema", "Windows envía datos opcionales y te muestra publicidad", fmt.Sprintf("Hay %d ajustes de privacidad de Windows sin quitar. Quitarlos no sube los FPS, es cuestión de privacidad y de limpieza.", n), "windows")
+	if n, _ := pendingPrivacy(); n > 0 {
+		add("windows-privacy", "info", "sistema", "Quedan ajustes de privacidad de Windows por quitar", fmt.Sprintf("Hay %d sin quitar. Quitarlos no sube los FPS, es cuestión de privacidad y de limpieza.", n), "windows")
 	}
 	if up := uptime(); up < 15*time.Minute {
 		add("cold-start", "info", "sistema", "Acabas de encender el PC", fmt.Sprintf("Lleva %d minutos encendido. Las primeras partidas tras arrancar van peor porque Windows aún está cargando cosas en memoria y Roblox lee sus archivos del disco. Mide de nuevo en un rato.", int(up.Minutes())), "")

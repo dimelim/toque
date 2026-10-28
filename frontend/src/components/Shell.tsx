@@ -75,9 +75,10 @@ function useWatchToast() {
   }, [watch, toast]);
   useEffect(() => {
     const note = watch?.note;
-    if (!note || announced.current === note) return;
-    announced.current = note;
-    play("error");
+    const key = `${watch?.since}|${note}`;
+    if (!note || announced.current === key) return;
+    announced.current = key;
+    play("tap");
     toast({ tone: "info", title: "Vigía detenido", detail: note, sticky: true });
   }, [watch, toast]);
 }

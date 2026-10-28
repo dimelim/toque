@@ -351,6 +351,7 @@ export type SessionState = "off" | "waiting" | "active" | "paused";
 export interface SessionProc {
   name: string;
   cpu: number;
+  gpu: number;
   ramMb: number;
 }
 
