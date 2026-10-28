@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { api, errorText } from "@/lib/api";
 import { play } from "@/lib/sound";
-import type { PrepCheck } from "@/lib/types";
+import type { PrepCheck, SessionAction } from "@/lib/types";
 import { useSession } from "@/hooks/use-session";
 import { useApp } from "@/state";
 import { PageHeader } from "@/components/primitives";
@@ -69,9 +69,8 @@ export function Session() {
     }
   };
 
-  const verify = async () => {
-    if (!info) return;
-    const rec = await run("verify", "Probando apps de fondo en modo eficiencia", () => api.verify(info.verifyId));
+  const verify = async (a: SessionAction) => {
+    const rec = await run("verify", `Probando ${a.title.toLowerCase()}`, () => api.verify(a.verifyId));
     if (rec) {
       toast({ tone: rec.verdict === "improves" ? "ok" : "info", title: rec.verdict === "improves" ? "Mejora confirmada en tu PC" : "Sin mejora clara en tu PC", detail: rec.summary });
       setInfo(await api.session());
@@ -102,12 +101,10 @@ export function Session() {
               <ActionCard
                 key={a.id}
                 action={a}
-                experiment={info.experiment}
-                verifyId={info.verifyId}
                 busy={pending === a.id}
                 taskActive={!!task}
                 onToggle={(v) => toggleAction(a.id, a.title, v)}
-                onVerify={verify}
+                onVerify={() => verify(a)}
               />
             ))}
           </div>

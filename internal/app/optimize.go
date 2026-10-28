@@ -143,7 +143,7 @@ func (s *Service) RevertAll() error {
 	if len(roblox.Running()) > 0 {
 		return errors.New("cierra Roblox para revertir todo")
 	}
-	return errors.Join(throttler().RestoreAll(), tweaks.RevertAll(s.context()))
+	return errors.Join(throttler().RestoreAll(), restoreSystem(), tweaks.RevertAll(s.context()))
 }
 
 func (s *Service) Verify(id string) (ExperimentRecord, error) {

@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.15.1"
+const Version = "1.16.0"
 
 type Emitter func(name string, data any)
 
@@ -113,6 +113,7 @@ func (s *Service) launchInstall() (roblox.Install, error) {
 		return roblox.Install{}, err
 	}
 	tweaks.Resync(tweaks.Context{Install: inst})
+	s.prelaunch()
 	return inst, nil
 }
 
@@ -218,7 +219,11 @@ func currentSession(inst roblox.Install) (roblox.Session, error) {
 
 func (s *Service) Recover() {
 	throttler().Recover()
+	restoreSystem()
 	tweaks.Revert(tweaks.Context{}, backgroundTweak{})
+	for _, t := range systemTweaks {
+		tweaks.Revert(tweaks.Context{}, t)
+	}
 	inst, err := roblox.Find()
 	if err != nil {
 		return

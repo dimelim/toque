@@ -29,12 +29,15 @@ func (s *Service) SetHudConfig(cfg overlay.Config) overlay.Config {
 	cfg.Demo = false
 	s.hud.Apply(cfg)
 	out := s.hud.Config()
-	saved := out
-	saved.Move = false
-	if b, err := json.MarshalIndent(saved, "", "  "); err == nil {
+	saveHudConfig(out)
+	return out
+}
+
+func saveHudConfig(cfg overlay.Config) {
+	cfg.Move = false
+	if b, err := json.MarshalIndent(cfg, "", "  "); err == nil {
 		winx.AsUser(func() error { return os.WriteFile(hudPath(), b, 0o644) })
 	}
-	return out
 }
 
 func (s *Service) MoveHudTo(corner string) overlay.Config {
@@ -53,4 +56,32 @@ func (s *Service) MoveHudTo(corner string) overlay.Config {
 		cfg.X, cfg.Y = m, m
 	}
 	return s.SetHudConfig(cfg)
+}
+
+type HudLayout struct {
+	ScreenW int `json:"screenW"`
+	ScreenH int `json:"screenH"`
+	PanelW  int `json:"panelW"`
+	PanelH  int `json:"panelH"`
+}
+
+func (s *Service) HudLayout() HudLayout {
+	sw, sh := overlay.ScreenSize()
+	pw, ph := overlay.PanelSize(s.hud.Config())
+	return HudLayout{ScreenW: sw, ScreenH: sh, PanelW: pw, PanelH: ph}
+}
+
+func (s *Service) PlaceHud(x, y int, save bool) overlay.Config {
+	l := s.HudLayout()
+	x = max(0, min(x, l.ScreenW-l.PanelW))
+	y = max(0, min(y, l.ScreenH-l.PanelH))
+	cfg := s.hud.MoveTo(x, y)
+	if save {
+		saveHudConfig(cfg)
+	}
+	return cfg
+}
+
+func (s *Service) PreviewHud(on bool) {
+	s.hud.SetPreview(on)
 }

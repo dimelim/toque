@@ -61,22 +61,19 @@ function Result({ exp }: { exp: ExperimentRecord }) {
 
 export function ActionCard({
   action,
-  experiment,
-  verifyId,
   busy,
   taskActive,
   onToggle,
   onVerify,
 }: {
   action: SessionAction;
-  experiment: ExperimentRecord | null;
-  verifyId: string;
   busy: boolean;
   taskActive: boolean;
   onToggle: (on: boolean) => void;
   onVerify: () => void;
 }) {
-  const verifiable = action.id === "background" && verifyId !== "";
+  const verifiable = action.verifyId !== "";
+  const experiment = action.experiment;
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-4">

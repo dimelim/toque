@@ -46,13 +46,16 @@ func init() {
 	tweaks.Register(backgroundTweak{})
 }
 
-func latestExperiment(id string) *ExperimentRecord {
-	var best *ExperimentRecord
+func latestExperiments(ids ...string) map[string]*ExperimentRecord {
+	out := map[string]*ExperimentRecord{}
+	for _, id := range ids {
+		out[id] = nil
+	}
 	for _, r := range LoadExperiments() {
-		if r.Tweak == id && (best == nil || r.At.After(best.At)) {
+		if best, ok := out[r.Tweak]; ok && (best == nil || r.At.After(best.At)) {
 			r := r
-			best = &r
+			out[r.Tweak] = &r
 		}
 	}
-	return best
+	return out
 }

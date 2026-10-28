@@ -206,6 +206,30 @@ var Catalog = []Entry{
 		Verdict:  VerdictPending,
 		Lab:      "Sin probar todavía. En el PC de pruebas, subir la prioridad de Roblox con carga de fondo no cambió nada medible, así que en equipos con muchos núcleos se espera poco efecto. Puede ayudar en equipos de 4 hilos con el navegador abierto.",
 	},
+	{
+		ID:       "session:windows-fx",
+		Title:    "Windows en modo juego",
+		Category: CategorySession,
+		What:     "Mientras juegas, Windows deja de grabar en segundo plano y apaga animaciones, sombras y transparencia, como hace AtlasOS.",
+		Why:      "La grabación en segundo plano de la Xbox Game Bar codifica vídeo todo el tiempo, y Microsoft reconoce que cuesta rendimiento salvo en gráficas de gama alta. Las animaciones y la transparencia hacen trabajar al compositor de Windows cuando se ven.",
+		Metric:   "1 % low, tirones y latencia de render.",
+		Risk:     "Windows se ve más plano mientras juegas.",
+		Revert:   "Toque guarda tus valores antes de cambiarlos y los devuelve al cerrar Roblox, al apagar la opción, al cerrar Toque o al volver a abrirlo tras un fallo.",
+		Verdict:  VerdictPending,
+		Lab:      "Sin probar todavía. Si la grabación en segundo plano ya estaba apagada, que es lo normal, el efecto esperado dentro de la partida es pequeño.",
+	},
+	{
+		ID:       "session:power-overlay",
+		Title:    "Portátil en máximo rendimiento",
+		Category: CategorySession,
+		What:     "Mientras juegas con el portátil enchufado, pone el modo de energía de Windows en Máximo rendimiento.",
+		Why:      "En los portátiles, el modo de energía decide cuánto puede subir de frecuencia el procesador. El fabricante ajusta ese límite para cada modo.",
+		Metric:   "FPS, 1 % low y tirones.",
+		Risk:     "El portátil gasta más energía y se calienta más mientras juegas.",
+		Revert:   "Toque guarda tu modo antes de cambiarlo y lo devuelve al cerrar Roblox, al apagar la opción, al cerrar Toque o al volver a abrirlo tras un fallo.",
+		Verdict:  VerdictPending,
+		Lab:      "Sin probar todavía. Es distinto del plan Alto rendimiento, que en el PC de sobremesa de pruebas no cambió nada. Solo se puede medir en un portátil.",
+	},
 }
 
 var labTitles = map[string]string{

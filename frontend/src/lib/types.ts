@@ -277,6 +277,13 @@ export interface HudConfig {
   demo: boolean;
 }
 
+export interface HudLayout {
+  screenW: number;
+  screenH: number;
+  panelW: number;
+  panelH: number;
+}
+
 export interface Account {
   userId: number;
   username: string;
@@ -346,7 +353,7 @@ export interface SessionProc {
 }
 
 export interface SessionAction {
-  id: "self" | "background" | "watch";
+  id: "self" | "windows" | "power" | "background" | "watch";
   title: string;
   what: string;
   tested: boolean;
@@ -354,6 +361,8 @@ export interface SessionAction {
   status: "off" | "waiting" | "active";
   detail: string;
   procs: SessionProc[];
+  verifyId: string;
+  experiment: ExperimentRecord | null;
 }
 
 export interface SessionNote {
@@ -380,8 +389,6 @@ export interface SessionInfo {
   actions: SessionAction[];
   notes: SessionNote[];
   prep: PrepCheck[];
-  verifyId: string;
-  experiment: ExperimentRecord | null;
 }
 
 export interface WindowState {

@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 	"sort"
+
+	"toque/internal/winx"
 )
 
 func (s *Service) sessionInfo() SessionInfo {
@@ -10,12 +12,10 @@ func (s *Service) sessionInfo() SessionInfo {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 	info := SessionInfo{
-		Enabled:    ss.cfg.Enabled,
-		State:      ss.state,
-		VerifyID:   backgroundID,
-		Prep:       ss.prep,
-		Experiment: ss.experiment,
-		Notes:      []SessionNote{},
+		Enabled: ss.cfg.Enabled,
+		State:   ss.state,
+		Prep:    ss.prep,
+		Notes:   []SessionNote{},
 	}
 	if info.Prep == nil {
 		info.Prep = []PrepCheck{}
@@ -26,7 +26,11 @@ func (s *Service) sessionInfo() SessionInfo {
 	if ss.cfg.Watch {
 		info.Notes = ss.watch.notes()
 	}
-	info.Actions = []SessionAction{ss.selfAction(), ss.backgroundAction(), ss.watchAction()}
+	info.Actions = []SessionAction{ss.selfAction(), ss.windowsAction()}
+	if laptop, _ := winx.Laptop(); laptop {
+		info.Actions = append(info.Actions, ss.powerAction())
+	}
+	info.Actions = append(info.Actions, ss.backgroundAction(), ss.watchAction())
 	return info
 }
 
@@ -58,13 +62,15 @@ func (ss *session) selfAction() SessionAction {
 
 func (ss *session) backgroundAction() SessionAction {
 	a := SessionAction{
-		ID:      "background",
-		Title:   "Apps de fondo en modo eficiencia",
-		What:    "Pone en modo eficiencia los programas conocidos que gastan CPU mientras juegas, como navegadores, launchers o fondos animados. Nunca toca los que están sonando, Discord, tu antivirus ni la app que tengas delante.",
-		Tested:  false,
-		Enabled: ss.cfg.Background,
-		Status:  ss.status(ss.cfg.Background),
-		Procs:   []SessionProc{},
+		ID:         "background",
+		VerifyID:   backgroundID,
+		Experiment: ss.experiment[backgroundID],
+		Title:      "Apps de fondo en modo eficiencia",
+		What:       "Pone en modo eficiencia los programas conocidos que gastan CPU mientras juegas, como navegadores, launchers o fondos animados. Nunca toca los que están sonando, Discord, tu antivirus ni la app que tengas delante.",
+		Tested:     false,
+		Enabled:    ss.cfg.Background,
+		Status:     ss.status(ss.cfg.Background),
+		Procs:      []SessionProc{},
 	}
 	if a.Status != "active" {
 		return a
@@ -84,6 +90,53 @@ func (ss *session) backgroundAction() SessionAction {
 		a.Detail = "Ninguna app de fondo conocida está gastando CPU ahora."
 	} else {
 		a.Detail = fmt.Sprintf("%d en modo eficiencia ahora.", len(a.Procs))
+	}
+	return a
+}
+
+func (ss *session) windowsAction() SessionAction {
+	a := SessionAction{
+		ID:         "windows",
+		VerifyID:   visualID,
+		Experiment: ss.experiment[visualID],
+		Title:      "Windows en modo juego",
+		What:       "Mientras juegas, Windows deja de grabar tus partidas en segundo plano y apaga animaciones, sombras y transparencia, como hace AtlasOS. Microsoft reconoce que esa grabación cuesta rendimiento salvo en gráficas de gama alta. Al cerrar Roblox todo vuelve a como lo tenías.",
+		Tested:     false,
+		Enabled:    ss.cfg.Windows,
+		Status:     ss.status(ss.cfg.Windows),
+		Procs:      []SessionProc{},
+	}
+	if a.Status == "active" {
+		if visualChange.applied() {
+			a.Detail = "Apagado hasta que cierres Roblox."
+		} else {
+			a.Detail = "Tu Windows ya lo tenía todo apagado."
+		}
+	}
+	return a
+}
+
+func (ss *session) powerAction() SessionAction {
+	a := SessionAction{
+		ID:         "power",
+		VerifyID:   powerID,
+		Experiment: ss.experiment[powerID],
+		Title:      "Portátil en máximo rendimiento",
+		What:       "Mientras juegas con el portátil enchufado, el modo de energía de Windows pasa a Máximo rendimiento y vuelve a tu ajuste al cerrar Roblox. Durante la partida el portátil gasta más y se calienta más.",
+		Tested:     false,
+		Enabled:    ss.cfg.Power,
+		Status:     ss.status(ss.cfg.Power),
+		Procs:      []SessionProc{},
+	}
+	if a.Status == "active" {
+		switch {
+		case powerChange.applied():
+			a.Detail = "Máximo rendimiento hasta que cierres Roblox."
+		case !powerApplicable():
+			a.Detail = "Solo funciona con el portátil enchufado y el plan de energía Equilibrado."
+		default:
+			a.Detail = "Tu Windows ya estaba en Máximo rendimiento."
+		}
 	}
 	return a
 }

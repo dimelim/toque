@@ -47,13 +47,14 @@ func (c Config) norm() Config {
 }
 
 type HUD struct {
-	mu   sync.Mutex
-	cfg  Config
-	ping float64
-	run  bool
-	tid  uint32
-	tick int
-	hwnd windows.HWND
+	mu      sync.Mutex
+	cfg     Config
+	ping    float64
+	preview bool
+	run     bool
+	tid     uint32
+	tick    int
+	hwnd    windows.HWND
 
 	frame     frame
 	drawn     bool
@@ -70,6 +71,30 @@ func (h *HUD) SetPing(ms float64) {
 	h.mu.Lock()
 	h.ping = ms
 	h.mu.Unlock()
+}
+
+func (h *HUD) SetPreview(on bool) {
+	h.mu.Lock()
+	h.preview = on
+	h.mu.Unlock()
+}
+
+func (h *HUD) previewing() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.preview
+}
+
+func (h *HUD) MoveTo(x, y int) Config {
+	h.mu.Lock()
+	h.cfg.X, h.cfg.Y = x, y
+	h.cfg = h.cfg.norm()
+	cfg, hwnd := h.cfg, h.hwnd
+	h.mu.Unlock()
+	if hwnd != 0 {
+		setWindowPos.Call(uintptr(hwnd), hwndTopmost, uintptr(cfg.X), uintptr(cfg.Y), 0, 0, swpNoSize|swpNoActivate)
+	}
+	return cfg
 }
 
 func (h *HUD) Config() Config {

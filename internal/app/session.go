@@ -21,14 +21,16 @@ type SessionProc struct {
 }
 
 type SessionAction struct {
-	ID      string        `json:"id"`
-	Title   string        `json:"title"`
-	What    string        `json:"what"`
-	Tested  bool          `json:"tested"`
-	Enabled bool          `json:"enabled"`
-	Status  string        `json:"status"`
-	Detail  string        `json:"detail"`
-	Procs   []SessionProc `json:"procs"`
+	ID         string            `json:"id"`
+	Title      string            `json:"title"`
+	What       string            `json:"what"`
+	Tested     bool              `json:"tested"`
+	Enabled    bool              `json:"enabled"`
+	Status     string            `json:"status"`
+	Detail     string            `json:"detail"`
+	Procs      []SessionProc     `json:"procs"`
+	VerifyID   string            `json:"verifyId"`
+	Experiment *ExperimentRecord `json:"experiment"`
 }
 
 type SessionNote struct {
@@ -49,20 +51,20 @@ type PrepCheck struct {
 }
 
 type SessionInfo struct {
-	Enabled    bool              `json:"enabled"`
-	State      string            `json:"state"`
-	Since      time.Time         `json:"since"`
-	Actions    []SessionAction   `json:"actions"`
-	Notes      []SessionNote     `json:"notes"`
-	Prep       []PrepCheck       `json:"prep"`
-	VerifyID   string            `json:"verifyId"`
-	Experiment *ExperimentRecord `json:"experiment"`
+	Enabled bool            `json:"enabled"`
+	State   string          `json:"state"`
+	Since   time.Time       `json:"since"`
+	Actions []SessionAction `json:"actions"`
+	Notes   []SessionNote   `json:"notes"`
+	Prep    []PrepCheck     `json:"prep"`
 }
 
 type sessionConfig struct {
 	Enabled    bool `json:"enabled"`
 	Self       bool `json:"self"`
 	Background bool `json:"background"`
+	Windows    bool `json:"windows"`
+	Power      bool `json:"power"`
 	Watch      bool `json:"watch"`
 }
 
@@ -83,8 +85,9 @@ type session struct {
 	watch      watchLog
 	self       map[uint32]selfEntry
 	excused    map[string]bool
+	launchedAt time.Time
 	prep       []PrepCheck
-	experiment *ExperimentRecord
+	experiment map[string]*ExperimentRecord
 }
 
 const (
@@ -92,6 +95,7 @@ const (
 	stateWaiting = "waiting"
 	stateActive  = "active"
 	statePaused  = "paused"
+	launchGrace  = 2 * time.Minute
 )
 
 var (
@@ -149,6 +153,9 @@ func (ss *session) step(running, sample bool) {
 		if next != statePaused && len(throttler().Throttled()) > 0 {
 			throttler().RestoreAll()
 		}
+		if next != statePaused && time.Since(ss.launchedAt) > launchGrace {
+			restoreSystem()
+		}
 		return
 	}
 	if sample {
@@ -166,11 +173,27 @@ func (ss *session) start() {
 	ss.excused = map[string]bool{}
 	ss.sampler.Reset()
 	ss.procs = ss.sampler.Sample()
+	if ss.cfg.Windows {
+		visualChange.on()
+	}
+	if ss.cfg.Power {
+		powerChange.on()
+	}
+}
+
+func (s *Service) prelaunch() {
+	s.sess.mu.Lock()
+	defer s.sess.mu.Unlock()
+	if s.sess.cfg.Enabled && !s.sess.closed && s.sess.paused == 0 && s.sess.cfg.Windows {
+		s.sess.launchedAt = time.Now()
+		visualChange.on()
+	}
 }
 
 func (ss *session) stop() {
 	ss.relaxSelf()
 	throttler().RestoreAll()
+	restoreSystem()
 	ss.excused = map[string]bool{}
 }
 
@@ -317,7 +340,7 @@ func (s *Service) Shutdown() {
 }
 
 func (s *Service) Session() SessionInfo {
-	prep, exp := s.prepChecks(), latestExperiment(backgroundID)
+	prep, exp := s.prepChecks(), latestExperiments(backgroundID, visualID, powerID)
 	s.sess.mu.Lock()
 	s.sess.prep, s.sess.experiment = prep, exp
 	s.sess.mu.Unlock()
@@ -345,6 +368,22 @@ func (s *Service) SetSessionAction(id string, on bool) (SessionInfo, error) {
 		s.sess.cfg.Background = on
 		if !on {
 			throttler().RestoreAll()
+		}
+	case "windows":
+		s.sess.cfg.Windows = on
+		switch {
+		case !on:
+			visualChange.off()
+		case s.sess.state == stateActive:
+			visualChange.on()
+		}
+	case "power":
+		s.sess.cfg.Power = on
+		switch {
+		case !on:
+			powerChange.off()
+		case s.sess.state == stateActive:
+			powerChange.on()
 		}
 	case "watch":
 		s.sess.cfg.Watch = on

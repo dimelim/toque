@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"os"
 	"runtime"
 	"syscall"
 	"unsafe"
@@ -219,7 +220,7 @@ func (h *HUD) wndProc(hwnd windows.HWND, message uint32, wparam, lparam uintptr)
 
 func (h *HUD) onTick(hwnd windows.HWND) {
 	cfg, ping := h.snapshot()
-	visible := cfg.Move || cfg.Demo || winx.RobloxInFront()
+	visible := cfg.Move || cfg.Demo || winx.RobloxInFront() || (h.previewing() && winx.ForegroundPID() == uint32(os.Getpid()))
 	if visible != h.shown {
 		h.shown, h.drawn = visible, false
 		if visible {

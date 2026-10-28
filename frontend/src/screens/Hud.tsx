@@ -3,11 +3,12 @@ import { Label, Slider, SliderOutput, SliderThumb, SliderTrack } from "react-ari
 import { cx } from "@/utils/cx";
 import { api, errorText } from "@/lib/api";
 import { play } from "@/lib/sound";
-import type { HudConfig } from "@/lib/types";
+import type { HudConfig, HudLayout } from "@/lib/types";
 import { useApp } from "@/state";
 import { Card, Eyebrow, PageHeader } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { HudEditor } from "./hud/Editor";
 
 function Row({ title, text, on, disabled, onChange }: { title: string; text: string; on: boolean; disabled?: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -80,6 +81,7 @@ const corners = [
 export function Hud() {
   const { overview, toast } = useApp();
   const [cfg, setCfg] = useState<HudConfig | null>(null);
+  const [layout, setLayout] = useState<HudLayout | null>(null);
   const load = useCallback(async () => {
     try {
       setCfg(await api.hudConfig());
@@ -89,7 +91,15 @@ export function Hud() {
   }, []);
   useEffect(() => {
     load();
+    api.previewHud(true).catch(() => undefined);
+    return () => {
+      api.previewHud(false).catch(() => undefined);
+    };
   }, [load]);
+  useEffect(() => {
+    if (!cfg) return;
+    api.hudLayout().then(setLayout).catch(() => undefined);
+  }, [cfg?.scale, cfg?.showKeys, cfg?.showMouse, cfg?.showPing, !!cfg]);
 
   const commit = async (next: HudConfig) => {
     setCfg(next);
@@ -103,6 +113,14 @@ export function Hud() {
   const patch = (p: Partial<HudConfig>) => {
     if (!cfg) return;
     commit({ ...cfg, ...p });
+  };
+  const place = async (x: number, y: number, save: boolean) => {
+    try {
+      const next = await api.placeHud(x, y, save);
+      if (save) setCfg(next);
+    } catch (e) {
+      if (save) toast({ tone: "error", title: "No pude mover el HUD", detail: errorText(e) });
+    }
   };
   const corner = async (id: string) => {
     try {
@@ -159,13 +177,19 @@ export function Hud() {
 
         <Card className="col-span-2 p-5">
           <h2 className="mb-1 text-[15px] font-semibold text-ink">Posición</h2>
-          <p className="mb-3 text-caption-1-medium text-ink-3">Elige una esquina. El HUD se recoloca al cambiar el tamaño.</p>
-          <div className="grid grid-cols-4 gap-2">
-            {corners.map((c) => (
-              <Button key={c.id} variant="secondary" disabled={!on} onClick={() => corner(c.id)}>
-                {c.label}
-              </Button>
-            ))}
+          <p className="mb-4 text-caption-1-medium text-ink-3">Arrastra el HUD en la miniatura de tu pantalla. Se pega a los bordes y al centro, y mientras estás aquí lo ves también encima del escritorio.</p>
+          <div className="grid grid-cols-[minmax(0,1fr)_200px] items-start gap-6">
+            {cfg && layout ? <HudEditor cfg={cfg} layout={layout} disabled={!on} onPlace={place} /> : <div />}
+            <div>
+              <p className="mb-2 text-caption-1-medium text-ink-3">Esquinas</p>
+              <div className="grid grid-cols-2 gap-2">
+                {corners.map((c) => (
+                  <Button key={c.id} size="small" variant="secondary" disabled={!on} onClick={() => corner(c.id)}>
+                    {c.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </Card>
       </div>
