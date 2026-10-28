@@ -123,7 +123,7 @@ function OptimizationCard({ o, onChange }: { o: Optimization; onChange: (o: Opti
               {open ? "Ocultar detalles" : "Ver detalles"}
             </Button>
             <Button variant="ghost" size="small" leadingIcon={IconFlask} disabled={!!task} onClick={verify}>
-              {rejected ? "Probarla igualmente en mi PC" : "Probar en mi PC"}
+              {rejected ? "Probar en mi PC de todos modos" : "Probar en mi PC"}
             </Button>
           </div>
         </div>

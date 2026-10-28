@@ -48,10 +48,11 @@ type Service struct {
 func New(presentMon string, emit Emitter) *Service {
 	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New(), sess: loadSession(), returning: returningUser()}
 	s.hud.Apply(loadHudConfig())
+	s.sess.onEnd = func(n SessionNote) { s.send("session-summary", n) }
 	return s
 }
 
-var ErrBusy = errors.New("toque ya estÃ¡ ejecutando otra tarea")
+var ErrBusy = errors.New("Toque ya está ejecutando otra tarea")
 
 func (s *Service) idle() error {
 	s.mu.Lock()
@@ -211,16 +212,16 @@ var logTail roblox.Tail
 func currentSession(inst roblox.Install) (roblox.Session, error) {
 	pids := roblox.Running()
 	if len(pids) == 0 {
-		return roblox.Session{}, errors.New("roblox is not running")
+		return roblox.Session{}, errors.New("Roblox no está abierto")
 	}
 	log := roblox.NewestPlayerLog(inst.LogDir(), time.Now().Add(-12*time.Hour))
 	if log == "" {
-		return roblox.Session{PID: pids[0]}, errors.New("no log")
+		return roblox.Session{PID: pids[0]}, errors.New("No encuentro el registro de Roblox")
 	}
 	st := logTail.Read(log)
 	sess := roblox.Session{PID: pids[0], LogPath: log, JobID: st.JobID, PlaceID: st.PlaceID, ServerIP: st.ServerIP, ServerPort: st.ServerPort}
 	if sess.ServerIP == "" {
-		return sess, errors.New("not in game")
+		return sess, errors.New("Entra en una partida primero")
 	}
 	return sess, nil
 }

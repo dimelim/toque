@@ -35,6 +35,9 @@ func (s *Service) prepChecks() []PrepCheck {
 	if c, ok := windowedCheck(); ok {
 		out = append(out, c)
 	}
+	if c, ok := gameModeCheck(); ok {
+		out = append(out, c)
+	}
 	return append(out, s.provenCheck(), windowsCheck())
 }
 
@@ -47,6 +50,19 @@ func lastPresentMode() string {
 		mode = r.Window.Frames.PresentMode
 	}
 	return mode
+}
+
+func gameModeCheck() (PrepCheck, bool) {
+	t := tweaks.GameMode()
+	managed, _ := tweaks.Entries()
+	_, mine := managed[t.ID()]
+	switch {
+	case tweaks.GameModeOff():
+		return PrepCheck{ID: "gamemode", Title: "Modo de juego de Windows", Detail: "Lo tienes apagado. Windows lo trae activado porque evita que instale controladores y te muestre notificaciones mientras juegas.", Action: "Activar"}, true
+	case mine:
+		return PrepCheck{ID: "gamemode", Title: "Modo de juego de Windows", Detail: "Activado de nuevo por Toque.", Done: true, Action: "Quitar"}, true
+	}
+	return PrepCheck{}, false
 }
 
 func windowedCheck() (PrepCheck, bool) {
@@ -141,6 +157,14 @@ func (s *Service) ApplyPrep(id string) (SessionInfo, error) {
 		return s.Session(), err
 	}
 	switch id {
+	case "gamemode":
+		t := tweaks.GameMode()
+		if managed, _ := tweaks.Entries(); managed != nil {
+			if _, mine := managed[t.ID()]; mine {
+				return s.Session(), tweaks.Revert(s.context(), t)
+			}
+		}
+		return s.Session(), tweaks.Apply(s.context(), t)
 	case "windowed":
 		t := tweaks.WindowedGames()
 		if managed, _ := tweaks.Entries(); managed != nil {

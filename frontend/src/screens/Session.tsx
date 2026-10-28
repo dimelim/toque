@@ -13,6 +13,12 @@ import { Prep } from "./session/Prep";
 import { ActionCard } from "./session/Actions";
 import { Notes } from "./session/Notes";
 
+const prepCopy: Record<string, { running: string; done: string; detail: string }> = {
+  "fps-cap": { running: "Ajustando el límite de FPS", done: "Límite de FPS ajustado", detail: "Roblox lo usará la próxima vez que lo abras." },
+  windowed: { running: "Cambiando Juegos en ventana", done: "Juegos en ventana actualizado", detail: "Roblox lo usará la próxima vez que lo abras." },
+  gamemode: { running: "Cambiando el Modo de juego de Windows", done: "Modo de juego de Windows actualizado", detail: "Windows lo usará en tu próxima partida." },
+};
+
 function Section({ title, hint, index, children }: { title: string; hint: string; index: number; children: ReactNode }) {
   return (
     <motion.div className="mt-8" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 * index, ease: [0.22, 1, 0.36, 1] }}>
@@ -40,7 +46,7 @@ export function Session() {
     try {
       setInfo(await api.setSession(on));
     } catch (e) {
-      fail("No pude cambiar el modo partida", e);
+      fail("No pude cambiar el Modo partida", e);
     }
   };
 
@@ -62,11 +68,11 @@ export function Session() {
       go("optimize");
       return;
     }
-    const windowed = c.id === "windowed";
-    const next = await run("prep", windowed ? "Activando la optimización de juegos en ventana" : "Ajustando el límite de FPS", () => api.applyPrep(c.id));
+    const copy = prepCopy[c.id] ?? prepCopy["fps-cap"];
+    const next = await run("prep", copy.running, () => api.applyPrep(c.id));
     if (next) {
       setInfo(next);
-      toast({ tone: "ok", title: windowed ? "Optimización de juegos en ventana actualizada" : "Límite de FPS ajustado", detail: "Roblox lo usará la próxima vez que lo abras." });
+      toast({ tone: "ok", title: copy.done, detail: copy.detail });
       refresh();
     }
   };

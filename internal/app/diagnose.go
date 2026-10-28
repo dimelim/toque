@@ -191,7 +191,7 @@ func findings(d Diagnosis) []Finding {
 			names = append(names, fmt.Sprintf("%s (%.0f MB)", h.Name, h.MB))
 		}
 		add("ram-low", "warn", "memoria", "Poca RAM libre para jugar",
-			fmt.Sprintf("Quedan %.0f MB libres y Roblox usa cerca de 2 GB. Lo que más ocupa ahora es %s. Cerrarlo antes de jugar reduce los tirones.", d.RAMAvailMB, strings.Join(names, ", ")), "")
+			fmt.Sprintf("Quedan %.0f MB libres y Roblox usa cerca de 2 GB. Lo que más ocupa ahora es %s. Cerrarlo antes de jugar libera memoria.", d.RAMAvailMB, strings.Join(names, ", ")), "")
 	}
 	planName := d.PowerName
 	if planName == "" {
@@ -217,7 +217,7 @@ func findings(d Diagnosis) []Finding {
 		case p.Kind == "local" && p.Loss > 2:
 			add("lan-loss", "warn", "red", "Se pierden paquetes antes de salir de casa", fmt.Sprintf("El %s no respondió al %s %% de las pruebas.", strings.ToLower(p.Label), dec(p.Loss)), "")
 		case p.Kind == "game" && (p.RTT > 100 || (bestDC > 0 && p.RTT > bestDC+25)):
-			detail := "Buscar otro servidor de Realistic Street Soccer suele bajar mucho el ping."
+			detail := "Buscar otro servidor de Realistic Street Soccer puede darte un ping más bajo."
 			if bestDC > 0 && p.RTT > bestDC+25 {
 				detail = fmt.Sprintf("Ya te medí un centro de datos de Roblox a %.0f ms. Buscar servidor puede dejarte ahí.", bestDC)
 			}

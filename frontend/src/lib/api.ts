@@ -20,6 +20,7 @@ import type {
   ServerProbe,
   ServerSearch,
   SessionInfo,
+  SessionNote,
   UpdateInfo,
   WatchInfo,
   WindowState,
@@ -104,6 +105,10 @@ export function onSession(cb: (s: SessionInfo) => void) {
 
 export function onWindow(cb: (w: WindowState) => void) {
   return EventsOn("window", cb);
+}
+
+export function onSessionSummary(cb: (n: SessionNote) => void) {
+  return EventsOn("session-summary", cb);
 }
 
 export const win = {

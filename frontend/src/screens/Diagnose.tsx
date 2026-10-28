@@ -235,7 +235,7 @@ export function Diagnose() {
   const problems = findings.filter((f) => f.level === "bad" || f.level === "warn").length;
   return (
     <div>
-      <PageHeader eyebrow="Diagnóstico" title="Qué está frenando tu Roblox">
+      <PageHeader eyebrow="Diagnóstico" title="Qué te está frenando">
         {d ? (
           <>
             <Switch size="sm" isSelected={withGame} onChange={setWithGame} isDisabled={!!task}>

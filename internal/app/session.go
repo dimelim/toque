@@ -90,6 +90,7 @@ type session struct {
 	excused    map[string]bool
 	launchedAt time.Time
 	retryAt    time.Time
+	onEnd      func(SessionNote)
 	prep       []PrepCheck
 	experiment map[string]*ExperimentRecord
 }
@@ -149,6 +150,9 @@ func (ss *session) step(running, sample bool) {
 	next := ss.want(running)
 	if ss.state == stateActive && next != stateActive {
 		ss.stop()
+		if n, ok := ss.summary(); ok && next == stateWaiting && ss.onEnd != nil {
+			ss.onEnd(n)
+		}
 	}
 	if ss.state != stateActive && next == stateActive {
 		ss.start()
@@ -210,6 +214,18 @@ func (ss *session) stop() {
 	throttler().RestoreAll()
 	restoreSystem()
 	ss.excused = map[string]bool{}
+}
+
+func (ss *session) summary() (SessionNote, bool) {
+	if !ss.cfg.Watch {
+		return SessionNote{}, false
+	}
+	for _, n := range ss.watch.notes() {
+		if n.Tone == "warn" {
+			return n, true
+		}
+	}
+	return SessionNote{}, false
 }
 
 func (ss *session) act() {

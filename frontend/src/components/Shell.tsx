@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cx } from "@/utils/cx";
-import { win, api } from "@/lib/api";
+import { win, api, onSessionSummary } from "@/lib/api";
 import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
@@ -60,6 +60,18 @@ function WindowControls() {
         <IconClose className="size-4" />
       </button>
     </div>
+  );
+}
+
+function useSessionSummary() {
+  const { toast } = useApp();
+  useEffect(
+    () =>
+      onSessionSummary((n) => {
+        play("tap");
+        toast({ tone: "info", title: "En tu última partida", detail: `${n.title}. Lo tienes en Partida, en Qué te está frenando.` });
+      }),
+    [toast],
   );
 }
 
@@ -289,6 +301,7 @@ function Toasts() {
 export function Shell({ children }: { children: ReactNode }) {
   const { screen } = useApp();
   useWatchToast();
+  useSessionSummary();
   return (
     <div className="flex h-full bg-canvas text-ink">
       <WhatsNew />

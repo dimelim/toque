@@ -350,6 +350,17 @@ var privacyTweaks = []privacy{
 	},
 }
 
+var gameMode = regValue{root: registry.CURRENT_USER, path: `Software\Microsoft\GameBar`, name: "AutoGameModeEnabled", value: 1}
+
+func GameMode() Tweak {
+	return privacy{id: "windows:gamemode", values: []regValue{gameMode}}
+}
+
+func GameModeOff() bool {
+	cur, st := gameMode.read()
+	return st == regDword && cur == 0
+}
+
 func PrivacyChanges(id string) []string {
 	for _, p := range privacyTweaks {
 		if p.id != id {
@@ -380,4 +391,5 @@ func init() {
 	for _, p := range privacyTweaks {
 		Register(p)
 	}
+	Register(GameMode())
 }

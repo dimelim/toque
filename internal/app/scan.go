@@ -128,5 +128,5 @@ func (s *Service) joinIn(ctx context.Context, inst roblox.Install, key string, m
 	if ctx.Err() != nil {
 		return roblox.Session{}, tried, ctx.Err()
 	}
-	return roblox.Session{}, tried, errors.New("no server in region")
+	return roblox.Session{}, tried, errors.New("No hay partidas en esa ciudad ahora mismo")
 }

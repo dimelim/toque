@@ -99,3 +99,21 @@ func TestOwnTreeKeepsToqueWebViewAndNeverRoblox(t *testing.T) {
 		}
 	}
 }
+
+func TestSessionSummaryOnlyForWarnings(t *testing.T) {
+	cores := float64(runtime.NumCPU())
+	ss := &session{cfg: sessionConfig{Watch: true}}
+	if _, ok := ss.summary(); ok {
+		t.Fatal("summary without data")
+	}
+	busy := []sysmon.ProcCPU{{PID: 20, Name: "steam.exe", Core: 9 * cores}}
+	ss.watch.add(busy, map[uint32]bool{}, nil)
+	n, ok := ss.summary()
+	if !ok || n.ID != "cpu" {
+		t.Fatalf("summary = %+v, %v", n, ok)
+	}
+	ss.cfg.Watch = false
+	if _, ok := ss.summary(); ok {
+		t.Fatal("summary while watching is off")
+	}
+}
