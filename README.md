@@ -18,6 +18,7 @@ Toque es una app para Windows que mide el retraso real de Roblox, empezando por 
 
 - **Mide tu partida.** FPS, 1 % low, tirones, latencia de render y el ping real dentro del juego.
 - **Optimiza con pruebas.** Solo recomienda lo que mejoró en pruebas A/B, y cada cambio se deshace con un clic.
+- **Modo partida.** Mientras juegas, Toque se aparta, te cuenta qué programas gastan CPU o memoria y, si lo activas, pone en modo eficiencia las apps de fondo conocidas. Todo se deshace al cerrar Roblox.
 - **Diagnostica qué te frena.** Red tramo a tramo, memoria y disco, cómo dibuja Roblox, Windows y energía.
 - **Juega cerca.** Comprueba el servidor al entrar y te mueve si Roblox te mandó lejos.
 - **Elige la ciudad.** Los 35 centros de datos de Roblox, incluidos Lima, Santiago, Buenos Aires y Querétaro. Si no hay partidas en esa ciudad, Toque vigila y entra en cuanto aparece una.

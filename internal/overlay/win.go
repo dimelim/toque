@@ -6,6 +6,8 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+
+	"toque/internal/winx"
 )
 
 var (
@@ -217,7 +219,7 @@ func (h *HUD) wndProc(hwnd windows.HWND, message uint32, wparam, lparam uintptr)
 
 func (h *HUD) onTick(hwnd windows.HWND) {
 	cfg, ping := h.snapshot()
-	visible := cfg.Move || cfg.Demo || robloxInFront()
+	visible := cfg.Move || cfg.Demo || winx.RobloxInFront()
 	if visible != h.shown {
 		h.shown, h.drawn = visible, false
 		if visible {
@@ -241,16 +243,6 @@ func (h *HUD) onTick(hwnd windows.HWND) {
 	if h.tick%120 == 0 {
 		setWindowPos.Call(uintptr(hwnd), hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate)
 	}
-}
-
-func robloxInFront() bool {
-	fg := windows.GetForegroundWindow()
-	if fg == 0 {
-		return false
-	}
-	buf := make([]uint16, 32)
-	n, _ := windows.GetClassName(fg, &buf[0], int32(len(buf)))
-	return windows.UTF16ToString(buf[:n]) == "WINDOWSCLIENT"
 }
 
 func stock(id int) (windows.Handle, uintptr) {

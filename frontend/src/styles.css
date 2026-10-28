@@ -311,3 +311,60 @@
 .progress-sweep {
   animation: sweep 1.6s var(--ease-out-quint) infinite;
 }
+
+[data-calm] *,
+[data-calm] *::before,
+[data-calm] *::after {
+  animation-play-state: paused !important;
+}
+
+.session-layer {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+@keyframes session-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes session-spin-back {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes session-breathe {
+  0%,
+  100% {
+    transform: scale(0.93);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.65;
+  }
+}
+@keyframes session-glow {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+.session-spin {
+  animation: session-spin 3.4s linear infinite;
+}
+.session-spin-slow {
+  animation: session-spin-back 9s linear infinite;
+}
+.session-breathe {
+  animation: session-breathe 4.4s ease-in-out infinite;
+}
+.session-glow {
+  animation: session-glow 3.2s ease-in-out infinite;
+}

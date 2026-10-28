@@ -14,11 +14,14 @@ import type {
   PlayResult,
   Progress,
   Region,
+  Repo,
   RunRecord,
   ServerProbe,
   ServerSearch,
+  SessionInfo,
   UpdateInfo,
   WatchInfo,
+  WindowState,
 } from "./types";
 
 export const api = {
@@ -53,6 +56,12 @@ export const api = {
   cancel: () => Service.Cancel() as Promise<void>,
   noteError: (text: string) => Service.NoteError(text) as Promise<void>,
   exportReport: () => Service.ExportReport() as Promise<string>,
+  repo: () => Service.Repo() as Promise<Repo>,
+  session: () => Service.Session() as Promise<SessionInfo>,
+  setSession: (enabled: boolean) => Service.SetSession(enabled) as Promise<SessionInfo>,
+  setSessionAction: (id: string, on: boolean) => Service.SetSessionAction(id, on) as Promise<SessionInfo>,
+  applyPrep: (id: string) => Service.ApplyPrep(id) as Promise<SessionInfo>,
+  window: () => Service.Window() as Promise<WindowState>,
   lastDiagnosis: () => Service.LastDiagnosis() as Promise<Diagnosis | null>,
   lastBloat: () => Service.LastBloat() as Promise<BloatResult | null>,
   pingHistory: () => Service.PingHistory() as Promise<PingPoint[]>,
@@ -72,6 +81,18 @@ export function onUpdate(cb: (u: UpdateInfo) => void) {
 
 export function onWatch(cb: (w: WatchInfo) => void) {
   return EventsOn("watch", cb);
+}
+
+export function onOverview(cb: (o: Overview) => void) {
+  return EventsOn("overview", cb);
+}
+
+export function onSession(cb: (s: SessionInfo) => void) {
+  return EventsOn("session", cb);
+}
+
+export function onWindow(cb: (w: WindowState) => void) {
+  return EventsOn("window", cb);
 }
 
 export const win = {

@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api, errorText, onProgress, onUpdate, onWatch } from "@/lib/api";
+import { api, errorText, onOverview, onProgress, onUpdate, onWatch, onWindow } from "@/lib/api";
 import { play } from "@/lib/sound";
-import type { Overview, Progress, UpdateInfo, WatchInfo } from "@/lib/types";
+import type { Overview, Progress, UpdateInfo, WatchInfo, WindowState } from "@/lib/types";
 
-export type Screen = "home" | "diagnose" | "optimize" | "flags" | "hud" | "tests" | "settings";
+export type Screen = "home" | "session" | "diagnose" | "optimize" | "flags" | "hud" | "tests" | "settings";
 
 export interface Toast {
   id: number;
@@ -92,13 +92,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refresh();
     api.updateStatus().then(setUpdate).catch(() => undefined);
-    const t = setInterval(refresh, 4000);
+    const offOverview = onOverview(setOverview);
+    const calm = (w: WindowState) => document.documentElement.toggleAttribute("data-calm", w.calm);
+    api.window().then(calm).catch(() => undefined);
+    const offWindow = onWindow(calm);
     const off = onProgress((p) => setProgress(p.step === "done" ? null : p));
     const offUpdate = onUpdate(setUpdate);
     api.watchStatus().then(setWatch).catch(() => undefined);
     const offWatch = onWatch(setWatch);
     return () => {
-      clearInterval(t);
+      offOverview();
+      offWindow();
       off();
       offUpdate();
       offWatch();

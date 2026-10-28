@@ -48,4 +48,7 @@
   FileArrowUp as IconImport,
   Plus as IconPlus,
   Keyboard as IconKeyboard,
+  LogoGithub as IconGithub,
+  StarFill as IconStar,
+  Rocket as IconRocket,
 } from "@gravity-ui/icons";

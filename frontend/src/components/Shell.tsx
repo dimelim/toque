@@ -7,6 +7,8 @@ import { PRIVATE, regionCity } from "@/lib/regions";
 import { play } from "@/lib/sound";
 import { installUpdate } from "@/lib/updates";
 import { useAccount } from "@/hooks/use-account";
+import { useCountUp } from "@/hooks/use-count-up";
+import { useRepo } from "@/hooks/use-repo";
 import { usePlay } from "@/hooks/use-play";
 import { useApp } from "@/state";
 import type { Screen } from "@/state";
@@ -29,10 +31,14 @@ import {
   IconBad,
   IconInfo,
   IconDownload,
+  IconGithub,
+  IconStar,
+  IconRocket,
 } from "./icons";
 
 const nav: { id: Screen; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { id: "home", label: "Inicio", icon: IconHome },
+  { id: "session", label: "Partida", icon: IconRocket },
   { id: "diagnose", label: "Diagnóstico", icon: IconDiagnose },
   { id: "optimize", label: "Optimizar", icon: IconOptimize },
   { id: "flags", label: "Flags", icon: IconFlag },
@@ -89,7 +95,7 @@ function RobloxStatus() {
         </div>
       ) : null}
       <div className="flex items-center gap-2">
-        <span className={cx("live-dot relative size-2 rounded-full", inGame ? "text-volt bg-volt" : r.running ? "text-warn bg-warn" : "bg-ink-4 text-transparent")} />
+        <span className={cx("relative size-2 rounded-full", inGame ? "live-dot text-volt bg-volt" : r.running ? "live-dot text-warn bg-warn" : "bg-ink-4")} />
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
       <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : watch?.active ? `Vigilando ${regionCity(watch.region)}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
@@ -136,6 +142,37 @@ function UpdateCard() {
   );
 }
 
+function RepoLink({ version }: { version: string }) {
+  const repo = useRepo();
+  const stars = useCountUp(repo && repo.stars >= 0 ? repo.stars : 0, 900);
+  return (
+    <button
+      onClick={() => {
+        play("tap");
+        win.open(repo?.url ?? "https://github.com/dimelim/toque");
+      }}
+      aria-label="Ver el código de Toque en GitHub y darle una estrella"
+      className="group flex h-9 items-center gap-2 rounded-[10px] px-3 text-left outline-none transition-colors duration-150 hover:bg-surface-1 focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+    >
+      <IconGithub className="size-4 shrink-0 text-ink-3 transition-colors duration-150 group-hover:text-ink" />
+      <span className="min-w-0 truncate text-caption-1-medium text-ink-3 transition-colors duration-150 group-hover:text-ink-2">Toque {version}</span>
+      <AnimatePresence initial={false}>
+        {repo && repo.stars >= 0 ? (
+          <motion.span
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", duration: 0.45, bounce: 0.35 }}
+            className="ml-auto flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-caption-1-semibold tabular-nums text-ink-2 transition-colors duration-150 group-hover:text-ink"
+          >
+            <IconStar className="size-3 text-volt transition-transform duration-300 ease-out group-hover:rotate-[72deg] group-hover:scale-125" />
+            {stars}
+          </motion.span>
+        ) : null}
+      </AnimatePresence>
+    </button>
+  );
+}
+
 function Sidebar() {
   const { screen, go, overview } = useApp();
   return (
@@ -169,7 +206,7 @@ function Sidebar() {
       <div className="mt-auto flex flex-col gap-3">
         <UpdateCard />
         <RobloxStatus />
-        <p className="px-3 text-caption-1-medium text-ink-4">Toque {overview?.version ?? ""}</p>
+        <RepoLink version={overview?.version ?? ""} />
       </div>
     </aside>
   );

@@ -15,7 +15,7 @@ import (
 	"toque/internal/winx"
 )
 
-const Version = "1.14.1"
+const Version = "1.15.0"
 
 type Emitter func(name string, data any)
 
@@ -40,10 +40,12 @@ type Service struct {
 	watchStop  context.CancelFunc
 	watchGen   int
 	hud        *overlay.HUD
+	sess       *session
+	calm       atomic.Bool
 }
 
 func New(presentMon string, emit Emitter) *Service {
-	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New()}
+	s := &Service{presentMon: presentMon, emit: emit, upd: UpdateInfo{Current: Version, State: "idle"}, hud: overlay.New(), sess: loadSession()}
 	s.hud.Apply(loadHudConfig())
 	return s
 }
@@ -67,11 +69,18 @@ func (s *Service) begin(task string) (context.Context, func(), error) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s.busy, s.cancel = task, cancel
+	measuring := task == "verify" || task == "benchmark" || task == "diagnose"
+	if measuring {
+		s.pauseSession()
+	}
 	return ctx, func() {
 		cancel()
 		s.mu.Lock()
 		s.busy, s.cancel = "", nil
 		s.mu.Unlock()
+		if measuring {
+			s.resumeSession()
+		}
 		s.progress(task, "done", 1, "")
 	}, nil
 }
@@ -135,22 +144,28 @@ var (
 	systemInfo SystemInfo
 )
 
+func robloxState() RobloxState {
+	var r RobloxState
+	inst, err := roblox.Find()
+	if err != nil {
+		return r
+	}
+	r.Installed, r.Version = true, inst.Version
+	if sess, err := currentSession(inst); err == nil {
+		r.Running = true
+		r.InGame = sess.ServerIP != ""
+		r.PlaceID = sess.PlaceID
+		r.JobID = sess.JobID
+		r.ServerIP = sess.ServerIP
+	} else {
+		r.Running = len(roblox.Running()) > 0
+	}
+	return r
+}
+
 func (s *Service) Overview() Overview {
 	systemOnce.Do(func() { systemInfo = ReadSystem() })
-	o := Overview{Version: Version, Elevated: winx.IsElevated(), System: systemInfo, UptimeMin: int(uptime().Minutes())}
-	if inst, err := roblox.Find(); err == nil {
-		o.Roblox.Installed = true
-		o.Roblox.Version = inst.Version
-		if sess, err := currentSession(inst); err == nil {
-			o.Roblox.Running = true
-			o.Roblox.InGame = sess.ServerIP != ""
-			o.Roblox.PlaceID = sess.PlaceID
-			o.Roblox.JobID = sess.JobID
-			o.Roblox.ServerIP = sess.ServerIP
-		} else {
-			o.Roblox.Running = len(roblox.Running()) > 0
-		}
-	}
+	o := Overview{Version: Version, Elevated: winx.IsElevated(), System: systemInfo, UptimeMin: int(uptime().Minutes()), Roblox: robloxState()}
 	entries, _ := tweaks.Entries()
 	o.Applied = len(entries)
 	o.Tested = len(catalog.Catalog)
@@ -159,9 +174,7 @@ func (s *Service) Overview() Overview {
 			o.Proven++
 		}
 	}
-	if runs := LoadRuns(); len(runs) > 0 {
-		o.LastRun = &runs[0]
-	}
+	o.LastRun = latestRun()
 	s.mu.Lock()
 	o.Busy = s.busy
 	s.mu.Unlock()
@@ -204,6 +217,8 @@ func currentSession(inst roblox.Install) (roblox.Session, error) {
 }
 
 func (s *Service) Recover() {
+	throttler().Recover()
+	tweaks.Revert(tweaks.Context{}, backgroundTweak{})
 	inst, err := roblox.Find()
 	if err != nil {
 		return

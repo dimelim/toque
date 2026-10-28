@@ -21,6 +21,8 @@ const (
 	VerdictRejected    = "rejected"
 	VerdictPending     = "pending"
 	VerdictSituational = "situational"
+
+	CategorySession = "sesion"
 )
 
 var Catalog = []Entry{
@@ -191,6 +193,18 @@ var Catalog = []Entry{
 		Revert:   "Quita las opciones del archivo de configuración de Roblox.",
 		Verdict:  VerdictRejected,
 		Lab:      "Descartada. La RAM de Roblox quedó igual (1.954 frente a 1.946 MB) y no cambiaron los tirones ni las lecturas de paginación de forma medible.",
+	},
+	{
+		ID:       "session:background-eco",
+		Title:    "Apps de fondo en modo eficiencia",
+		Category: CategorySession,
+		What:     "Mientras juegas, pone en modo eficiencia los programas conocidos que gastan CPU de fondo, como navegadores, launchers o fondos animados.",
+		Why:      "Un programa que gasta CPU de fondo compite con Roblox por el procesador. En modo eficiencia Windows lo atiende después que al juego y a menor frecuencia.",
+		Metric:   "1 % low, tirones y latencia de render con tus programas de fondo abiertos.",
+		Risk:     "Ese programa va más lento mientras juegas. Toque nunca toca los que están sonando ni la app que tengas delante, y lo devuelve a la normalidad al terminar.",
+		Revert:   "Cada programa vuelve a su prioridad al cerrar Roblox, al apagar la opción, al cerrar Toque o al volver a abrirlo tras un fallo.",
+		Verdict:  VerdictPending,
+		Lab:      "Sin probar todavía. En el PC de pruebas, subir la prioridad de Roblox con carga de fondo no cambió nada medible, así que en equipos con muchos núcleos se espera poco efecto. Puede ayudar en equipos de 4 hilos con el navegador abierto.",
 	},
 }
 

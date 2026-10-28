@@ -330,3 +330,60 @@ export interface Progress {
   pct: number;
   message: string;
 }
+
+export interface Repo {
+  name: string;
+  url: string;
+  stars: number;
+}
+
+export type SessionState = "off" | "waiting" | "active" | "paused";
+
+export interface SessionProc {
+  name: string;
+  cpu: number;
+  ramMb: number;
+}
+
+export interface SessionAction {
+  id: "self" | "background" | "watch";
+  title: string;
+  what: string;
+  tested: boolean;
+  enabled: boolean;
+  status: "off" | "waiting" | "active";
+  detail: string;
+  procs: SessionProc[];
+}
+
+export interface SessionNote {
+  id: string;
+  tone: "info" | "warn";
+  title: string;
+  detail: string;
+  procs: SessionProc[];
+}
+
+export interface PrepCheck {
+  id: "fps-cap" | "proven";
+  title: string;
+  detail: string;
+  done: boolean;
+  action: string;
+  blocked: string;
+}
+
+export interface SessionInfo {
+  enabled: boolean;
+  state: SessionState;
+  since: string;
+  actions: SessionAction[];
+  notes: SessionNote[];
+  prep: PrepCheck[];
+  verifyId: string;
+  experiment: ExperimentRecord | null;
+}
+
+export interface WindowState {
+  calm: boolean;
+}

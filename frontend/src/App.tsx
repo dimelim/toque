@@ -3,6 +3,7 @@ import * as Service from "@wails/go/app/Service";
 import { AppProvider, useApp } from "./state";
 import { Shell } from "./components/Shell";
 import { Home } from "./screens/Home";
+import { Session } from "./screens/Session";
 import { Diagnose } from "./screens/Diagnose";
 import { Optimize } from "./screens/Optimize";
 import { Flags } from "./screens/Flags";
@@ -15,6 +16,8 @@ import type { InstallState } from "./screens/Install";
 function Current() {
   const { screen } = useApp();
   switch (screen) {
+    case "session":
+      return <Session />;
     case "diagnose":
       return <Diagnose />;
     case "optimize":

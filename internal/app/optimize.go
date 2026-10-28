@@ -61,6 +61,9 @@ func (s *Service) Optimizations() []Optimization {
 	exps := LoadExperiments()
 	out := make([]Optimization, 0, len(catalog.Catalog))
 	for _, e := range catalog.Catalog {
+		if e.Category == catalog.CategorySession {
+			continue
+		}
 		out = append(out, s.describe(e, managed, exps))
 	}
 	return out
@@ -140,7 +143,7 @@ func (s *Service) RevertAll() error {
 	if len(roblox.Running()) > 0 {
 		return errors.New("cierra Roblox para revertir todo")
 	}
-	return tweaks.RevertAll(s.context())
+	return errors.Join(throttler().RestoreAll(), tweaks.RevertAll(s.context()))
 }
 
 func (s *Service) Verify(id string) (ExperimentRecord, error) {

@@ -68,6 +68,10 @@ func main() {
 			started.Store(ctx)
 			svc.Recover()
 			svc.StartUpdates()
+			svc.StartMonitor(func() bool { return runtime.WindowIsMinimised(ctx) })
+		},
+		OnShutdown: func(context.Context) {
+			svc.Shutdown()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: instanceID(),

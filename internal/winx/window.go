@@ -70,6 +70,26 @@ func IsForeground(h windows.HWND) bool {
 	return h != 0 && windows.GetForegroundWindow() == h
 }
 
+func RobloxInFront() bool {
+	fg := windows.GetForegroundWindow()
+	if fg == 0 {
+		return false
+	}
+	buf := make([]uint16, 32)
+	n, _ := windows.GetClassName(fg, &buf[0], int32(len(buf)))
+	return windows.UTF16ToString(buf[:n]) == "WINDOWSCLIENT"
+}
+
+func ForegroundPID() uint32 {
+	fg := windows.GetForegroundWindow()
+	if fg == 0 {
+		return 0
+	}
+	var pid uint32
+	windows.GetWindowThreadProcessId(fg, &pid)
+	return pid
+}
+
 func IdleTime() time.Duration {
 	var info struct {
 		Size uint32

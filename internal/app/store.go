@@ -55,6 +55,29 @@ func LoadRuns() []RunRecord {
 	return out
 }
 
+func latestRun() *RunRecord {
+	files, _ := filepath.Glob(filepath.Join(runsDir(), "*.json"))
+	var newest string
+	var at time.Time
+	for _, f := range files {
+		if info, err := os.Stat(f); err == nil && info.ModTime().After(at) {
+			newest, at = f, info.ModTime()
+		}
+	}
+	if newest == "" {
+		return nil
+	}
+	b, err := os.ReadFile(newest)
+	if err != nil {
+		return nil
+	}
+	var r RunRecord
+	if json.Unmarshal(b, &r) != nil {
+		return nil
+	}
+	return &r
+}
+
 func DeleteRun(id string) error {
 	return os.Remove(filepath.Join(runsDir(), filepath.Base(id)+".json"))
 }
