@@ -25,7 +25,7 @@ function Check({ done }: { done: boolean }) {
 
 export function Prep({ checks, disabled, onAct }: { checks: PrepCheck[]; disabled: boolean; onAct: (c: PrepCheck) => void }) {
   return (
-    <div className={cx("grid gap-3", checks.length >= 3 ? "grid-cols-3" : checks.length === 2 ? "grid-cols-2" : "grid-cols-1")}>
+    <div className={cx("grid gap-3", checks.length === 3 ? "grid-cols-3" : checks.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
       {checks.map((c) => (
         <Card key={c.id} className="flex items-start gap-4 p-5">
           <Check done={c.done} />

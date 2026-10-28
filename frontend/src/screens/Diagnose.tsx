@@ -182,7 +182,7 @@ function Prep({ withGame, setWithGame, start, regions }: { withGame: boolean; se
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4">
-        <section className="edge-light flex flex-col rounded-2xl bg-background-secondary-default p-6 shadow-card">
+        <section className="flex flex-col rounded-2xl bg-background-secondary-default p-6 shadow-card">
           <p className="flex items-center gap-1.5 text-body-medium text-text-secondary">
             <IconDiagnose className="size-4 text-ink-3" />
             Diagnóstico completo

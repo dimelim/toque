@@ -376,7 +376,7 @@ export interface SessionNote {
 }
 
 export interface PrepCheck {
-  id: "fps-cap" | "proven" | "windows";
+  id: "fps-cap" | "proven" | "windows" | "windowed";
   title: string;
   detail: string;
   done: boolean;

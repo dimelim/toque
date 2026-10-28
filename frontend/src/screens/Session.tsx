@@ -62,10 +62,11 @@ export function Session() {
       go("optimize");
       return;
     }
-    const next = await run("prep", "Ajustando el límite de FPS", () => api.applyPrep(c.id));
+    const windowed = c.id === "windowed";
+    const next = await run("prep", windowed ? "Activando la optimización de juegos en ventana" : "Ajustando el límite de FPS", () => api.applyPrep(c.id));
     if (next) {
       setInfo(next);
-      toast({ tone: "ok", title: "Límite de FPS ajustado", detail: "Roblox lo usará la próxima vez que lo abras." });
+      toast({ tone: "ok", title: windowed ? "Optimización de juegos en ventana activada" : "Límite de FPS ajustado", detail: "Roblox lo usará la próxima vez que lo abras." });
       refresh();
     }
   };

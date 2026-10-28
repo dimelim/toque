@@ -171,8 +171,11 @@ func (s *Service) Overview() Overview {
 	o := Overview{Version: Version, Elevated: winx.IsElevated(), System: systemInfo, UptimeMin: int(uptime().Minutes()), Roblox: robloxState()}
 	entries, _ := tweaks.Entries()
 	o.Applied = len(entries)
-	o.Tested = len(catalog.Catalog)
 	for _, e := range catalog.Catalog {
+		if e.Category == catalog.CategorySession {
+			continue
+		}
+		o.Tested++
 		if e.Verdict == catalog.VerdictProven || e.Verdict == catalog.VerdictTradeoff {
 			o.Proven++
 		}

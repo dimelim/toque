@@ -79,7 +79,7 @@ export function PlayCard({ regions, onDone }: { regions: Region[]; onDone: () =>
   };
 
   return (
-    <section className="edge-light flex min-w-0 flex-col rounded-2xl bg-background-secondary-default p-5 shadow-card">
+    <section className="flex min-w-0 flex-col rounded-2xl bg-background-secondary-default p-5 shadow-card">
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-body-medium text-text-secondary">
           <StatusDot color={inGame ? "green" : running ? "yellow" : "gray"} />

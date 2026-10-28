@@ -3,6 +3,8 @@ package app
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"toque/internal/catalog"
 	"toque/internal/roblox"
@@ -30,7 +32,39 @@ func (s *Service) prepChecks() []PrepCheck {
 	if c, ok := fpsCheck(); ok {
 		out = append(out, c)
 	}
+	if c, ok := windowedCheck(); ok {
+		out = append(out, c)
+	}
 	return append(out, s.provenCheck(), windowsCheck())
+}
+
+func lastPresentMode() string {
+	mode, at := "", time.Time{}
+	if d := loadLast[Diagnosis]("diagnosis.json"); d != nil && d.Game != nil {
+		mode, at = d.Game.Frames.PresentMode, d.At
+	}
+	if r := latestRun(); r != nil && r.At.After(at) {
+		mode = r.Window.Frames.PresentMode
+	}
+	return mode
+}
+
+func windowedCheck() (PrepCheck, bool) {
+	t := tweaks.WindowedGames()
+	st := t.State(tweaks.Context{})
+	managed, _ := tweaks.Entries()
+	_, mine := managed[t.ID()]
+	if !st.Applicable || (!mine && !strings.Contains(lastPresentMode(), "Copy with")) {
+		return PrepCheck{}, false
+	}
+	c := PrepCheck{ID: "windowed", Title: "Juegos en ventana"}
+	if st.Applied {
+		c.Done, c.Detail = true, "Windows 11 pasa Roblox al modo flip, que Microsoft documenta con menos retraso."
+		return c, true
+	}
+	c.Detail = "En tu última medición Roblox se mostraba copiando cada frame al escritorio. Windows 11 puede pasarlo al modo flip, que Microsoft documenta con menos retraso. Se nota al reabrir Roblox."
+	c.Action = "Activar"
+	return c, true
 }
 
 func windowsCheck() PrepCheck {
@@ -95,11 +129,15 @@ func (s *Service) provenCheck() PrepCheck {
 }
 
 func (s *Service) ApplyPrep(id string) (SessionInfo, error) {
-	if id != "fps-cap" {
-		return s.Session(), errors.New("no conozco ese ajuste")
-	}
 	if err := s.idle(); err != nil {
 		return s.Session(), err
+	}
+	switch id {
+	case "windowed":
+		return s.Session(), tweaks.Apply(s.context(), tweaks.WindowedGames())
+	case "fps-cap":
+	default:
+		return s.Session(), errors.New("no conozco ese ajuste")
 	}
 	if len(roblox.Running()) > 0 {
 		return s.Session(), errors.New("cierra Roblox para cambiar el límite de FPS")
