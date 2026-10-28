@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { Focusable } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { improvement, metricMeta, num, when } from "@/lib/format";
 import type { ExperimentRecord, SessionAction, SessionProc } from "@/lib/types";
@@ -6,6 +7,7 @@ import { Card, DeltaChip, Pill } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { IconFlask } from "@/components/icons";
 
 const statusLabel: Record<SessionAction["status"], string> = {
@@ -81,9 +83,16 @@ export function ActionCard({
           <div className="flex flex-wrap items-center gap-2.5">
             <h3 className="text-[15px] font-semibold text-ink">{action.title}</h3>
             {!action.tested ? (
-              <Chip variant="caption" color="yellow">
-                Sin probar
-              </Chip>
+              <TooltipTrigger>
+                <Focusable>
+                  <span className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">
+                    <Chip variant="caption" color="yellow">
+                      Sin probar
+                    </Chip>
+                  </span>
+                </Focusable>
+                <Tooltip>Toque aún no ha medido si esto mejora tus FPS. Compruébalo en tu PC con Probar en mi PC.</Tooltip>
+              </TooltipTrigger>
             ) : null}
             <Indicator status={action.status} />
           </div>

@@ -89,6 +89,7 @@ export function Hero({ info }: { info: SessionInfo | null }) {
   const state: SessionState = info?.state ?? "off";
   const now = useNow(state === "active");
   const text = state === "active" && info ? elapsed(info.since, now) : copy[state].text;
+  const working = (info?.actions ?? []).filter((a) => a.enabled && a.status === "active");
   return (
     <Card className="mb-8 flex items-center gap-8 overflow-hidden p-6">
       <Engine state={state} />
@@ -97,6 +98,22 @@ export function Hero({ info }: { info: SessionInfo | null }) {
           <motion.div key={state} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
             <h2 className={cx("text-[26px] leading-[1.15] font-semibold tracking-[-0.02em]", state === "active" ? "text-volt" : "text-ink")}>{copy[state].title}</h2>
             <p className="num mt-2 text-body-regular text-ink-2">{text}</p>
+            {state === "active" && working.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {working.map((a, i) => (
+                  <motion.span
+                    key={a.id}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-volt-soft px-2.5 py-1 text-caption-1-semibold text-volt"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", duration: 0.4, bounce: 0.2, delay: 0.05 * i }}
+                  >
+                    <span className="size-1.5 rounded-full bg-volt" />
+                    {a.title}
+                  </motion.span>
+                ))}
+              </div>
+            ) : null}
           </motion.div>
         </AnimatePresence>
         <p className="mt-5 max-w-[60ch] text-caption-1-medium text-ink-3">
