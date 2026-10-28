@@ -10,25 +10,29 @@ import (
 
 var (
 	procRegOpenCurrentUser = advapi32.NewProc("RegOpenCurrentUser")
-	userRootOnce           sync.Once
-	userRoot               = registry.CURRENT_USER
+	userRootMu             sync.Mutex
+	userRootKey            registry.Key
 )
 
-func UserRoot() registry.Key {
-	userRootOnce.Do(func() {
-		if !IsElevated() {
-			return
+func UserRoot() (registry.Key, error) {
+	if !IsElevated() {
+		return registry.CURRENT_USER, nil
+	}
+	userRootMu.Lock()
+	defer userRootMu.Unlock()
+	if userRootKey != 0 {
+		return userRootKey, nil
+	}
+	var h syscall.Handle
+	err := AsUser(func() error {
+		if r, _, _ := procRegOpenCurrentUser.Call(uintptr(registry.ALL_ACCESS), uintptr(unsafe.Pointer(&h))); r != 0 {
+			return syscall.Errno(r)
 		}
-		var h syscall.Handle
-		err := AsUser(func() error {
-			if r, _, _ := procRegOpenCurrentUser.Call(uintptr(registry.ALL_ACCESS), uintptr(unsafe.Pointer(&h))); r != 0 {
-				return syscall.Errno(r)
-			}
-			return nil
-		})
-		if err == nil && h != 0 {
-			userRoot = registry.Key(h)
-		}
+		return nil
 	})
-	return userRoot
+	if err != nil {
+		return 0, err
+	}
+	userRootKey = registry.Key(h)
+	return userRootKey, nil
 }

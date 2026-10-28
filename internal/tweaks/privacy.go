@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -32,14 +31,14 @@ const (
 )
 
 type privacy struct {
-	id      string
-	values  []regValue
-	service string
+	id     string
+	values []regValue
 }
 
 const (
-	absent = "absent"
-	other  = "other"
+	absent        = "absent"
+	other         = "other"
+	servicePrefix = "service:"
 )
 
 func (v regValue) key() string {
@@ -50,17 +49,24 @@ func (v regValue) key() string {
 	return root + `\` + v.path + `\` + v.name
 }
 
-func (v regValue) base() registry.Key {
+func (v regValue) base() (registry.Key, error) {
 	if v.root == registry.CURRENT_USER {
 		return winx.UserRoot()
 	}
-	return v.root
+	return v.root, nil
 }
 
 func (v regValue) read() (uint32, regState) {
-	k, err := registry.OpenKey(v.base(), v.path, registry.QUERY_VALUE)
+	base, err := v.base()
 	if err != nil {
+		return 0, regOther
+	}
+	k, err := registry.OpenKey(base, v.path, registry.QUERY_VALUE)
+	if errors.Is(err, registry.ErrNotExist) {
 		return 0, regAbsent
+	}
+	if err != nil {
+		return 0, regOther
 	}
 	defer k.Close()
 	n, _, err := k.GetIntegerValue(v.name)
@@ -73,12 +79,9 @@ func (v regValue) read() (uint32, regState) {
 	return 0, regOther
 }
 
-func (v regValue) satisfied() bool {
-	cur, st := v.read()
+func (v regValue) satisfied(cur uint32, st regState) bool {
 	switch {
-	case st == regOther:
-		return true
-	case st == regAbsent:
+	case st != regDword:
 		return false
 	case v.ceiling:
 		return cur <= v.value
@@ -87,7 +90,11 @@ func (v regValue) satisfied() bool {
 }
 
 func (v regValue) write(n uint32) error {
-	k, _, err := registry.CreateKey(v.base(), v.path, registry.SET_VALUE)
+	base, err := v.base()
+	if err != nil {
+		return err
+	}
+	k, _, err := registry.CreateKey(base, v.path, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}
@@ -96,7 +103,11 @@ func (v regValue) write(n uint32) error {
 }
 
 func (v regValue) remove() error {
-	k, err := registry.OpenKey(v.base(), v.path, registry.SET_VALUE)
+	base, err := v.base()
+	if err != nil {
+		return err
+	}
+	k, err := registry.OpenKey(base, v.path, registry.SET_VALUE)
 	if err != nil {
 		return ignoreMissing(err)
 	}
@@ -108,9 +119,6 @@ func (p privacy) ID() string { return p.id }
 func (privacy) Kind() Kind   { return Live }
 
 func (p privacy) admin() bool {
-	if p.service != "" {
-		return true
-	}
 	for _, v := range p.values {
 		if v.root == registry.LOCAL_MACHINE {
 			return true
@@ -120,17 +128,21 @@ func (p privacy) admin() bool {
 }
 
 func (p privacy) State(Context) State {
-	applied := true
+	st := State{Applicable: !p.admin() || winx.IsElevated(), Applied: true}
 	for _, v := range p.values {
-		if !v.satisfied() {
-			applied = false
+		if _, err := v.base(); err != nil {
+			st.Applicable, st.Applied, st.Detail = false, false, "No encuentro tu sesión de Windows. Vuelve a abrir Toque desde tu escritorio"
+			return st
+		}
+		cur, rs := v.read()
+		if rs == regOther {
+			st.Applicable, st.Detail = false, "Windows tiene este ajuste en un formato que Toque no toca"
+		}
+		if !v.satisfied(cur, rs) {
+			st.Applied = false
 		}
 	}
-	if p.service != "" {
-		start, _, err := serviceStart(p.service)
-		applied = applied && err == nil && start == mgr.StartDisabled
-	}
-	return State{Applicable: !p.admin() || winx.IsElevated(), Applied: applied}
+	return st
 }
 
 func (p privacy) Snapshot(Context) (Undo, error) {
@@ -142,13 +154,7 @@ func (p privacy) Snapshot(Context) (Undo, error) {
 		case regAbsent:
 			u[v.key()] = absent
 		default:
-			u[v.key()] = other
-		}
-	}
-	if p.service != "" {
-		start, delayed, err := serviceStart(p.service)
-		if err == nil {
-			u["service:"+p.service] = fmt.Sprintf("%d:%t", start, delayed)
+			return nil, fmt.Errorf("no puedo leer %s", v.key())
 		}
 	}
 	return u, nil
@@ -157,12 +163,9 @@ func (p privacy) Snapshot(Context) (Undo, error) {
 func (p privacy) Apply(Context) error {
 	var errs []error
 	for _, v := range p.values {
-		if !v.satisfied() {
+		if cur, st := v.read(); !v.satisfied(cur, st) && st != regOther {
 			errs = append(errs, v.write(v.value))
 		}
-	}
-	if p.service != "" {
-		errs = append(errs, disableService(p.service))
 	}
 	return errors.Join(errs...)
 }
@@ -184,58 +187,12 @@ func (p privacy) Revert(_ Context, u Undo) error {
 			errs = append(errs, v.write(uint32(n)))
 		}
 	}
-	if prev, ok := u["service:"+p.service]; ok && p.service != "" {
-		errs = append(errs, restoreService(p.service, prev))
+	for k, prev := range u {
+		if name, ok := strings.CutPrefix(k, servicePrefix); ok {
+			errs = append(errs, restoreService(name, prev))
+		}
 	}
 	return errors.Join(errs...)
-}
-
-func serviceStart(name string) (uint32, bool, error) {
-	scm, err := windows.OpenSCManager(nil, nil, windows.SC_MANAGER_CONNECT)
-	if err != nil {
-		return 0, false, err
-	}
-	defer windows.CloseServiceHandle(scm)
-	n, err := windows.UTF16PtrFromString(name)
-	if err != nil {
-		return 0, false, err
-	}
-	h, err := windows.OpenService(scm, n, windows.SERVICE_QUERY_CONFIG)
-	if err != nil {
-		return 0, false, err
-	}
-	s := &mgr.Service{Name: name, Handle: h}
-	defer s.Close()
-	c, err := s.Config()
-	if err != nil {
-		return 0, false, err
-	}
-	return c.StartType, c.DelayedAutoStart, nil
-}
-
-func disableService(name string) error {
-	m, err := mgr.Connect()
-	if err != nil {
-		return err
-	}
-	defer m.Disconnect()
-	s, err := m.OpenService(name)
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-	c, err := s.Config()
-	if err != nil {
-		return err
-	}
-	c.StartType, c.DelayedAutoStart = mgr.StartDisabled, false
-	if err := s.UpdateConfig(c); err != nil {
-		return err
-	}
-	if st, err := s.Query(); err == nil && st.State != svc.Stopped {
-		s.Control(svc.Stop)
-	}
-	return nil
 }
 
 func restoreService(name, prev string) error {
@@ -288,9 +245,8 @@ const (
 
 var privacyTweaks = []privacy{
 	{
-		id:      "privacy:telemetry",
-		values:  []regValue{{root: registry.LOCAL_MACHINE, path: `SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection`, name: "AllowTelemetry", value: 1, ceiling: true}},
-		service: "DiagTrack",
+		id:     "privacy:telemetry",
+		values: []regValue{{root: registry.LOCAL_MACHINE, path: `SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection`, name: "AllowTelemetry", value: 1, ceiling: true}},
 	},
 	{
 		id: "privacy:typing",
@@ -333,9 +289,9 @@ var privacyTweaks = []privacy{
 	{
 		id: "privacy:ai",
 		values: []regValue{
+			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\WindowsAI`, name: "DisableAIDataAnalysis", value: 1},
 			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\WindowsCopilot`, name: "TurnOffWindowsCopilot", value: 1},
 			{root: registry.CURRENT_USER, path: explorerAdvanced, name: "ShowCopilotButton", value: 0},
-			{root: registry.CURRENT_USER, path: `Software\Policies\Microsoft\Windows\WindowsAI`, name: "DisableAIDataAnalysis", value: 1},
 		},
 	},
 	{
@@ -357,15 +313,6 @@ func PrivacyIDs() []string {
 		ids[i] = p.id
 	}
 	return ids
-}
-
-func PrivacyNeedsAdmin(id string) bool {
-	for _, p := range privacyTweaks {
-		if p.id == id {
-			return p.admin()
-		}
-	}
-	return false
 }
 
 func init() {

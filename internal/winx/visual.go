@@ -125,7 +125,11 @@ func boolArg(on bool) uintptr {
 }
 
 func dword(path, name string, missing bool) bool {
-	k, err := registry.OpenKey(UserRoot(), path, registry.QUERY_VALUE)
+	root, err := UserRoot()
+	if err != nil {
+		return missing
+	}
+	k, err := registry.OpenKey(root, path, registry.QUERY_VALUE)
 	if err != nil {
 		return missing
 	}
@@ -138,7 +142,11 @@ func dword(path, name string, missing bool) bool {
 }
 
 func setDword(path, name string, on bool) error {
-	k, _, err := registry.CreateKey(UserRoot(), path, registry.SET_VALUE)
+	root, err := UserRoot()
+	if err != nil {
+		return err
+	}
+	k, _, err := registry.CreateKey(root, path, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}

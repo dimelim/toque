@@ -47,8 +47,6 @@ func TestPrivacyTweaksAreRegistered(t *testing.T) {
 			t.Fatalf("%s: %v", id, err)
 		}
 	}
-	start, _, err := serviceStart("DiagTrack")
-	t.Logf("DiagTrack start=%d err=%v", start, err)
 }
 
 func TestPrivacyNeverRaisesACeilingOrTouchesOtherTypes(t *testing.T) {
@@ -62,20 +60,22 @@ func TestPrivacyNeverRaisesACeilingOrTouchesOtherTypes(t *testing.T) {
 	k.SetStringValue("Text", "keep")
 	k.Close()
 	ceiling := regValue{root: registry.CURRENT_USER, path: testPath, name: "Telemetry", value: 1, ceiling: true}
-	text := regValue{root: registry.CURRENT_USER, path: testPath, name: "Text", value: 0}
-	p := privacy{id: "privacy:test", values: []regValue{ceiling, text}}
-	if !p.State(Context{}).Applied {
-		t.Fatal("a lower value and a non-dword value should count as applied")
+	low := privacy{id: "privacy:low", values: []regValue{ceiling}}
+	if !low.State(Context{}).Applied {
+		t.Fatal("a value under the ceiling should count as applied")
 	}
-	u, _ := p.Snapshot(Context{})
-	if err := p.Apply(Context{}); err != nil {
-		t.Fatal(err)
-	}
-	if err := p.Revert(Context{}, u); err != nil {
-		t.Fatal(err)
-	}
+	u, _ := low.Snapshot(Context{})
+	low.Apply(Context{})
+	low.Revert(Context{}, u)
 	if v, st := ceiling.read(); st != regDword || v != 0 {
 		t.Fatalf("telemetry = %d, %v; want 0", v, st)
+	}
+	text := privacy{id: "privacy:text", values: []regValue{{root: registry.CURRENT_USER, path: testPath, name: "Text", value: 0}}}
+	if st := text.State(Context{}); st.Applicable || st.Applied {
+		t.Fatalf("a non-dword value must not be applicable: %+v", st)
+	}
+	if _, err := text.Snapshot(Context{}); err == nil {
+		t.Fatal("snapshot of a non-dword value should fail")
 	}
 	k, _ = registry.OpenKey(registry.CURRENT_USER, testPath, registry.QUERY_VALUE)
 	defer k.Close()

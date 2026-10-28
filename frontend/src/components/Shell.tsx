@@ -105,6 +105,12 @@ function RobloxStatus() {
         <span className="text-caption-1-semibold text-ink">{!r.installed ? "Roblox no instalado" : inGame ? "En partida" : r.running ? "Roblox abierto" : "Roblox cerrado"}</span>
       </div>
       <p className="mt-1 truncate text-caption-1-medium text-ink-3">{inGame ? `Servidor ${r.serverIp}` : watch?.active ? `Vigilando ${regionCity(watch.region)}` : region === PRIVATE ? "Servidor privado" : region ? `Servidor en ${regionCity(region)}` : "Realistic Street Soccer"}</p>
+      {overview?.session === "active" ? (
+        <p className="mt-1 flex items-center gap-1.5 text-caption-1-semibold text-volt">
+          <IconRocket className="size-3.5" />
+          Modo partida activo
+        </p>
+      ) : null}
       {r.installed ? (
         <Button size="small" variant="secondary" className="mt-3 w-full" leadingIcon={IconPlay} disabled={!!task || (region === PRIVATE && !privateLink.trim())} onClick={start}>
           {r.running ? "Cambiar de servidor" : "Jugar"}

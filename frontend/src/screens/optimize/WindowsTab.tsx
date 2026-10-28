@@ -29,7 +29,7 @@ function Row({ o, disabled, onChange }: { o: WindowsOption; disabled: boolean; o
           ) : null}
           {!o.applicable ? (
             <Chip variant="caption" color="yellow">
-              Necesita administrador
+              {o.note || "Necesita administrador"}
             </Chip>
           ) : null}
         </div>

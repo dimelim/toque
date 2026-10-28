@@ -139,6 +139,7 @@ type Overview struct {
 	LastRun   *RunRecord  `json:"lastRun"`
 	Busy      string      `json:"busy"`
 	UptimeMin int         `json:"uptimeMin"`
+	Session   string      `json:"session"`
 }
 
 var (
@@ -180,6 +181,9 @@ func (s *Service) Overview() Overview {
 	s.mu.Lock()
 	o.Busy = s.busy
 	s.mu.Unlock()
+	s.sess.mu.Lock()
+	o.Session = s.sess.state
+	s.sess.mu.Unlock()
 	s.feedPing(o)
 	return o
 }

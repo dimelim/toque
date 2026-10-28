@@ -30,7 +30,20 @@ func (s *Service) prepChecks() []PrepCheck {
 	if c, ok := fpsCheck(); ok {
 		out = append(out, c)
 	}
-	return append(out, s.provenCheck())
+	return append(out, s.provenCheck(), windowsCheck())
+}
+
+func windowsCheck() PrepCheck {
+	c := PrepCheck{ID: "windows", Title: "Windows más limpio", Action: "Ver ajustes"}
+	switch n := pendingPrivacy(); n {
+	case 0:
+		c.Done, c.Action, c.Detail = true, "", "Sin telemetría opcional, publicidad ni sugerencias."
+	case 1:
+		c.Detail = "Te queda 1 ajuste de privacidad por quitar."
+	default:
+		c.Detail = fmt.Sprintf("Te quedan %d ajustes de privacidad por quitar.", n)
+	}
+	return c
 }
 
 func fpsCheck() (PrepCheck, bool) {

@@ -168,6 +168,7 @@ export interface Overview {
   lastRun: RunRecord | null;
   busy: string;
   uptimeMin: number;
+  session: SessionState;
 }
 
 export interface Finding {
@@ -375,7 +376,7 @@ export interface SessionNote {
 }
 
 export interface PrepCheck {
-  id: "fps-cap" | "proven";
+  id: "fps-cap" | "proven" | "windows";
   title: string;
   detail: string;
   done: boolean;
@@ -404,4 +405,5 @@ export interface WindowsOption {
   applied: boolean;
   managed: boolean;
   applicable: boolean;
+  note: string;
 }

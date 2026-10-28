@@ -104,11 +104,12 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 				s.updateWatch(gen, func(w *WatchInfo) { w.Checked += len(page) })
 				if matches, _ := serversIn(ctx, key, page); len(matches) > 0 {
 					playing := len(roblox.Running()) > 0
-					if probe, ok := s.joinWatched(key, matches); ok {
+					probe, tried, ok := s.joinWatched(ctx, key, matches)
+					if ok {
 						s.updateWatch(gen, func(w *WatchInfo) { w.Joined = &probe })
 						return
 					}
-					if playing && ctx.Err() == nil {
+					if tried && playing && ctx.Err() == nil {
 						s.updateWatch(gen, func(w *WatchInfo) {
 							w.Note = fmt.Sprintf("No pude entrar en la partida de %s, así que paré el vigía para no volver a sacarte de tu partida.", regionCity(key))
 						})
@@ -125,20 +126,22 @@ func (s *Service) watchLoop(ctx context.Context, gen int, key string) {
 	}
 }
 
-func (s *Service) joinWatched(key string, matches []roblox.PublicServer) (ServerProbe, bool) {
+func (s *Service) joinWatched(watching context.Context, key string, matches []roblox.PublicServer) (ServerProbe, bool, bool) {
 	ctx, done, err := s.begin("play")
 	if err != nil {
-		return ServerProbe{}, false
+		return ServerProbe{}, false, false
 	}
 	defer done()
+	stop := context.AfterFunc(watching, s.Cancel)
+	defer stop()
 	inst, err := s.launchInstall()
 	if err != nil {
-		return ServerProbe{}, false
+		return ServerProbe{}, false, false
 	}
 	s.progress("play", "join", 0.1, fmt.Sprintf("Hay una partida en %s. Entrando", regionCity(key)))
 	sess, _, err := s.joinIn(ctx, inst, key, matches, "play")
 	if err != nil {
-		return ServerProbe{}, false
+		return ServerProbe{}, true, false
 	}
-	return joinedProbe(ctx, sess), true
+	return joinedProbe(ctx, sess), true, true
 }

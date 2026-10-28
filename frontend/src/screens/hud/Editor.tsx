@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { cx } from "@/utils/cx";
 import type { HudConfig, HudLayout } from "@/lib/types";
 
@@ -83,6 +83,18 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
     onPlace(g.x, g.y, true);
   };
 
+  const nudge = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? 40 : 8;
+    const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    const m = moves[e.key];
+    if (disabled || !m) return;
+    e.preventDefault();
+    const x = Math.min(maxX, Math.max(0, pos.x + m[0]));
+    const y = Math.min(maxY, Math.max(0, pos.y + m[1]));
+    setPos({ x, y });
+    onPlace(x, y, true);
+  };
+
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
   return (
     <div>
@@ -100,8 +112,10 @@ export function HudEditor({ cfg, layout, disabled, onPlace }: { cfg: HudConfig; 
           onPointerMove={move}
           onPointerUp={up}
           onPointerCancel={up}
+          onKeyDown={nudge}
+          tabIndex={disabled ? -1 : 0}
           className={cx(
-            "absolute touch-none rounded-[10%] bg-surface-3 p-[1.2%] ring-1 transition-[box-shadow,background-color] duration-150 select-none",
+            "absolute touch-none rounded-[10%] bg-surface-3 p-[1.2%] ring-1 transition-[box-shadow,background-color] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
             disabled ? "cursor-not-allowed opacity-60 ring-line-strong" : dragging ? "cursor-grabbing bg-surface-4 ring-volt" : "cursor-grab ring-volt-line hover:ring-volt",
           )}
           style={{ left: pct(pos.x, layout.screenW), top: pct(pos.y, layout.screenH), width: pct(layout.panelW, layout.screenW), height: pct(layout.panelH, layout.screenH) }}

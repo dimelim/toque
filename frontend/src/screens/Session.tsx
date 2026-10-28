@@ -5,7 +5,7 @@ import { api, errorText } from "@/lib/api";
 import { play } from "@/lib/sound";
 import type { PrepCheck, SessionAction } from "@/lib/types";
 import { useSession } from "@/hooks/use-session";
-import { useApp } from "@/state";
+import { remember, useApp } from "@/state";
 import { PageHeader } from "@/components/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Hero } from "./session/Hero";
@@ -57,7 +57,8 @@ export function Session() {
   };
 
   const act = async (c: PrepCheck) => {
-    if (c.id === "proven") {
+    if (c.id === "proven" || c.id === "windows") {
+      remember("toque.optimizeTab", c.id === "windows" ? "windows" : "tested");
       go("optimize");
       return;
     }

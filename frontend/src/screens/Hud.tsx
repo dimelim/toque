@@ -178,7 +178,7 @@ export function Hud() {
 
         <Card className="col-span-2 p-5">
           <h2 className="mb-1 text-[15px] font-semibold text-ink">Posición</h2>
-          <p className="mb-4 text-caption-1-medium text-ink-3">Arrastra el HUD en la miniatura de tu pantalla. Se pega a los bordes y al centro, y mientras estás aquí lo ves también encima del escritorio.</p>
+          <p className="mb-4 text-caption-1-medium text-ink-3">Arrastra el HUD en la miniatura de tu pantalla o muévelo con las flechas, con Mayús para ir más rápido. Se pega a los bordes y al centro, y mientras estás aquí lo ves también encima del escritorio.</p>
           <div className="grid grid-cols-[minmax(0,1fr)_200px] items-start gap-6">
             {cfg && layout ? <HudEditor cfg={cfg} layout={layout} disabled={!on} onPlace={place} /> : <div />}
             <div>
